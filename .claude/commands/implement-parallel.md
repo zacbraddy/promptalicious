@@ -1,0 +1,1 @@
+../../ai-software-dev-workbench/speckit/templates/commands/implement-parallel.md

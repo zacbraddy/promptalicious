@@ -1,0 +1,3 @@
+[submodule "ai-software-dev-workbench"]
+	path = ai-software-dev-workbench
+	url = https://github.com/zacbraddy/ai-software-dev-workbench.git
