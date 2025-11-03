@@ -29,6 +29,29 @@ pnpm format
 pnpm test       # All passing (or justified failures)
 ```
 
+### Package Installation Protocol
+**CRITICAL**: When adding new packages, ALWAYS use `pnpm add <package>@latest` instead of manually editing package.json.
+
+**Why**:
+- Verifies package exists in npm registry
+- Ensures latest version is installed
+- Prevents outdated dependencies from being introduced
+
+**Examples**:
+```bash
+# Correct ✅
+pnpm --filter @promptalicious/backend add -D typescript@latest
+pnpm add -D eslint@latest  # Root level
+
+# Wrong ❌
+# Manually adding "typescript": "^5.9.3" to package.json
+```
+
+**Check for outdated packages regularly**:
+```bash
+pnpm outdated -r  # Shows outdated packages across workspace
+```
+
 ### Key Principles (from Constitution v1.1.0)
 1. **Visibility Above All** - Everything observable, no silent failures
 2. **Good Architecture Without Cargo-Culting** - DDD/Onion where they solve problems
