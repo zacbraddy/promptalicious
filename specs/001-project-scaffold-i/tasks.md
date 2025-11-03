@@ -52,7 +52,7 @@ Web application structure:
   - **Dependencies**: T001 (requires workspace structure)
   - **Research Context**: See research.md Decision 3, Decision 6
 
-- [ ] **T003** Create frontend package with Vite + React scaffold
+- [x] **T003** Create frontend package with Vite + React scaffold
   - **Files**:
     - `packages/frontend/package.json`
     - `packages/frontend/vite.config.ts`
