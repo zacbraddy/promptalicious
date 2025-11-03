@@ -25,7 +25,7 @@ Web application structure:
 
 **CRITICAL**: These tasks build on each other and MUST be done sequentially.
 
-- [ ] **T001** Initialize pnpm workspace structure
+- [x] **T001** Initialize pnpm workspace structure
   - **Files**: `pnpm-workspace.yaml`, root `package.json`, `.npmrc`
   - **Actions**:
     - Create `pnpm-workspace.yaml` with `packages/*` pattern

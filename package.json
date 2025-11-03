@@ -1,0 +1,24 @@
+{
+  "name": "promptalicious",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local development tool for debugging and iterating LLM prompts and tool configurations",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "keywords": [
+    "llm",
+    "prompt-engineering",
+    "development-tools"
+  ],
+  "author": "Zac Braddy",
+  "license": "MIT",
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
+}
