@@ -69,7 +69,7 @@ Web application structure:
   - **Dependencies**: T002 (requires shared-infra to exist for workspace reference)
   - **Research Context**: See research.md Decision 4
 
-- [ ] **T004** Create backend package with Node + TypeScript scaffold
+- [x] **T004** Create backend package with Node + TypeScript scaffold
   - **Files**:
     - `packages/backend/package.json`
     - `packages/backend/src/index.ts`
@@ -84,7 +84,7 @@ Web application structure:
   - **Dependencies**: T002 (requires shared-infra to exist for workspace reference)
   - **Research Context**: See research.md Decision 5
 
-- [ ] **T005** Configure Turbo for multi-package orchestration
+- [x] **T005** Configure Turbo for multi-package orchestration
   - **Files**: `turbo.json`
   - **Actions**:
     - Create turbo.json at repository root

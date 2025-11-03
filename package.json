@@ -4,6 +4,7 @@
   "private": true,
   "description": "Local development tool for debugging and iterating LLM prompts and tool configurations",
   "type": "module",
+  "packageManager": "pnpm@10.11.0",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
