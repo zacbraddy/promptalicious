@@ -36,7 +36,7 @@ Web application structure:
   - **Dependencies**: None (first task)
   - **Research Context**: See research.md Decision 1 (pnpm workspaces)
 
-- [ ] **T002** Create shared-infra package with base structure
+- [x] **T002** Create shared-infra package with base structure
   - **Files**:
     - `packages/shared-infra/package.json`
     - `packages/shared-infra/tsconfig.json` (base config)
