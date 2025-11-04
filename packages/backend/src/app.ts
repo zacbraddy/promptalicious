@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import type { Context } from "hono";
 
-import { logger } from "./lib/logger.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = new Hono();
 
@@ -17,19 +17,7 @@ app.use(
   }),
 );
 
-app.onError((err, c) => {
-  logger.error({ err, path: c.req.path }, "Unhandled error");
-
-  return c.json(
-    {
-      error: {
-        message: err.message || "Internal server error",
-        type: "unknown",
-      },
-    },
-    500,
-  );
-});
+app.onError(errorHandler);
 
 app.get("/health", (c: Context) => {
   return c.json({
