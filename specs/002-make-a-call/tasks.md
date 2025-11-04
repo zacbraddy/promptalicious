@@ -132,7 +132,7 @@ Commands to add:
 **Dependencies**: T004
 **Surfacing**: After T005, run `pnpm db:migrate` to apply schema, `pnpm db:status` to show tables created
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -158,7 +158,7 @@ Commands to add:
 **Dependencies**: None (can run parallel with Phase 1)
 **Expected Outcome**: Backend server starts on port 3000, responds to health check
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

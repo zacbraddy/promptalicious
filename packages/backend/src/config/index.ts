@@ -15,6 +15,9 @@ function getEnvVar(name: string, defaultValue?: string): string {
 }
 
 export const config = {
+  server: {
+    port: Number(getEnvVar("PORT", "3000")),
+  },
   database: {
     url: getEnvVar(
       "DATABASE_URL",
