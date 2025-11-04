@@ -334,7 +334,7 @@ interface ExecutionResult {
 
 **Research Question**: Which migration tool best fits TypeScript + PostgreSQL in this project?
 
-**Decision**: NEEDS IMPLEMENTATION RESEARCH - Options: DrizzleORM, Prisma, TypeORM, node-pg-migrate, or Knex
+**Decision**: DrizzleORM (confirmed via Context7 research 2025-11-04)
 
 **Options to Evaluate**:
 
@@ -450,7 +450,58 @@ interface ExecutionResult {
 
 **Preliminary Lean**: DrizzleORM for performance, simplicity, and alignment with "no cargo-culting" principle. Prisma if during Context7 research we discover compelling ecosystem benefits that justify the overhead.
 
-**Action Item**: Research via Context7 during Phase 1 contract design to validate this decision with latest documentation and best practices
+**Context7 Research Findings (2025-11-04)**:
+
+**DrizzleORM Validated Strengths**:
+- ✅ **Native TypeScript-first**: Schema definition in TypeScript with zero code generation required
+- ✅ **SQL-like syntax**: `pgTable`, `serial`, `text`, `timestamp` etc. mirror PostgreSQL types directly
+- ✅ **Migrations via drizzle-kit**: Simple `drizzle-kit push` and `drizzle-kit generate` commands
+- ✅ **Programmatic migrations**: Can run migrations in code via `migrate(db, { migrationsFolder: './drizzle' })`
+- ✅ **Flexible schema organisation**: Support for custom schemas via `pgSchema('mySchema')`
+- ✅ **View support**: Native `pgView` and `pgMaterializedView` definitions
+- ✅ **Connection flexibility**: Multiple connection adapters (node-postgres, pg-proxy, etc.)
+- ✅ **Query builder integration**: Works alongside Kysely or Knex if needed
+- ✅ **Type inference from schema**: No separate type generation step, types flow directly from schema definition
+
+**Prisma Validated Strengths**:
+- ✅ **Mature ecosystem**: Extensive documentation (10,408 code snippets in Context7)
+- ✅ **CLI tooling**: Rich CLI with `prisma migrate dev`, `prisma generate`, `prisma studio`
+- ✅ **Visual database browser**: Prisma Studio for GUI-based data management
+- ✅ **Schema language**: Prisma Schema Language (PSL) - declarative but non-TypeScript
+- ✅ **Generated client**: Auto-generated PrismaClient with full type safety
+- ✅ **Multiple adapters**: Support for various database drivers (@prisma/adapter-pg, adapter-d1, etc.)
+- ✅ **Corporate backing**: Strong support from Prisma Labs, high trust scores (10/10)
+
+**Key Context7 Insights**:
+1. **DrizzleORM Trust Score**: 7.6-9.9 (excellent but younger ecosystem)
+2. **Prisma Trust Score**: 10/10 (maximum trust, mature product)
+3. **Code Examples**: DrizzleORM (436-4037 snippets), Prisma (10,408+ snippets)
+4. **Migration Approach**:
+   - DrizzleORM: `await migrate(db, { migrationsFolder: './drizzle' })` - programmatic
+   - Prisma: `npx prisma migrate dev --name init` - CLI-driven
+5. **Schema Definition**:
+   - DrizzleORM: Pure TypeScript schema definitions
+   - Prisma: Separate `.prisma` schema file requiring code generation step
+
+**Final Decision Rationale**:
+
+Choosing **DrizzleORM** for the following validated reasons:
+
+1. **Zero Build Step**: No code generation required - schema IS the types
+2. **TypeScript-Native**: Aligns perfectly with project's TypeScript-first philosophy
+3. **Simplicity**: Fewer moving parts - no separate schema language, no generated client to maintain
+4. **Performance**: Lightweight runtime with minimal abstraction overhead
+5. **SQL Transparency**: SQL-like syntax makes it clear what queries are being generated
+6. **Constitution Alignment**: Embodies "Good Architecture Without Cargo-Culting" - lightweight solution that solves our needs without excess tooling
+7. **Programmatic Migrations**: Can run migrations in application code, not just via CLI
+8. **Greenfield Advantage**: This is a new project where we control the schema from day one
+
+**Trade-offs Accepted**:
+- Smaller community (fewer StackOverflow answers) - acceptable for experienced team
+- No visual database browser - can use external tools (pgAdmin, DBeaver) if needed
+- Younger ecosystem - but trust score 7.6-9.9 indicates production-ready maturity
+
+**Action Completed**: Context7 research validates preliminary recommendation of DrizzleORM
 
 ---
 

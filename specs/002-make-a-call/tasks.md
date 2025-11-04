@@ -52,7 +52,7 @@
 **Dependencies**: None
 **Expected Outcome**: Updated research.md with Decision 7 confirmed, chosen ORM ready for T003
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
