@@ -19,6 +19,7 @@ Base TypeScript configuration with strict mode enabled. Other packages extend th
 ```
 
 **Key Settings**:
+
 - Strict mode enabled
 - ES2022 target
 - ESNext modules
@@ -30,13 +31,13 @@ Base TypeScript configuration with strict mode enabled. Other packages extend th
 Factory functions for creating ESLint configurations with package-specific options. Consuming packages will import and call these factories:
 
 ```typescript
-import { createEslintConfig } from '@promptalicious/shared-infra/eslint'
+import { createEslintConfig } from "@promptalicious/shared-infra/eslint";
 
 export default createEslintConfig({
   tsconfigRootDir: import.meta.dirname,
   isFrontend: true,
-  ignores: ['./specific-file.ts']
-})
+  ignores: ["./specific-file.ts"],
+});
 ```
 
 ### Prettier Configuration (Future)
@@ -76,6 +77,7 @@ Then reference the shared configurations in their own config files.
 This package is part of the promptalicious monorepo and uses pnpm workspaces. Changes to shared configurations automatically propagate to dependent packages.
 
 **Quality Gates**:
+
 - `pnpm typecheck` - TypeScript validation
 - `pnpm lint` - ESLint checks
 - `pnpm format:check` - Prettier formatting validation
@@ -83,6 +85,7 @@ This package is part of the promptalicious monorepo and uses pnpm workspaces. Ch
 ## Future Enhancements
 
 As the project evolves, this package may include:
+
 - ESLint configuration factory functions
 - Prettier shared configuration
 - Vitest configuration helpers

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+build
+coverage
+
+# Generated files
+pnpm-lock.yaml
+
+# Cache directories
+.turbo
+.cache
+
+# IDE files
+.vscode
+.idea
+
+# Logs
+*.log

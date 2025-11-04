@@ -101,7 +101,7 @@ Web application structure:
 
 **SAFE TO PARALLELIZE**: Each task configures a different tool and outputs to different files.
 
-- [ ] **T006** [P] Implement TypeScript configuration hierarchy
+- [x] **T006** [P] Implement TypeScript configuration hierarchy
   - **Files**:
     - `packages/shared-infra/tsconfig.json` (update with full base config)
     - `packages/frontend/tsconfig.json` (extends shared-infra, add jsx, dom)
@@ -115,7 +115,7 @@ Web application structure:
   - **Dependencies**: T001-T005 (foundation complete)
   - **Research Context**: See research.md Decision 6
 
-- [ ] **T007** [P] Implement ESLint configuration with shared rules
+- [x] **T007** [P] Implement ESLint configuration with shared rules
   - **Files**:
     - `packages/shared-infra/src/eslint/createEslintConfig.ts` (factory function)
     - `packages/shared-infra/src/eslint/base.config.ts` (base rules)
@@ -125,17 +125,21 @@ Web application structure:
     - Add eslint, @typescript-eslint/*, eslint-plugin-react, eslint-plugin-import to dependencies
   - **Actions**:
     - Install ESLint 9+ with flat config support in shared-infra
+    - **CRITICAL**: All ESLint configuration files MUST use TypeScript (.ts extension), NOT JavaScript (.js)
     - Create `createEslintConfig()` factory function (TypeScript) following techsift pattern
     - Implement base.config.ts with TypeScript + import sorting rules
     - Implement frontend.config.ts with React, React Hooks, JSX a11y plugins
     - Configure import order: built-ins → externals → internals → parent → sibling → index with `newlines-between: "always"`
     - Consuming packages import factory and call with options (tsconfigRootDir, isFrontend, ignores)
+    - Use `import.meta.dirname` for tsconfigRootDir (requires "type": "module" in package.json)
+    - Export TypeScript files directly from shared-infra package.json (e.g., "./eslint": "./src/eslint/createEslintConfig.ts")
     - Add lint and lint:fix scripts to all package.json files
   - **Verification**: Run `pnpm lint` (expect 0 errors, maybe warnings)
   - **Dependencies**: T001-T005 (foundation complete)
   - **Research Context**: See research.md Decision 7
+  - **Implementation Pattern**: Follow techsift project structure at "../Magic Bullet Software/techsift"
 
-- [ ] **T008** [P] Implement Prettier configuration
+- [x] **T008** [P] Implement Prettier configuration
   - **Files**:
     - Root `.prettierignore`
     - Add prettier and eslint-config-prettier to dependencies
