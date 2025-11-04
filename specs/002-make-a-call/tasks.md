@@ -69,7 +69,7 @@
 **Dependencies**: None
 **Expected Outcome**: .gitignore updated, verified with `git status` that database directories are ignored
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

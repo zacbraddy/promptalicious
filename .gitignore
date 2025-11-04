@@ -12,5 +12,18 @@ pnpm-lock.yaml
 .env.local
 .env.*.local
 
+postgres-data/
+pgdata/
+db-data/
+.postgres/
+postgresql/
+
+*.sql
+*.dump
+*.backup
+*.db
+*.sqlite
+*.sqlite3
+
 *.log
 .DS_Store
