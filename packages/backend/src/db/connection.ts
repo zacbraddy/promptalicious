@@ -1,17 +1,15 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
+import { config } from "../config/index.js";
 import { logger } from "../lib/logger.js";
 
 import * as schema from "./schema.js";
 
 const { Pool } = pg;
 
-const connectionString =
-  process.env.DATABASE_URL || "postgresql://localhost:5432/promptalicious";
-
 const pool = new Pool({
-  connectionString,
+  connectionString: config.database.url,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
