@@ -190,7 +190,7 @@ Commands to add:
 **Dependencies**: None
 **Surfacing**: After T008, backend server runs with health check, shared types available for import
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

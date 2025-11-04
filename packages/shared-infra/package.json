@@ -5,6 +5,7 @@
   "description": "Shared infrastructure and configuration for promptalicious monorepo",
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
     "./tsconfig": "./tsconfig.json",
     "./eslint": "./src/eslint/createEslintConfig.ts",
     "./eslint/base": "./src/eslint/base.config.ts",
