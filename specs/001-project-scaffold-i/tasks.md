@@ -126,7 +126,6 @@ Web application structure:
   - **Actions**:
     - Install ESLint 9+ with flat config support in shared-infra
     - **CRITICAL**: All ESLint configuration files MUST use TypeScript (.ts extension), NOT JavaScript (.js)
-    - Create `createEslintConfig()` factory function (TypeScript) following techsift pattern
     - Implement base.config.ts with TypeScript + import sorting rules
     - Implement frontend.config.ts with React, React Hooks, JSX a11y plugins
     - Configure import order: built-ins → externals → internals → parent → sibling → index with `newlines-between: "always"`
@@ -137,7 +136,6 @@ Web application structure:
   - **Verification**: Run `pnpm lint` (expect 0 errors, maybe warnings)
   - **Dependencies**: T001-T005 (foundation complete)
   - **Research Context**: See research.md Decision 7
-  - **Implementation Pattern**: Follow techsift project structure at "../Magic Bullet Software/techsift"
 
 - [x] **T008** [P] Implement Prettier configuration
   - **Files**:
