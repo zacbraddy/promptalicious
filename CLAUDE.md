@@ -66,6 +66,51 @@ pnpm add -D eslint@latest  # Root level
 pnpm outdated -r  # Shows outdated packages across workspace
 ```
 
+### DrizzleORM Migration Protocol
+
+**CRITICAL**: DrizzleORM migrations MUST NEVER be modified manually. ONLY use drizzle-kit commands.
+
+**FORBIDDEN ❌**:
+- Directly editing migration SQL files
+- Manually renaming migration files
+- Manually deleting migration files
+- Manually creating migration files
+- Any direct file system operations on the `drizzle/` directory
+
+**REQUIRED ✅**:
+- ALWAYS use `drizzle-kit generate` to create migrations
+- ALWAYS use `--name` flag for descriptive migration names
+- ALWAYS use `drizzle-kit drop` to remove migrations (if needed)
+- NEVER touch migration files or the drizzle/meta directory directly
+
+**Why this matters**:
+- DrizzleORM maintains internal metadata in `drizzle/meta/`
+- Manual changes break migration tracking and database sync
+- Breaking Drizzle's internal state can corrupt your migration history
+
+**Correct workflow**:
+```bash
+# Generate migration with descriptive name
+pnpm exec drizzle-kit generate --name=initial_schema
+pnpm exec drizzle-kit generate --name=add_user_roles
+pnpm exec drizzle-kit generate --name=add_pricing_cache
+
+# If you need to remove a migration (BEFORE applying it)
+pnpm exec drizzle-kit drop  # Interactive selection
+
+# Apply migrations
+pnpm exec drizzle-kit push   # For development
+pnpm exec drizzle-kit migrate  # For production
+```
+
+**Wrong workflow ❌**:
+```bash
+# DO NOT DO THIS
+rm packages/backend/drizzle/0000_bad_name.sql
+mv packages/backend/drizzle/0000_old.sql packages/backend/drizzle/0000_new.sql
+nano packages/backend/drizzle/0000_something.sql
+```
+
 ### Privacy & Open Source Protocol
 
 **CRITICAL**: This is an open-source project. All files checked into this repository MUST NOT contain:

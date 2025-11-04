@@ -89,7 +89,7 @@ Schema details from data-model.md entities 4-6.
 **Dependencies**: T001 (ORM selected)
 **Expected Outcome**: Migration files created, ready to apply in T005
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
