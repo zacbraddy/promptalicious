@@ -255,7 +255,7 @@ Use single-row table pattern (id=1), per data-model.md.
 **Dependencies**: T005 (database ready), T011 (tests written)
 **Expected Outcome**: Service methods implemented, unit tests pass
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
