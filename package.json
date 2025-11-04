@@ -1,0 +1,34 @@
+{
+  "name": "promptalicious",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local development tool for debugging and iterating LLM prompts and tool configurations",
+  "type": "module",
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "llm",
+    "prompt-engineering",
+    "development-tools"
+  ],
+  "author": "Zac Braddy",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "turbo": "^2.3.3"
+  }
+}

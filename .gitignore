@@ -1,1 +1,16 @@
 scratch
+
+node_modules/
+dist/
+build/
+.turbo/
+
+pnpm-lock.yaml
+.pnpm-debug.log
+
+.env
+.env.local
+.env.*.local
+
+*.log
+.DS_Store

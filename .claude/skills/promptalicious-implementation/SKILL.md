@@ -7,17 +7,25 @@ description: promptalicious-specific implementation patterns including Serena an
 
 This skill provides promptalicious-specific customisations for implementation and audit workflows.
 
-## Serena MCP Integration
+## Serena MCP Activation (MANDATORY FIRST STEP)
 
-**IMPORTANT**: If the Serena MCP is available, activate the promptalicious project before beginning any implementation or audit tasks:
+**CRITICAL**: Before implementing ANY task or starting ANY audit:
 
-```
-If serena MCP tools are available:
-  - Call mcp__serena__initial_instructions
-  - This ensures symbolic code analysis tools are properly configured
-```
+1. **ALWAYS call `mcp__serena__initial_instructions` FIRST**
+2. Wait for the Serena instructions manual to load
+3. Then proceed with your task
 
-Serena provides semantic code analysis tools that enable token-efficient code exploration and editing across 25+ programming languages.
+**This is NOT optional**. Serena provides semantic code analysis (25+ languages) that enables:
+- Token-efficient code exploration (no wasteful full-file reads)
+- Symbolic code editing (precise, surgical changes)
+- Fast codebase pattern searching
+- Understanding code relationships and references
+
+**Failure to activate Serena means**:
+- Wasting tokens reading entire files unnecessarily
+- Missing existing patterns and implementations in the codebase
+- Inefficient, slow implementation
+- Poor code exploration and understanding
 
 ## Context7 MCP Integration
 

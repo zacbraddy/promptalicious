@@ -1,0 +1,84 @@
+---
+coalesced_date: 2025-11-04
+spec_name: 001-project-scaffold-i
+spec_completion: 100%
+
+knowledge_extracted_to:
+  memory/development-protocols.md:
+    - Tech Stack (from CLAUDE.md)
+    - Package Manager - pnpm (from research.md Decision 1)
+    - Build Orchestration - Turbo (from research.md Decision 2)
+    - Configuration Sharing Pattern (from research.md Decision 3)
+    - Frontend Stack - React + Vite (from research.md Decision 4)
+    - Backend Stack - Node.js + TypeScript (from research.md Decision 5)
+    - TypeScript Configuration (from research.md Decision 6)
+    - Linting Strategy - ESLint (from research.md Decision 7)
+    - Formatting Strategy - Prettier (from research.md Decision 8)
+    - Git Hooks - Husky (from research.md Decision 9)
+    - Task Orchestration (from research.md Decision 10)
+    - Quality Standards (from CLAUDE.md)
+    - MCP Integration (from CLAUDE.md)
+    - Testing Philosophy (from CLAUDE.md)
+    - Package Installation Protocol (from CLAUDE.md)
+    - Repository Structure (from plan.md)
+
+  memory/program_overview.md:
+    - Project Mission (from CLAUDE.md)
+    - User Value Proposition (from spec.md)
+    - Product Vision Phase 1 (from spec.md)
+    - Target Audience (from spec.md)
+    - Project Status (from CLAUDE.md)
+
+  memory/task-execution-patterns.md:
+    - Validation Approach for Infrastructure (from spec.md)
+    - Infrastructure Testing Considerations (from spec.md Edge Cases)
+    - Infrastructure vs Feature Task Planning (from plan.md)
+    - Constitutional Violation Documentation (from plan.md Complexity Tracking)
+    - Quality Gates Enforcement (from research.md)
+    - Debugging & Escalation Protocol (from skill file)
+    - Task Execution Discipline (from skill file)
+    - Notes & Reminders (from CLAUDE.md)
+
+  docs/architectural-decisions.md:
+    - Monorepo Structure with pnpm + Turbo
+    - Shared Infrastructure Package Pattern
+    - No Backend Framework (Yet)
+    - Pragmatic TDD Workflow
+    - Dolphin-Based Development Principle
+
+claude_md_changes:
+  - Removed duplicate content now in memory files
+  - Added memory file references for complete context
+  - Reduced from 247 lines to 143 lines
+  - Enhanced MCP Activation Checklist with mandatory language
+  - Updated Recent Changes section
+  - Added "For Complete Context" section at end
+
+provisional_items_processed:
+  established: 0
+  removed: 0
+  kept_provisional: 0
+  skipped: 0
+  note: "First spec - no provisional content existed"
+
+command_fixes:
+  - Updated /coalesce-knowledge command to warn against manual bash execution
+  - Added CRITICAL warning in Step 1 to trust frontmatter script output
+
+notes: |
+  First spec completion for promptalicious. Infrastructure scaffold complete.
+
+  Memory files created for first time with foundational knowledge:
+  - memory/development-protocols.md: Comprehensive tech stack decisions and patterns
+  - memory/program_overview.md: Product vision and user value proposition
+  - memory/task-execution-patterns.md: Workflow processes and quality gates
+
+  memory/constitution.md already existed from spec-kit initialization.
+
+  CLAUDE.md significantly reduced by removing duplicates and adding references to memory files.
+
+  Serena activation protocol strengthened in both CLAUDE.md and skill file to prevent
+  future issues with semantic code analysis not being activated.
+
+  /coalesce-knowledge command updated to prevent manual bash script execution issues.
+---
