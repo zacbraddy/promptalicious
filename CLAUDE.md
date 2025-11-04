@@ -66,6 +66,28 @@ pnpm add -D eslint@latest  # Root level
 pnpm outdated -r  # Shows outdated packages across workspace
 ```
 
+### Privacy & Open Source Protocol
+
+**CRITICAL**: This is an open-source project. All files checked into this repository MUST NOT contain:
+
+❌ **FORBIDDEN in committed files**:
+- Personal names or identifying information
+- Absolute file paths revealing machine architecture
+- References to other projects on the developer's machine
+- Workplace names or employer details
+- Local machine usernames or directory structures
+- Any personally identifiable information (PII)
+
+✅ **ALLOWED**:
+- Generic example paths: `/path/to/project`, `~/projects/app`
+- Role-based references: "the developer", "users", "team"
+- Generic locations: "local machine", "development environment"
+
+**When documenting**:
+- Use relative paths from repository root (e.g., `specs/002-make-a-call/`)
+- Use placeholders for examples (e.g., `<username>`, `<project-name>`)
+- Sanitise any copy-pasted content before committing
+
 ### Key Principles (from Constitution v1.1.0)
 
 See `memory/constitution.md` for complete principles and governance.
