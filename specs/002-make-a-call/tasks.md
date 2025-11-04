@@ -209,7 +209,7 @@ Commands to add:
 **Dependencies**: T008 (shared types)
 **Expected Outcome**: Test FAILS (endpoint not implemented yet) - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -224,7 +224,7 @@ Commands to add:
 **Dependencies**: T008
 **Expected Outcome**: Test FAILS - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -238,7 +238,7 @@ Commands to add:
 **Dependencies**: T008
 **Expected Outcome**: Test FAILS - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
