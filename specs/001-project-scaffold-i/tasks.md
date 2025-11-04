@@ -178,7 +178,7 @@ Web application structure:
   - **Dependencies**: T005-T008 (Turbo + all configs ready)
   - **Research Context**: See research.md Decision 10
 
-- [ ] **T010** Implement code quality tasks
+- [x] **T010** Implement code quality tasks
   - **Files**: Root `package.json` scripts section, update turbo.json if needed
   - **Actions**:
     - Add `"typecheck": "turbo run typecheck"` to root
@@ -194,7 +194,7 @@ Web application structure:
   - **Dependencies**: T006-T009 (configs + dev tasks ready)
   - **Research Context**: See research.md Decision 10
 
-- [ ] **T011** Configure Husky pre-commit hooks
+- [x] **T011** Configure Husky pre-commit hooks
   - **Files**:
     - `.husky/pre-commit`
     - Root `package.json` (prepare script)
