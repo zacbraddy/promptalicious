@@ -6,12 +6,14 @@ import type {
   ConfigurationResponse,
   UpdateConfigurationSuccessResponse,
   UpdateConfigurationErrorResponse,
+  TestConnectionResponse,
 } from "@promptalicious/shared-infra";
 
 import {
   getConfig,
   updateConfig,
   testConnection,
+  getApiKey,
 } from "../services/configService.js";
 
 const configRouter = new Hono();
@@ -167,5 +169,74 @@ configRouter.put(
     }
   },
 );
+
+configRouter.post("/test-connection", async (c: Context) => {
+  try {
+    const config = await getConfig();
+
+    if (!config) {
+      return c.json<TestConnectionResponse>(
+        {
+          success: false,
+          message:
+            "No configuration found. Please configure API credentials first.",
+          error: {
+            errorType: "validation",
+          },
+        },
+        400,
+      );
+    }
+
+    const apiKey = await getApiKey();
+
+    if (!apiKey) {
+      return c.json<TestConnectionResponse>(
+        {
+          success: false,
+          message:
+            "No API key configured. Please configure API credentials first.",
+          error: {
+            errorType: "authentication",
+          },
+        },
+        400,
+      );
+    }
+
+    const testResult = await testConnection(apiKey, config.selectedModel);
+
+    if (testResult.success) {
+      return c.json<TestConnectionResponse>(
+        {
+          success: true,
+          message: testResult.message,
+        },
+        200,
+      );
+    }
+
+    return c.json<TestConnectionResponse>(
+      {
+        success: false,
+        message: testResult.message,
+        error: testResult.error,
+      },
+      400,
+    );
+  } catch (error) {
+    return c.json<TestConnectionResponse>(
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to test connection",
+        error: {
+          errorType: "unknown",
+        },
+      },
+      400,
+    );
+  }
+});
 
 export default configRouter;
