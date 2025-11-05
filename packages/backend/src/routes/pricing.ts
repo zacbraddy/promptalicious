@@ -36,15 +36,15 @@ pricingRouter.get("/", async (c: Context) => {
         id: pricingData.id,
         model: pricingData.model,
         provider: pricingData.provider,
-        inputTokenPriceUSD: parseFloat(pricingData.inputTokenPriceUsd),
-        outputTokenPriceUSD: parseFloat(pricingData.outputTokenPriceUsd),
+        inputTokenPriceUSD: pricingData.inputTokenPriceUsd,
+        outputTokenPriceUSD: pricingData.outputTokenPriceUsd,
         lastUpdated: pricingData.lastUpdated.toISOString(),
       },
       exchangeRate: {
         id: exchangeRateData.id,
         fromCurrency: exchangeRateData.fromCurrency,
         toCurrency: exchangeRateData.toCurrency,
-        rate: parseFloat(exchangeRateData.rate),
+        rate: exchangeRateData.rate,
         lastUpdated: exchangeRateData.lastUpdated.toISOString(),
       },
       staleness: {

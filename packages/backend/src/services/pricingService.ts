@@ -20,8 +20,8 @@ export interface PricingData {
   id: number;
   model: string;
   provider: string;
-  inputTokenPriceUsd: string;
-  outputTokenPriceUsd: string;
+  inputTokenPriceUsd: number;
+  outputTokenPriceUsd: number;
   lastUpdated: Date;
 }
 
@@ -171,7 +171,12 @@ export async function getPricingData(): Promise<PricingDataWithStaleness | null>
     const isStale = daysSinceUpdate > STALENESS_THRESHOLD_DAYS;
 
     return {
-      ...pricing,
+      id: pricing.id,
+      model: pricing.model,
+      provider: pricing.provider,
+      inputTokenPriceUsd: parseFloat(pricing.inputTokenPriceUsd),
+      outputTokenPriceUsd: parseFloat(pricing.outputTokenPriceUsd),
+      lastUpdated: pricing.lastUpdated,
       isStale,
       daysSinceUpdate,
     };

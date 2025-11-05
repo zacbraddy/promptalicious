@@ -169,8 +169,8 @@ pending → in_progress → failed
 - `id` (serial, auto-increment): Primary key
 - `model` (string, required): Model identifier (e.g., "gpt-4o-mini")
 - `provider` (string, required): Provider name (e.g., "openai")
-- `inputTokenPriceUSD` (decimal, required): Cost per input token in USD (high precision: 10 decimal places)
-- `outputTokenPriceUSD` (decimal, required): Cost per output token in USD (high precision: 10 decimal places)
+- `inputTokenPriceUSD` (number, required): Cost per input token in USD (stored as decimal with precision: 12, scale: 10 in database)
+- `outputTokenPriceUSD` (number, required): Cost per output token in USD (stored as decimal with precision: 12, scale: 10 in database)
 - `lastUpdated` (DateTime, required): When pricing data was last fetched
 
 **Validation Rules**:
@@ -187,6 +187,13 @@ pending → in_progress → failed
 **Relationships**:
 - Referenced by `Execution Result` for cost calculations
 
+**Storage & Precision**:
+- **Database**: Stored as PostgreSQL `NUMERIC(12,10)` for precise decimal storage
+- **Drizzle ORM**: Returns as string (by design) to prevent JavaScript floating-point precision loss
+- **Service Layer**: Converts to number via `parseFloat()` for application use
+- **Precision Analysis**: JavaScript `Number` is sufficient for our use case (token prices have <7 significant digits, simple multiplication, no accumulation)
+- **Decision**: Using native numbers (not big.js/decimal.js) is acceptable for a debugging tool with simple cost calculations
+
 **Notes**:
 - Populated on backend startup via live API lookup (FR-025)
 - Falls back to last cached value if live lookup fails (FR-025b)
@@ -202,7 +209,7 @@ pending → in_progress → failed
 - `id` (serial, auto-increment): Primary key
 - `fromCurrency` (string, required): Source currency code (default: "USD")
 - `toCurrency` (string, required): Target currency code (default: "GBP")
-- `rate` (decimal, required): Conversion rate (precision: 6 decimal places)
+- `rate` (number, required): Conversion rate (stored as decimal with precision: 10, scale: 6 in database)
 - `lastUpdated` (DateTime, required): When rate was last fetched
 
 **Validation Rules**:
@@ -213,6 +220,12 @@ pending → in_progress → failed
 
 **Relationships**:
 - Used by cost calculation logic in `Execution Result`
+
+**Storage & Precision**:
+- **Database**: Stored as PostgreSQL `NUMERIC(10,6)` for precise decimal storage
+- **Drizzle ORM**: Returns as string (by design) to prevent JavaScript floating-point precision loss
+- **Service Layer**: Converts to number via `parseFloat()` for application use
+- **Precision**: Same reasoning as Pricing Information - native numbers are sufficient for exchange rate conversion
 
 **Notes**:
 - Populated on backend startup via exchange rate API lookup

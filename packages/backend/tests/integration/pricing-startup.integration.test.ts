@@ -59,12 +59,8 @@ describe("Pricing cache initialization on backend startup (integration)", () => 
       expect(pricingDataAfter).not.toBeNull();
       expect(pricingDataAfter?.model).toBe("gpt-4o-mini");
       expect(pricingDataAfter?.provider).toBe("openai");
-      expect(
-        parseFloat(pricingDataAfter?.inputTokenPriceUsd ?? "0"),
-      ).toBeGreaterThan(0);
-      expect(
-        parseFloat(pricingDataAfter?.outputTokenPriceUsd ?? "0"),
-      ).toBeGreaterThan(0);
+      expect(pricingDataAfter?.inputTokenPriceUsd ?? 0).toBeGreaterThan(0);
+      expect(pricingDataAfter?.outputTokenPriceUsd ?? 0).toBeGreaterThan(0);
       expect(pricingDataAfter?.lastUpdated).toBeInstanceOf(Date);
       expect(pricingDataAfter?.isStale).toBe(false);
       expect(pricingDataAfter?.daysSinceUpdate).toBe(0);
@@ -133,12 +129,8 @@ describe("Pricing cache initialization on backend startup (integration)", () => 
 
       const pricingAfter = await getPricingData();
       expect(pricingAfter).not.toBeNull();
-      expect(
-        parseFloat(pricingAfter?.inputTokenPriceUsd ?? "0"),
-      ).toBeGreaterThan(0);
-      expect(
-        parseFloat(pricingAfter?.outputTokenPriceUsd ?? "0"),
-      ).toBeGreaterThan(0);
+      expect(pricingAfter?.inputTokenPriceUsd ?? 0).toBeGreaterThan(0);
+      expect(pricingAfter?.outputTokenPriceUsd ?? 0).toBeGreaterThan(0);
     });
   });
 
@@ -153,7 +145,7 @@ describe("Pricing cache initialization on backend startup (integration)", () => 
       expect(exchangeRateAfter).not.toBeNull();
       expect(exchangeRateAfter?.fromCurrency).toBe("USD");
       expect(exchangeRateAfter?.toCurrency).toBe("GBP");
-      expect(parseFloat(exchangeRateAfter?.rate ?? "0")).toBeGreaterThan(0);
+      expect(exchangeRateAfter?.rate ?? 0).toBeGreaterThan(0);
       expect(exchangeRateAfter?.lastUpdated).toBeInstanceOf(Date);
       expect(exchangeRateAfter?.isStale).toBe(false);
       expect(exchangeRateAfter?.daysSinceUpdate).toBe(0);
@@ -220,7 +212,7 @@ describe("Pricing cache initialization on backend startup (integration)", () => 
 
       const rateAfter = await getExchangeRate();
       expect(rateAfter).not.toBeNull();
-      expect(parseFloat(rateAfter?.rate ?? "0")).toBeGreaterThan(0);
+      expect(rateAfter?.rate ?? 0).toBeGreaterThan(0);
     });
   });
 

@@ -219,8 +219,8 @@ describe("pricingService", () => {
         id: 1,
         model: "gpt-4o-mini",
         provider: "openai",
-        inputTokenPriceUsd: "0.00000015",
-        outputTokenPriceUsd: "0.0000006",
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
         isStale: false,
         daysSinceUpdate: 3,
       });

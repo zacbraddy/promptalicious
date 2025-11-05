@@ -14,7 +14,7 @@ export interface ExchangeRateData {
   id: number;
   fromCurrency: string;
   toCurrency: string;
-  rate: string;
+  rate: number;
   lastUpdated: Date;
 }
 
@@ -139,7 +139,11 @@ export async function getExchangeRate(): Promise<ExchangeRateDataWithStaleness |
     const isStale = daysSinceUpdate > STALENESS_THRESHOLD_DAYS;
 
     return {
-      ...exchangeRate,
+      id: exchangeRate.id,
+      fromCurrency: exchangeRate.fromCurrency,
+      toCurrency: exchangeRate.toCurrency,
+      rate: parseFloat(exchangeRate.rate),
+      lastUpdated: exchangeRate.lastUpdated,
       isStale,
       daysSinceUpdate,
     };
