@@ -301,7 +301,7 @@ Use single-row table pattern (id=1), per data-model.md.
 **Dependencies**: T012
 **Expected Outcome**: Test connection endpoint validates credentials, T011 test passes
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
