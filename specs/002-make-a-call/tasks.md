@@ -376,7 +376,7 @@ Hardcoded fallback (per research.md):
 **Dependencies**: T005
 **Expected Outcome**: Exchange rate service fetches USD→GBP rate, caches in database
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
