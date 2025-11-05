@@ -1,9 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import type { PricingInfoResponse } from "@promptalicious/shared-infra";
 
 import app from "@/app";
+import { initializePricingCache } from "@/services/pricingService";
+import { initializeExchangeRateCache } from "@/services/exchangeRateService";
 
 describe("GET /pricing - Contract Test", () => {
+  beforeAll(async () => {
+    await initializePricingCache();
+    await initializeExchangeRateCache();
+  });
   it("should return 200 status", async () => {
     const response = await app.request("/api/pricing");
     expect(response.status).toBe(200);

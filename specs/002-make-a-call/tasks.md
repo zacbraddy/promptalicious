@@ -391,7 +391,7 @@ Hardcoded fallback (per research.md):
 **Dependencies**: T018, T019
 **Expected Outcome**: GET /pricing returns pricing data with staleness indicator, T017 test passes
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

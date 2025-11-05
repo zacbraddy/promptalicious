@@ -5,6 +5,7 @@ import type { Context } from "hono";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 import configRouter from "./routes/config.js";
+import pricingRouter from "./routes/pricing.js";
 
 const app = new Hono();
 
@@ -28,5 +29,6 @@ app.get("/health", (c: Context) => {
 });
 
 app.route("/api/config", configRouter);
+app.route("/api/pricing", pricingRouter);
 
 export default app;
