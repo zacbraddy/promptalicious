@@ -460,7 +460,7 @@ Each test asserts correct error type, message format per api-contracts.yaml.
 **Dependencies**: T008
 **Expected Outcome**: Tests FAIL - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
