@@ -12,6 +12,9 @@ export interface ClassifiedError {
 export function classifyError(error: unknown): ClassifiedError {
   if (error instanceof Error) {
     const errorMessage = error.message.toLowerCase();
+    const existingContext =
+      (error as Error & { additionalContext?: Record<string, unknown> })
+        .additionalContext || {};
 
     if (
       errorMessage.includes("api key") ||
@@ -26,6 +29,7 @@ export function classifyError(error: unknown): ClassifiedError {
           "The API key provided is invalid. Please check your configuration.",
         additionalContext: {
           originalError: error.message,
+          ...existingContext,
         },
       };
     }
@@ -37,6 +41,7 @@ export function classifyError(error: unknown): ClassifiedError {
         errorMessage: "Rate limit exceeded. Please try again later.",
         additionalContext: {
           originalError: error.message,
+          ...existingContext,
         },
       };
     }
@@ -49,9 +54,10 @@ export function classifyError(error: unknown): ClassifiedError {
       return {
         errorType: "timeout",
         errorCode: "request_timeout",
-        errorMessage: "The LLM request timed out.",
+        errorMessage: error.message,
         additionalContext: {
           originalError: error.message,
+          ...existingContext,
         },
       };
     }
@@ -70,6 +76,7 @@ export function classifyError(error: unknown): ClassifiedError {
           "Unable to connect to OpenAI API. Please check your internet connection.",
         additionalContext: {
           originalError: error.message,
+          ...existingContext,
         },
       };
     }
@@ -85,6 +92,7 @@ export function classifyError(error: unknown): ClassifiedError {
         errorMessage: error.message,
         additionalContext: {
           originalError: error.message,
+          ...existingContext,
         },
       };
     }
@@ -95,6 +103,7 @@ export function classifyError(error: unknown): ClassifiedError {
       errorMessage: error.message || "An API error occurred",
       additionalContext: {
         originalError: error.message,
+        ...existingContext,
       },
     };
   }

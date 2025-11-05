@@ -2,8 +2,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
 
-import { config } from "../config/index.js";
-import { logger } from "../lib/logger.js";
+import { config } from "../config";
+import { logger } from "../lib/logger";
 
 async function runMigrations() {
   const databaseUrl = config.database.url;

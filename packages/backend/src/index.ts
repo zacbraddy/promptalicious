@@ -1,10 +1,10 @@
 import { serve } from "@hono/node-server";
 
-import app from "./app.js";
-import { config } from "./config/index.js";
-import { logger } from "./lib/logger.js";
-import { initializePricingCache } from "./services/pricingService.js";
-import { initializeExchangeRateCache } from "./services/exchangeRateService.js";
+import app from "./app";
+import { config } from "./config";
+import { logger } from "./lib/logger";
+import { initializePricingCache } from "./services/pricingService";
+import { initializeExchangeRateCache } from "./services/exchangeRateService";
 
 async function startServer() {
   logger.info(`Starting server on port ${config.server.port}...`);

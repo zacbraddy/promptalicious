@@ -1,10 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
-import { config } from "../config/index.js";
-import { logger } from "../lib/logger.js";
+import { config } from "../config/index";
+import { logger } from "../lib/logger";
 
-import * as schema from "./schema.js";
+import * as schema from "./schema";
 
 const { Pool } = pg;
 

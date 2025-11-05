@@ -22,6 +22,10 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
       createdAt: new Date("2025-01-01T00:00:00.000Z"),
       updatedAt: new Date("2025-01-01T00:00:00.000Z"),
     });
+
+    vi.mocked(configService.getApiKey).mockResolvedValue(
+      "sk-test-mock-api-key",
+    );
   });
 
   describe("Validation error (400)", () => {
@@ -160,12 +164,9 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
     };
 
     beforeEach(() => {
-      vi.mocked(llmService.executePrompt).mockRejectedValue({
-        name: "AuthenticationError",
-        message: "The API key provided is invalid",
-        statusCode: 401,
-        errorCode: "invalid_api_key",
-      });
+      const error = new Error("The API key provided is invalid");
+      error.name = "AuthenticationError";
+      vi.mocked(llmService.executePrompt).mockRejectedValue(error);
     });
 
     it("should return 401 status for invalid API key", async () => {
@@ -246,15 +247,13 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
     };
 
     beforeEach(() => {
-      vi.mocked(llmService.executePrompt).mockRejectedValue({
-        name: "RateLimitError",
-        message: "Rate limit exceeded. Please try again in 60 seconds.",
-        statusCode: 429,
-        errorCode: "rate_limit_exceeded",
-        additionalContext: {
-          retryAfter: 60,
-        },
-      });
+      const error: Error & { additionalContext?: Record<string, unknown> } =
+        new Error("Rate limit exceeded. Please try again in 60 seconds.");
+      error.name = "RateLimitError";
+      error.additionalContext = {
+        retryAfter: 60,
+      };
+      vi.mocked(llmService.executePrompt).mockRejectedValue(error);
     });
 
     it("should return 429 status for rate limit exceeded", async () => {
@@ -335,11 +334,11 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
     };
 
     beforeEach(() => {
-      vi.mocked(llmService.executePrompt).mockRejectedValue({
-        name: "NetworkError",
-        message: "Unable to connect to OpenAI API",
-        statusCode: 500,
-      });
+      const error = new Error(
+        "Unable to connect to OpenAI API. Network error.",
+      );
+      error.name = "NetworkError";
+      vi.mocked(llmService.executePrompt).mockRejectedValue(error);
     });
 
     it("should return 500 status for network error", async () => {
@@ -404,11 +403,9 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
     };
 
     beforeEach(() => {
-      vi.mocked(llmService.executePrompt).mockRejectedValue({
-        name: "TimeoutError",
-        message: "The LLM request timed out after 60 seconds",
-        statusCode: 504,
-      });
+      const error = new Error("Request timeout after 60 seconds");
+      error.name = "TimeoutError";
+      vi.mocked(llmService.executePrompt).mockRejectedValue(error);
     });
 
     it("should return 504 status for timeout error", async () => {

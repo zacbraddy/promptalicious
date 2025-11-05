@@ -2,9 +2,9 @@ import { eq } from "drizzle-orm";
 import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 
-import { db } from "../db/connection.js";
-import { llmConfig } from "../db/schema.js";
-import { logger } from "../lib/logger.js";
+import { db } from "../db/connection";
+import { llmConfig } from "../db/schema";
+import { logger } from "../lib/logger";
 
 export interface UpdateConfigData {
   selectedModel?: string;

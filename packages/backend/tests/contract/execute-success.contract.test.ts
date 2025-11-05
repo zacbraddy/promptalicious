@@ -34,6 +34,10 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       updatedAt: new Date("2025-01-01T00:00:00.000Z"),
     });
 
+    vi.mocked(configService.getApiKey).mockResolvedValue(
+      "sk-test-mock-api-key",
+    );
+
     vi.mocked(llmService.executePrompt).mockResolvedValue({
       responseText:
         "TypeScript generics allow you to create reusable components that work with multiple types while maintaining type safety. They use angle brackets <T> to define type parameters that are determined when the function or class is used.",

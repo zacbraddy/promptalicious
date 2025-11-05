@@ -3,9 +3,10 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import type { Context } from "hono";
 
-import { errorHandler } from "./middleware/errorHandler.js";
-import configRouter from "./routes/config.js";
-import pricingRouter from "./routes/pricing.js";
+import { errorHandler } from "./middleware/errorHandler";
+import configRouter from "./routes/config";
+import pricingRouter from "./routes/pricing";
+import executeRouter from "./routes/execute";
 
 const app = new Hono();
 
@@ -30,5 +31,6 @@ app.get("/health", (c: Context) => {
 
 app.route("/api/config", configRouter);
 app.route("/api/pricing", pricingRouter);
+app.route("/api/execute", executeRouter);
 
 export default app;

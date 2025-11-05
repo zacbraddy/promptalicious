@@ -33,7 +33,9 @@ describe("errorClassificationService", () => {
       });
 
       it("should classify error with 'invalid_api_key' in message as authentication error", () => {
-        const error = new Error("Error: invalid_api_key - please check credentials");
+        const error = new Error(
+          "Error: invalid_api_key - please check credentials",
+        );
 
         const result = classifyError(error);
 
@@ -59,7 +61,9 @@ describe("errorClassificationService", () => {
 
         expect(result.errorType).toBe("rate_limit");
         expect(result.errorCode).toBe("rate_limit_exceeded");
-        expect(result.errorMessage).toBe("Rate limit exceeded. Please try again later.");
+        expect(result.errorMessage).toBe(
+          "Rate limit exceeded. Please try again later.",
+        );
         expect(result.additionalContext).toEqual({
           originalError: "Rate limit exceeded",
         });
@@ -83,7 +87,7 @@ describe("errorClassificationService", () => {
 
         expect(result.errorType).toBe("timeout");
         expect(result.errorCode).toBe("request_timeout");
-        expect(result.errorMessage).toBe("The LLM request timed out.");
+        expect(result.errorMessage).toBe("Request timeout");
         expect(result.additionalContext).toEqual({
           originalError: "Request timeout",
         });
@@ -276,7 +280,7 @@ describe("errorClassificationService", () => {
         expect(result.errorType).toBe("unknown");
         expect(result.errorMessage).toBe("An unknown error occurred");
         expect(result.additionalContext).toEqual({
-          originalError: '[object Object]',
+          originalError: "[object Object]",
         });
       });
     });
@@ -323,7 +327,9 @@ describe("errorClassificationService", () => {
       expect(result.promptExecutionId).toBe(promptExecutionId);
       expect(result.errorType).toBe("rate_limit");
       expect(result.errorCode).toBe("rate_limit_exceeded");
-      expect(result.errorMessage).toBe("Rate limit exceeded. Please try again later.");
+      expect(result.errorMessage).toBe(
+        "Rate limit exceeded. Please try again later.",
+      );
       expect(result.stackTrace).toBe(stackTrace);
       expect(result.additionalContext).toEqual({
         originalError: "Rate limit exceeded",
@@ -361,7 +367,9 @@ describe("errorClassificationService", () => {
 
       const result = createExecutionError(promptExecutionId, error);
 
-      expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(result.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
       const parsedDate = new Date(result.timestamp);
       expect(parsedDate.toString()).not.toBe("Invalid Date");
       expect(parsedDate.getTime()).toBeLessThanOrEqual(Date.now());

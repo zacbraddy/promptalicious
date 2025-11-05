@@ -223,7 +223,7 @@ describe("exchangeRateService", () => {
         id: 1,
         fromCurrency: "USD",
         toCurrency: "GBP",
-        rate: "0.79",
+        rate: 0.79,
         isStale: false,
         daysSinceUpdate: 3,
       });
