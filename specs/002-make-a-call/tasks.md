@@ -645,7 +645,7 @@ npx shadcn@latest add card button textarea badge table alert
 **Dependencies**: T032, T033
 **Expected Outcome**: Layout renders with dark theme applied
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

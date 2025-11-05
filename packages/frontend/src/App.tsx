@@ -1,35 +1,48 @@
-import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { Layout } from "./components/Layout";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Layout>
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome to promptalicious</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              A local development tool for debugging and iterating LLM prompts
+              with full diagnostic visibility.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Dark Theme Applied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p>
+                <span className="font-semibold">Background:</span> Muddy blacks
+              </p>
+              <p>
+                <span className="font-semibold">Foreground:</span> Soft greys
+              </p>
+              <p>
+                <span className="font-semibold text-primary">Primary:</span>{" "}
+                Subdued cyan
+              </p>
+              <p>
+                <span className="font-semibold text-accent">Accent:</span>{" "}
+                Subdued magenta
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </Layout>
   );
 }
 
