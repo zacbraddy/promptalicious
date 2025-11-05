@@ -5,6 +5,7 @@
   "description": "Node.js backend for promptalicious LLM prompt debugging tool",
   "type": "module",
   "scripts": {
+    "predev": "pnpm db:start",
     "dev": "tsx watch src/index.ts",
     "build": "tsc -b",
     "typecheck": "tsc --noEmit",
@@ -15,6 +16,9 @@
     "test": "vitest --project=unit",
     "test:integration": "vitest --project=integration",
     "test:all": "vitest",
+    "db:start": "tsx scripts/start-db.ts",
+    "db:stop": "tsx scripts/stop-db.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",

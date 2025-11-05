@@ -89,8 +89,8 @@ export async function fetchPricingData(): Promise<{
 
     logger.info(
       {
-        inputPrice: inputPricePerToken,
-        outputPrice: outputPricePerToken,
+        inputPriceUSD: inputPricePerToken.toFixed(10),
+        outputPriceUSD: outputPricePerToken.toFixed(10),
       },
       "Successfully fetched pricing data from llmpricing.ai",
     );

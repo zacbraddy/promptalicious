@@ -423,7 +423,7 @@ Hardcoded fallback (per research.md):
 **Dependencies**: T020
 **Surfacing**: After T022, restart backend and observe pricing fetched in logs, query `/pricing` endpoint with curl
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

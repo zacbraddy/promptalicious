@@ -55,7 +55,10 @@ export async function fetchExchangeRate(): Promise<number> {
       throw new Error("Invalid exchange rate returned from API");
     }
 
-    logger.info({ rate }, "Successfully fetched USD→GBP exchange rate");
+    logger.info(
+      { rateUSD_to_GBP: rate.toFixed(6) },
+      "Successfully fetched USD→GBP exchange rate",
+    );
     return rate;
   } catch (error) {
     logger.error(
