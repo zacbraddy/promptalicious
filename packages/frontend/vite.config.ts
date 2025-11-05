@@ -13,5 +13,7 @@ export default defineConfig({
   },
   test: {
     passWithNoTests: true,
+    environment: "happy-dom",
+    setupFiles: ["./tests/setup.ts"],
   },
 });

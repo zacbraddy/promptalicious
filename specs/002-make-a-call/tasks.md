@@ -661,7 +661,7 @@ Use Vitest + React Testing Library.
 **Dependencies**: T034
 **Surfacing**: After T035, run `pnpm dev` in frontend package, observe styled dark mode UI
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
