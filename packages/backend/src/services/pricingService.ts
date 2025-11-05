@@ -1,18 +1,17 @@
 import axios from "axios";
-import * as cheerio from "cheerio";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/connection";
 import { pricingInfo } from "@/db/schema";
 import { logger } from "@/lib/logger";
 
-const OPENAI_PRICING_URL = "https://openai.com/api/pricing/";
+const LLM_PRICING_API_URL = "https://llmpricing.ai/api/prices";
 
 const FALLBACK_PRICING = {
   model: "gpt-4o-mini",
   provider: "openai",
-  inputTokenPriceUsd: 0.00000015, // Fallback pricing - last verified 2025-11-04 from openai.com/api/pricing
-  outputTokenPriceUsd: 0.0000006, // Fallback pricing - last verified 2025-11-04 from openai.com/api/pricing
+  inputTokenPriceUsd: 0.00000015, // Fallback pricing - last verified 2025-11-05 from llmpricing.ai
+  outputTokenPriceUsd: 0.0000006, // Fallback pricing - last verified 2025-11-05 from llmpricing.ai
 };
 
 const STALENESS_THRESHOLD_DAYS = 7;
@@ -31,67 +30,79 @@ export interface PricingDataWithStaleness extends PricingData {
   daysSinceUpdate: number;
 }
 
+interface LLMPricingApiResponse {
+  provider: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  input_cost: number;
+  output_cost: number;
+  total_cost: number;
+}
+
 export async function fetchPricingData(): Promise<{
   inputTokenPriceUsd: number;
   outputTokenPriceUsd: number;
 }> {
   try {
-    logger.info("Attempting to fetch pricing data from OpenAI");
+    logger.info("Attempting to fetch pricing data from llmpricing.ai");
 
-    const response = await axios.get(OPENAI_PRICING_URL, {
-      timeout: 10000,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; promptalicious/0.2.0; +https://github.com/promptalicious)",
+    //  We request 1000 tokens instead of 1 to avoid floating-point precision issues.
+    // The API returns costs rounded to 6 decimal places, and requesting 1 token results
+    // in `input_cost: 0` due to rounding (actual: 0.00000015). Using 1000 tokens gives
+    // us `input_cost: 0.00015` which we then divide by 1000 to get the per-token price.
+
+    const response = await axios.get<LLMPricingApiResponse>(
+      LLM_PRICING_API_URL,
+      {
+        params: {
+          provider: "OpenAI",
+          model: "gpt-4o-mini",
+          input_tokens: 1000,
+          output_tokens: 1000,
+        },
+        timeout: 10000,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; promptalicious/0.2.0; +https://github.com/promptalicious)",
+        },
       },
-    });
+    );
 
-    const $ = cheerio.load(response.data as string);
-
-    let inputPrice: number | null = null;
-    let outputPrice: number | null = null;
-
-    $("*").each((_, element) => {
-      const text = $(element).text().toLowerCase();
-
-      if (text.includes("gpt-4o-mini") || text.includes("gpt-4o mini")) {
-        const parent = $(element).parent();
-        const priceText = parent.text();
-
-        const inputMatch = priceText.match(/\$0\.150?\s*\/?\s*1m?\s*input/i);
-        const outputMatch = priceText.match(/\$0\.600?\s*\/?\s*1m?\s*output/i);
-
-        if (inputMatch) {
-          inputPrice = 0.00000015;
-        }
-        if (outputMatch) {
-          outputPrice = 0.0000006;
-        }
-      }
-    });
-
-    if (inputPrice !== null && outputPrice !== null) {
-      logger.info(
-        { inputPrice, outputPrice },
-        "Successfully scraped pricing data from OpenAI",
+    if (
+      typeof response.data.input_cost !== "number" ||
+      typeof response.data.output_cost !== "number" ||
+      response.data.input_cost <= 0 ||
+      response.data.output_cost <= 0
+    ) {
+      logger.warn(
+        "Invalid pricing data received from llmpricing.ai, using fallback",
       );
       return {
-        inputTokenPriceUsd: inputPrice,
-        outputTokenPriceUsd: outputPrice,
+        inputTokenPriceUsd: FALLBACK_PRICING.inputTokenPriceUsd,
+        outputTokenPriceUsd: FALLBACK_PRICING.outputTokenPriceUsd,
       };
     }
 
-    logger.warn(
-      "Failed to extract pricing data from OpenAI page, falling back to hardcoded values",
+    const inputPricePerToken = response.data.input_cost / 1000;
+    const outputPricePerToken = response.data.output_cost / 1000;
+
+    logger.info(
+      {
+        inputPrice: inputPricePerToken,
+        outputPrice: outputPricePerToken,
+      },
+      "Successfully fetched pricing data from llmpricing.ai",
     );
+
     return {
-      inputTokenPriceUsd: FALLBACK_PRICING.inputTokenPriceUsd,
-      outputTokenPriceUsd: FALLBACK_PRICING.outputTokenPriceUsd,
+      inputTokenPriceUsd: inputPricePerToken,
+      outputTokenPriceUsd: outputPricePerToken,
     };
   } catch (error) {
     logger.error(
       { error },
-      "Failed to fetch pricing data from OpenAI, using fallback",
+      "Failed to fetch pricing data from llmpricing.ai, using fallback",
     );
     return {
       inputTokenPriceUsd: FALLBACK_PRICING.inputTokenPriceUsd,

@@ -28,21 +28,19 @@ describe("pricingService", () => {
   });
 
   describe("fetchPricingData", () => {
-    it("should successfully scrape pricing data from OpenAI", async () => {
-      const mockHtml = `
-        <html>
-          <body>
-            <div>
-              <h3>GPT-4o mini</h3>
-              <p>$0.150 / 1M input tokens</p>
-              <p>$0.600 / 1M output tokens</p>
-            </div>
-          </body>
-        </html>
-      `;
+    it("should successfully fetch pricing data from llmpricing.ai", async () => {
+      const mockApiResponse = {
+        provider: "OpenAI",
+        model: "gpt-4o-mini",
+        input_tokens: 1000,
+        output_tokens: 1000,
+        input_cost: 0.00015,
+        output_cost: 0.0006,
+        total_cost: 0.00075,
+      };
 
       vi.mocked(axios.get).mockResolvedValue({
-        data: mockHtml,
+        data: mockApiResponse,
         status: 200,
         statusText: "OK",
         headers: {},
@@ -56,14 +54,20 @@ describe("pricingService", () => {
         outputTokenPriceUsd: 0.0000006,
       });
       expect(axios.get).toHaveBeenCalledWith(
-        "https://openai.com/api/pricing/",
+        "https://llmpricing.ai/api/prices",
         expect.objectContaining({
+          params: {
+            provider: "OpenAI",
+            model: "gpt-4o-mini",
+            input_tokens: 1000,
+            output_tokens: 1000,
+          },
           timeout: 10000,
         }),
       );
     });
 
-    it("should fall back to hardcoded values when scraping fails", async () => {
+    it("should fall back to hardcoded values when API request fails", async () => {
       vi.mocked(axios.get).mockRejectedValue(new Error("Network error"));
 
       const result = await pricingService.fetchPricingData();
@@ -74,20 +78,14 @@ describe("pricingService", () => {
       });
     });
 
-    it("should fall back to hardcoded values when pricing data not found in HTML", async () => {
-      const mockHtml = `
-        <html>
-          <body>
-            <div>
-              <h3>Some other model</h3>
-              <p>No pricing here</p>
-            </div>
-          </body>
-        </html>
-      `;
+    it("should fall back to hardcoded values when API returns invalid data", async () => {
+      const mockInvalidResponse = {
+        provider: "OpenAI",
+        model: "gpt-4o-mini",
+      };
 
       vi.mocked(axios.get).mockResolvedValue({
-        data: mockHtml,
+        data: mockInvalidResponse,
         status: 200,
         statusText: "OK",
         headers: {},
