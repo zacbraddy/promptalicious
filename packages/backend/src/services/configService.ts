@@ -54,7 +54,9 @@ export async function getConfig(): Promise<ConfigData | null> {
   }
 }
 
-export async function updateConfig(data: UpdateConfigData): Promise<ConfigData> {
+export async function updateConfig(
+  data: UpdateConfigData,
+): Promise<ConfigData> {
   try {
     const updateData: Record<string, string | null | Date> = {};
 
@@ -98,16 +100,13 @@ export async function updateConfig(data: UpdateConfigData): Promise<ConfigData> 
         providerEndpoint: data.providerEndpoint || null,
       };
 
-      const result = await db
-        .insert(llmConfig)
-        .values(insertData)
-        .returning({
-          id: llmConfig.id,
-          selectedModel: llmConfig.selectedModel,
-          providerEndpoint: llmConfig.providerEndpoint,
-          createdAt: llmConfig.createdAt,
-          updatedAt: llmConfig.updatedAt,
-        });
+      const result = await db.insert(llmConfig).values(insertData).returning({
+        id: llmConfig.id,
+        selectedModel: llmConfig.selectedModel,
+        providerEndpoint: llmConfig.providerEndpoint,
+        createdAt: llmConfig.createdAt,
+        updatedAt: llmConfig.updatedAt,
+      });
 
       if (!result[0]) {
         throw new Error("Failed to insert configuration: No result returned");

@@ -1,10 +1,41 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { ConfigurationResponse } from "@promptalicious/shared-infra";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+import type {
+  ConfigurationResponse,
+  UpdateConfigurationSuccessResponse,
+  UpdateConfigurationErrorResponse,
+} from "@promptalicious/shared-infra";
 
-import { getConfig } from "../services/configService.js";
+import {
+  getConfig,
+  updateConfig,
+  testConnection,
+} from "../services/configService.js";
 
 const configRouter = new Hono();
+
+const AVAILABLE_MODELS = ["gpt-4o-mini"];
+
+const updateConfigSchema = z
+  .object({
+    selectedModel: z
+      .enum(["gpt-4o-mini"], {
+        message: `Invalid model. Available models: ${AVAILABLE_MODELS.join(", ")}`,
+      })
+      .optional(),
+    apiKey: z.string().min(1, "API key cannot be empty").optional(),
+    providerEndpoint: z.union([z.url(), z.literal("")]).optional(),
+  })
+  .refine(
+    (data) =>
+      data.selectedModel || data.apiKey || data.providerEndpoint !== undefined,
+    {
+      message:
+        "Request must include at least one field to update (selectedModel, apiKey, or providerEndpoint)",
+    },
+  );
 
 configRouter.get("/", async (c: Context) => {
   try {
@@ -19,7 +50,7 @@ configRouter.get("/", async (c: Context) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
-          availableModels: ["gpt-4o-mini"],
+          availableModels: AVAILABLE_MODELS,
         },
         200,
       );
@@ -27,13 +58,13 @@ configRouter.get("/", async (c: Context) => {
 
     const response: ConfigurationResponse = {
       config: {
-        id: 1 as const,
+        id: 1,
         selectedModel: config.selectedModel,
         providerEndpoint: config.providerEndpoint ?? undefined,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
-      availableModels: ["gpt-4o-mini"],
+      availableModels: AVAILABLE_MODELS,
     };
 
     return c.json(response, 200);
@@ -46,11 +77,95 @@ configRouter.get("/", async (c: Context) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        availableModels: ["gpt-4o-mini"],
+        availableModels: AVAILABLE_MODELS,
       },
       200,
     );
   }
 });
+
+configRouter.put(
+  "/",
+  zValidator("json", updateConfigSchema, (result, c) => {
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      return c.json<UpdateConfigurationErrorResponse>(
+        {
+          error: {
+            errorType: "validation",
+            errorMessage: firstError?.message || "Validation failed",
+            additionalContext: firstError?.path
+              ? { field: firstError.path.join(".") }
+              : undefined,
+          },
+        },
+        400,
+      );
+    }
+  }),
+  async (c) => {
+    try {
+      const body = c.req.valid("json");
+
+      if (body.apiKey !== undefined) {
+        const currentConfig = await getConfig();
+        const modelToTest =
+          body.selectedModel || currentConfig?.selectedModel || "gpt-4o-mini";
+
+        const testResult = await testConnection(body.apiKey, modelToTest);
+
+        if (!testResult.success) {
+          return c.json<UpdateConfigurationErrorResponse>(
+            {
+              error: {
+                errorType: "authentication",
+                errorMessage: `API key validation failed: ${testResult.message}`,
+                additionalContext: {
+                  testCallFailed: true,
+                  errorType: testResult.error?.errorType,
+                  errorCode: testResult.error?.errorCode,
+                },
+              },
+            },
+            400,
+          );
+        }
+      }
+
+      const updatedConfig = await updateConfig(body);
+
+      const response: UpdateConfigurationSuccessResponse = {
+        config: {
+          id: 1,
+          selectedModel: updatedConfig.selectedModel,
+          providerEndpoint: updatedConfig.providerEndpoint ?? undefined,
+          createdAt: updatedConfig.createdAt.toISOString(),
+          updatedAt: updatedConfig.updatedAt.toISOString(),
+        },
+        validationResult: {
+          success: true,
+          message: body.apiKey
+            ? "API credentials validated successfully"
+            : "Configuration updated successfully",
+        },
+      };
+
+      return c.json(response, 200);
+    } catch (error) {
+      return c.json<UpdateConfigurationErrorResponse>(
+        {
+          error: {
+            errorType: "validation",
+            errorMessage:
+              error instanceof Error
+                ? error.message
+                : "Failed to update configuration",
+          },
+        },
+        400,
+      );
+    }
+  },
+);
 
 export default configRouter;

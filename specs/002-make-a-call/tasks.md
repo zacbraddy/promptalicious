@@ -286,7 +286,7 @@ Use single-row table pattern (id=1), per data-model.md.
 **Dependencies**: T012
 **Expected Outcome**: PUT /config validates and saves configuration, T010 test passes
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

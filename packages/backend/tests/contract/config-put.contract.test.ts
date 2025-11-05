@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type {
   UpdateConfigurationRequest,
   UpdateConfigurationSuccessResponse,
@@ -6,8 +6,41 @@ import type {
 } from "@promptalicious/shared-infra";
 
 import app from "../../src/app";
+import * as configService from "../../src/services/configService";
+
+vi.mock("../../src/services/configService", () => ({
+  getConfig: vi.fn(),
+  updateConfig: vi.fn(),
+  testConnection: vi.fn(),
+}));
 
 describe("PUT /config endpoint contract", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.mocked(configService.getConfig).mockResolvedValue({
+      id: 1,
+      selectedModel: "gpt-4o-mini",
+      providerEndpoint: null,
+      createdAt: new Date("2025-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2025-01-01T00:00:00.000Z"),
+    });
+
+    vi.mocked(configService.updateConfig).mockImplementation((data) =>
+      Promise.resolve({
+        id: 1,
+        selectedModel: data.selectedModel || "gpt-4o-mini",
+        providerEndpoint: data.providerEndpoint || null,
+        createdAt: new Date("2025-01-01T00:00:00.000Z"),
+        updatedAt: new Date(),
+      }),
+    );
+
+    vi.mocked(configService.testConnection).mockResolvedValue({
+      success: true,
+      message: "Successfully connected to OpenAI API with gpt-4o-mini",
+    });
+  });
   describe("Success responses (200)", () => {
     it("should return 200 with validation success when updating with valid API key", async () => {
       const res = await app.request("/api/config", {
@@ -95,6 +128,15 @@ describe("PUT /config endpoint contract", () => {
 
   describe("Validation error responses (400)", () => {
     it("should return 400 with validation error when API key is invalid", async () => {
+      vi.mocked(configService.testConnection).mockResolvedValue({
+        success: false,
+        message: "Connection failed: Invalid API key",
+        error: {
+          errorType: "authentication",
+          errorCode: "invalid_api_key",
+        },
+      });
+
       const res = await app.request("/api/config", {
         method: "PUT",
         headers: {
@@ -215,6 +257,15 @@ describe("PUT /config endpoint contract", () => {
     });
 
     it("should ensure error response matches schema with required fields", async () => {
+      vi.mocked(configService.testConnection).mockResolvedValue({
+        success: false,
+        message: "Connection failed: Invalid API key",
+        error: {
+          errorType: "authentication",
+          errorCode: "invalid_api_key",
+        },
+      });
+
       const res = await app.request("/api/config", {
         method: "PUT",
         headers: {
@@ -275,6 +326,15 @@ describe("PUT /config endpoint contract", () => {
     });
 
     it("should not save configuration when validation fails", async () => {
+      vi.mocked(configService.testConnection).mockResolvedValue({
+        success: false,
+        message: "Connection failed: Invalid API key",
+        error: {
+          errorType: "authentication",
+          errorCode: "invalid_api_key",
+        },
+      });
+
       const res = await app.request("/api/config", {
         method: "PUT",
         headers: {
@@ -290,6 +350,7 @@ describe("PUT /config endpoint contract", () => {
       expect(res.status).toBe(400);
       expect(json.error.errorType).toBe("authentication");
       expect(json.error.additionalContext?.testCallFailed).toBe(true);
+      expect(configService.updateConfig).not.toHaveBeenCalled();
     });
   });
 });
