@@ -630,7 +630,7 @@ npx shadcn@latest add card button textarea badge table alert
 **Dependencies**: T031
 **Expected Outcome**: All components installed in `src/components/ui/`
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
