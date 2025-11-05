@@ -589,7 +589,7 @@ Use real API call (or recorded fixture if API key not available in CI).
 **Dependencies**: None
 **Expected Outcome**: shadcn/ui initialized, ready to add components
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
