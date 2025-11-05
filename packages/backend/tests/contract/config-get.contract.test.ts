@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ConfigurationResponse } from "@promptalicious/shared-infra";
 
-import app from "../../src/app";
+import app from "@/app";
 
 describe("GET /config - Contract Test", () => {
   it("should return 200 status", async () => {

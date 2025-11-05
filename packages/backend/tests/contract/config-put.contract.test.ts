@@ -5,10 +5,10 @@ import type {
   UpdateConfigurationErrorResponse,
 } from "@promptalicious/shared-infra";
 
-import app from "../../src/app";
-import * as configService from "../../src/services/configService";
+import app from "@/app";
+import * as configService from "@/services/configService";
 
-vi.mock("../../src/services/configService", () => ({
+vi.mock("@/services/configService", () => ({
   getConfig: vi.fn(),
   updateConfig: vi.fn(),
   testConnection: vi.fn(),

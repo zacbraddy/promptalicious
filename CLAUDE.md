@@ -42,6 +42,35 @@ pnpm test       # All passing (or justified failures)
 - **Serena**: Semantic code analysis prevents wasteful file reads, enables symbolic editing
 - **Context7**: Latest documentation prevents guessing at APIs
 
+### Import Path Protocol
+
+**CRITICAL**: ALWAYS use the `@` alias for imports when it reduces path length.
+
+**Why**:
+- Improves readability and maintainability
+- Prevents brittle relative path chains (../../..)
+- Makes refactoring easier (paths don't break when files move)
+
+**Examples**:
+```typescript
+// Correct ✅
+import app from "@/app";
+import { ConfigurationResponse } from "@promptalicious/shared-infra";
+
+// Wrong ❌
+import app from "../../src/app";
+import { ConfigurationResponse } from "../../shared-infra/src/types/api";
+```
+
+**Path alias configuration**:
+- `@/` → Resolves to `src/` directory in current package
+- `@promptalicious/*` → Workspace packages
+
+**Configuration**:
+- `tsconfig.json`: Configured with `"@/*": ["./src/*"]`
+- `vitest.config.ts`: Configured with resolve.alias in both root and project levels
+- All environments now support the `@/` alias ✅
+
 ### Package Installation Protocol
 
 **CRITICAL**: When adding new packages, ALWAYS use `pnpm add <package>@latest` instead of manually editing package.json.

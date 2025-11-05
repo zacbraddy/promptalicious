@@ -338,7 +338,7 @@ Use real database (test instance or transactions for cleanup).
 **Dependencies**: T008
 **Expected Outcome**: Test FAILS - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
