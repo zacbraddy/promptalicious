@@ -319,7 +319,7 @@ Use real database (test instance or transactions for cleanup).
 **Dependencies**: T015
 **Surfacing**: After T016, use curl or Postman to manually test configuration endpoints, observe validation
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
