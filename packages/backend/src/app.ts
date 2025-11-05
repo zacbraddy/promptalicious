@@ -4,6 +4,7 @@ import { logger as honoLogger } from "hono/logger";
 import type { Context } from "hono";
 
 import { errorHandler } from "./middleware/errorHandler.js";
+import configRouter from "./routes/config.js";
 
 const app = new Hono();
 
@@ -25,5 +26,7 @@ app.get("/health", (c: Context) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.route("/api/config", configRouter);
 
 export default app;

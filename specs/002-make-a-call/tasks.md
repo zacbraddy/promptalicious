@@ -270,7 +270,7 @@ Use single-row table pattern (id=1), per data-model.md.
 **Dependencies**: T012
 **Expected Outcome**: GET /config returns valid configuration, T009 test passes
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
