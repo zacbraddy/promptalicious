@@ -567,7 +567,7 @@ Use real API call (or recorded fixture if API key not available in CI).
 **Dependencies**: T028
 **Surfacing**: After T030, use curl to execute prompts, observe full response + diagnostics
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
