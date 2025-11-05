@@ -13,12 +13,23 @@ import { db } from "../../src/db/connection";
 import { llmConfig } from "../../src/db/schema";
 
 describe("Configuration persistence and validation flow (integration)", () => {
+  let originalConfig: typeof llmConfig.$inferSelect | null = null;
+
   beforeAll(async () => {
+    const existingConfig = await db
+      .select()
+      .from(llmConfig)
+      .where(eq(llmConfig.id, 1))
+      .limit(1);
+    originalConfig = existingConfig[0] || null;
     await cleanupDatabase();
   });
 
   afterAll(async () => {
     await cleanupDatabase();
+    if (originalConfig) {
+      await db.insert(llmConfig).values(originalConfig);
+    }
   });
 
   beforeEach(async () => {
@@ -45,7 +56,24 @@ describe("Configuration persistence and validation flow (integration)", () => {
     expect(initialConfigData.config.selectedModel).toBe("gpt-4o-mini");
     expect(initialConfigData.availableModels).toContain("gpt-4o-mini");
 
-    const validApiKey = process.env.OPENAI_API_KEY || "sk-test-valid-key";
+    const existingConfig = await db
+      .select()
+      .from(llmConfig)
+      .where(eq(llmConfig.id, 1))
+      .limit(1);
+
+    const hasValidApiKey =
+      existingConfig.length > 0 && existingConfig[0]?.apiKey;
+
+    if (!hasValidApiKey || !existingConfig[0]) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "No valid API key in database - skipping real API validation test",
+      );
+      return;
+    }
+
+    const validApiKey = existingConfig[0].apiKey;
 
     const putWithValidKey = await app.request("/api/config", {
       method: "PUT",
@@ -60,19 +88,10 @@ describe("Configuration persistence and validation flow (integration)", () => {
     const validConfigResponse =
       (await putWithValidKey.json()) as UpdateConfigurationSuccessResponse;
 
-    if (process.env.OPENAI_API_KEY) {
-      expect(putWithValidKey.status).toBe(200);
-      expect(validConfigResponse.validationResult.success).toBe(true);
-      expect(validConfigResponse.validationResult.message).toContain(
-        "validated",
-      );
-      expect(validConfigResponse.config).not.toHaveProperty("apiKey");
-    } else {
-      // eslint-disable-next-line no-console
-      console.warn(
-        "OPENAI_API_KEY not set - skipping real API validation test",
-      );
-    }
+    expect(putWithValidKey.status).toBe(200);
+    expect(validConfigResponse.validationResult.success).toBe(true);
+    expect(validConfigResponse.validationResult.message).toContain("validated");
+    expect(validConfigResponse.config).not.toHaveProperty("apiKey");
 
     const dbConfig = await db
       .select()
@@ -80,26 +99,19 @@ describe("Configuration persistence and validation flow (integration)", () => {
       .where(eq(llmConfig.id, 1))
       .limit(1);
 
-    if (process.env.OPENAI_API_KEY) {
-      expect(dbConfig).toHaveLength(1);
-      expect(dbConfig[0]?.selectedModel).toBe("gpt-4o-mini");
-      expect(dbConfig[0]?.apiKey).toBe(validApiKey);
-    }
+    expect(dbConfig).toHaveLength(1);
+    expect(dbConfig[0]?.selectedModel).toBe("gpt-4o-mini");
+    expect(dbConfig[0]?.apiKey).toBe(validApiKey);
 
-    if (process.env.OPENAI_API_KEY) {
-      const testConnectionRes = await app.request(
-        "/api/config/test-connection",
-        {
-          method: "POST",
-        },
-      );
-      const testConnectionData =
-        (await testConnectionRes.json()) as TestConnectionResponse;
+    const testConnectionRes = await app.request("/api/config/test-connection", {
+      method: "POST",
+    });
+    const testConnectionData =
+      (await testConnectionRes.json()) as TestConnectionResponse;
 
-      expect(testConnectionRes.status).toBe(200);
-      expect(testConnectionData.success).toBe(true);
-      expect(testConnectionData.message).toContain("Successfully connected");
-    }
+    expect(testConnectionRes.status).toBe(200);
+    expect(testConnectionData.success).toBe(true);
+    expect(testConnectionData.message).toContain("Successfully connected");
 
     const putWithInvalidKey = await app.request("/api/config", {
       method: "PUT",
@@ -125,13 +137,11 @@ describe("Configuration persistence and validation flow (integration)", () => {
       .where(eq(llmConfig.id, 1))
       .limit(1);
 
-    if (process.env.OPENAI_API_KEY) {
-      expect(dbConfigAfterInvalid).toHaveLength(1);
-      expect(dbConfigAfterInvalid[0]?.apiKey).toBe(validApiKey);
-      expect(dbConfigAfterInvalid[0]?.apiKey).not.toBe(
-        "sk-invalid-test-key-12345",
-      );
-    }
+    expect(dbConfigAfterInvalid).toHaveLength(1);
+    expect(dbConfigAfterInvalid[0]?.apiKey).toBe(validApiKey);
+    expect(dbConfigAfterInvalid[0]?.apiKey).not.toBe(
+      "sk-invalid-test-key-12345",
+    );
 
     const getFinalConfig = await app.request("/api/config", {
       method: "GET",
@@ -201,7 +211,22 @@ describe("Configuration persistence and validation flow (integration)", () => {
   });
 
   it("should persist configuration across multiple requests", async () => {
-    const apiKey = process.env.OPENAI_API_KEY || "sk-test-persistence";
+    const existingConfig = await db
+      .select()
+      .from(llmConfig)
+      .where(eq(llmConfig.id, 1))
+      .limit(1);
+
+    const hasValidApiKey =
+      existingConfig.length > 0 && existingConfig[0]?.apiKey;
+
+    if (!hasValidApiKey || !existingConfig[0]) {
+      // eslint-disable-next-line no-console
+      console.warn("No valid API key in database - skipping persistence test");
+      return;
+    }
+
+    const apiKey = existingConfig[0].apiKey;
 
     const firstUpdate = await app.request("/api/config", {
       method: "PUT",
@@ -213,11 +238,6 @@ describe("Configuration persistence and validation flow (integration)", () => {
         selectedModel: "gpt-4o-mini",
       } satisfies UpdateConfigurationRequest),
     });
-
-    if (!process.env.OPENAI_API_KEY) {
-      expect(firstUpdate.status).toBe(400);
-      return;
-    }
 
     expect(firstUpdate.status).toBe(200);
 

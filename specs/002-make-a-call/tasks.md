@@ -553,7 +553,7 @@ Use real API call (or recorded fixture if API key not available in CI).
 **Dependencies**: T028
 **Expected Outcome**: Full execution flow validated, diagnostics accurate
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

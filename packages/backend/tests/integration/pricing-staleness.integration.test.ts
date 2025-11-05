@@ -39,20 +39,39 @@ describe("Pricing staleness detection (integration)", () => {
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
 
-    await db.insert(pricingInfo).values({
-      model: "gpt-4o-mini",
-      provider: "openai",
-      inputTokenPriceUsd: "0.00000015",
-      outputTokenPriceUsd: "0.0000006",
-      lastUpdated: tenDaysAgo,
-    });
+    await db
+      .insert(pricingInfo)
+      .values({
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
+        lastUpdated: tenDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [pricingInfo.model, pricingInfo.provider],
+        set: {
+          inputTokenPriceUsd: "0.00000015",
+          outputTokenPriceUsd: "0.0000006",
+          lastUpdated: tenDaysAgo,
+        },
+      });
 
-    await db.insert(exchangeRates).values({
-      fromCurrency: "USD",
-      toCurrency: "GBP",
-      rate: "0.79",
-      lastUpdated: tenDaysAgo,
-    });
+    await db
+      .insert(exchangeRates)
+      .values({
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: "0.79",
+        lastUpdated: tenDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [exchangeRates.fromCurrency, exchangeRates.toCurrency],
+        set: {
+          rate: "0.79",
+          lastUpdated: tenDaysAgo,
+        },
+      });
 
     const response = await app.request("/api/pricing", {
       method: "GET",
@@ -67,20 +86,39 @@ describe("Pricing staleness detection (integration)", () => {
   it("should detect fresh pricing when lastUpdated is current", async () => {
     const now = new Date();
 
-    await db.insert(pricingInfo).values({
-      model: "gpt-4o-mini",
-      provider: "openai",
-      inputTokenPriceUsd: "0.00000015",
-      outputTokenPriceUsd: "0.0000006",
-      lastUpdated: now,
-    });
+    await db
+      .insert(pricingInfo)
+      .values({
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
+        lastUpdated: now,
+      })
+      .onConflictDoUpdate({
+        target: [pricingInfo.model, pricingInfo.provider],
+        set: {
+          inputTokenPriceUsd: "0.00000015",
+          outputTokenPriceUsd: "0.0000006",
+          lastUpdated: now,
+        },
+      });
 
-    await db.insert(exchangeRates).values({
-      fromCurrency: "USD",
-      toCurrency: "GBP",
-      rate: "0.79",
-      lastUpdated: now,
-    });
+    await db
+      .insert(exchangeRates)
+      .values({
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: "0.79",
+        lastUpdated: now,
+      })
+      .onConflictDoUpdate({
+        target: [exchangeRates.fromCurrency, exchangeRates.toCurrency],
+        set: {
+          rate: "0.79",
+          lastUpdated: now,
+        },
+      });
 
     const response = await app.request("/api/pricing", {
       method: "GET",
@@ -96,20 +134,39 @@ describe("Pricing staleness detection (integration)", () => {
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
 
-    await db.insert(pricingInfo).values({
-      model: "gpt-4o-mini",
-      provider: "openai",
-      inputTokenPriceUsd: "0.00000015",
-      outputTokenPriceUsd: "0.0000006",
-      lastUpdated: tenDaysAgo,
-    });
+    await db
+      .insert(pricingInfo)
+      .values({
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
+        lastUpdated: tenDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [pricingInfo.model, pricingInfo.provider],
+        set: {
+          inputTokenPriceUsd: "0.00000015",
+          outputTokenPriceUsd: "0.0000006",
+          lastUpdated: tenDaysAgo,
+        },
+      });
 
-    await db.insert(exchangeRates).values({
-      fromCurrency: "USD",
-      toCurrency: "GBP",
-      rate: "0.79",
-      lastUpdated: tenDaysAgo,
-    });
+    await db
+      .insert(exchangeRates)
+      .values({
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: "0.79",
+        lastUpdated: tenDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [exchangeRates.fromCurrency, exchangeRates.toCurrency],
+        set: {
+          rate: "0.79",
+          lastUpdated: tenDaysAgo,
+        },
+      });
 
     const staleResponse = await app.request("/api/pricing", {
       method: "GET",
@@ -156,20 +213,39 @@ describe("Pricing staleness detection (integration)", () => {
     const fiveDaysAgo = new Date();
     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
 
-    await db.insert(pricingInfo).values({
-      model: "gpt-4o-mini",
-      provider: "openai",
-      inputTokenPriceUsd: "0.00000015",
-      outputTokenPriceUsd: "0.0000006",
-      lastUpdated: tenDaysAgo,
-    });
+    await db
+      .insert(pricingInfo)
+      .values({
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
+        lastUpdated: tenDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [pricingInfo.model, pricingInfo.provider],
+        set: {
+          inputTokenPriceUsd: "0.00000015",
+          outputTokenPriceUsd: "0.0000006",
+          lastUpdated: tenDaysAgo,
+        },
+      });
 
-    await db.insert(exchangeRates).values({
-      fromCurrency: "USD",
-      toCurrency: "GBP",
-      rate: "0.79",
-      lastUpdated: fiveDaysAgo,
-    });
+    await db
+      .insert(exchangeRates)
+      .values({
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: "0.79",
+        lastUpdated: fiveDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [exchangeRates.fromCurrency, exchangeRates.toCurrency],
+        set: {
+          rate: "0.79",
+          lastUpdated: fiveDaysAgo,
+        },
+      });
 
     const response = await app.request("/api/pricing", {
       method: "GET",
@@ -187,20 +263,39 @@ describe("Pricing staleness detection (integration)", () => {
 
     const now = new Date();
 
-    await db.insert(pricingInfo).values({
-      model: "gpt-4o-mini",
-      provider: "openai",
-      inputTokenPriceUsd: "0.00000015",
-      outputTokenPriceUsd: "0.0000006",
-      lastUpdated: eightDaysAgo,
-    });
+    await db
+      .insert(pricingInfo)
+      .values({
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
+        lastUpdated: eightDaysAgo,
+      })
+      .onConflictDoUpdate({
+        target: [pricingInfo.model, pricingInfo.provider],
+        set: {
+          inputTokenPriceUsd: "0.00000015",
+          outputTokenPriceUsd: "0.0000006",
+          lastUpdated: eightDaysAgo,
+        },
+      });
 
-    await db.insert(exchangeRates).values({
-      fromCurrency: "USD",
-      toCurrency: "GBP",
-      rate: "0.79",
-      lastUpdated: now,
-    });
+    await db
+      .insert(exchangeRates)
+      .values({
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: "0.79",
+        lastUpdated: now,
+      })
+      .onConflictDoUpdate({
+        target: [exchangeRates.fromCurrency, exchangeRates.toCurrency],
+        set: {
+          rate: "0.79",
+          lastUpdated: now,
+        },
+      });
 
     const response = await app.request("/api/pricing", {
       method: "GET",
