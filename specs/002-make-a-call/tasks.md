@@ -406,7 +406,7 @@ Hardcoded fallback (per research.md):
 **Dependencies**: T020
 **Expected Outcome**: Backend initializes pricing cache on startup, falls back gracefully
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
