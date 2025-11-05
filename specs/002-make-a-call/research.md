@@ -104,47 +104,35 @@ npx shadcn@latest add badge
 
 **Research Question**: How to implement dark mode with custom retrofuturistic colour palette?
 
-**Decision**: Configure Tailwind with `darkMode: 'class'` and custom colour scheme
+**Decision**: Configure Tailwind CSS v4 with custom colour scheme directly in `:root` CSS variables
 
 **Rationale**:
-- Spec requires dark mode as default (not toggle)
-- Class-based dark mode gives full control
-- Custom colours defined in Tailwind config extend the theme
-- shadcn/ui respects Tailwind theme customization
+- Spec requires dark mode as default and only theme (not toggle)
+- Project uses Tailwind CSS v4 with inline configuration via `@theme inline` directive
+- Custom colours defined in CSS variables (not JavaScript config file)
+- shadcn/ui respects CSS variable-based theming
 
 **Colour Palette** (per spec: soft greys, muddy blacks, cyan and magenta accents):
-```javascript
-// tailwind.config.js theme extension
-colors: {
-  background: {
-    DEFAULT: '#0a0a0a',  // Muddy black
-    secondary: '#1a1a1a',
-  },
-  foreground: {
-    DEFAULT: '#b0b0b0',  // Soft grey
-    muted: '#666666',
-  },
-  accent: {
-    cyan: '#00CED1',     // Subdued cyan
-    magenta: '#B565D8',  // Subdued magenta
-  },
-  // ... map to shadcn semantic tokens
-}
-```
+- Background: Muddy blacks (`oklch(0.04 0 0)` = #0a0a0a, `oklch(0.1 0 0)` = #1a1a1a)
+- Foreground: Soft greys (`oklch(0.69 0 0)` = #b0b0b0, `oklch(0.4 0 0)` = #666666)
+- Primary (Cyan accent): `oklch(0.66 0.14 196)` = subdued cyan (#00CED1)
+- Accent (Magenta): `oklch(0.68 0.16 320)` = subdued magenta (#B565D8)
 
-**Key Implementation Details**:
-- Add `class="dark"` to root HTML element
-- Extend Tailwind theme with custom colours
+**Key Implementation Details (T032)**:
+- Dark theme colours defined directly in `:root` CSS variables in `index.css`
+- **NO** `class="dark"` on HTML element (dark mode is the only mode, not a variant)
 - Map custom colours to shadcn's semantic colour variables (primary, secondary, accent, etc.)
-- Test contrast ratios for accessibility (WCAG AA minimum)
+- Use OKLCH colour space for better perceptual uniformity
+- This is the core and only colour palette for the application
 
 **Alternatives Considered**:
+- Class-based dark mode (`.dark` selector): Unnecessary complexity for single-theme app
 - System preference dark mode: Spec says dark mode is default, no toggle needed
-- CSS variables only: Less type-safe than Tailwind theme extension
+- JavaScript config file: Tailwind v4 uses CSS-based configuration
 
 **Integration Points**:
-- `packages/frontend/tailwind.config.js` defines theme
-- `packages/frontend/src/index.css` applies dark class and imports shadcn base styles
+- `packages/frontend/src/index.css` defines all theme colours in `:root`
+- `@theme inline` directive maps CSS variables to Tailwind utilities
 - Components use Tailwind utility classes
 
 **References**: Tailwind CSS dark mode documentation, shadcn theming guide

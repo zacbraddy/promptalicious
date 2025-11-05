@@ -594,19 +594,21 @@ Use real API call (or recorded fixture if API key not available in CI).
 ---
 
 ### T032: Configure Tailwind CSS with custom retrofuturistic dark theme colours
-**File**: `packages/frontend/tailwind.config.ts`
-**Description**: Extend Tailwind theme with custom colours per research.md Decision 3:
-- Background: Muddy blacks (#0a0a0a, #1a1a1a)
-- Foreground: Soft greys (#b0b0b0, #666666)
-- Accents: Subdued cyan (#00CED1), subdued magenta (#B565D8)
+**File**: `packages/frontend/src/index.css`
+**Description**: Configure Tailwind CSS v4 theme with custom colours per research.md Decision 3:
+- Background: Muddy blacks (`oklch(0.04 0 0)` = #0a0a0a, `oklch(0.1 0 0)` = #1a1a1a)
+- Foreground: Soft greys (`oklch(0.69 0 0)` = #b0b0b0, `oklch(0.4 0 0)` = #666666)
+- Primary: Subdued cyan (`oklch(0.66 0.14 196)` = #00CED1)
+- Accent: Subdued magenta (`oklch(0.68 0.16 320)` = #B565D8)
 - Map to shadcn semantic tokens (primary, secondary, accent, muted, etc.)
-- Set `darkMode: 'class'` in config
+- Define colours directly in `:root` CSS variables (Tailwind v4 inline config)
+- **NO** `class="dark"` on HTML element needed (dark mode is the only mode)
 
 **Test**: None (config task)
 **Dependencies**: T031
-**Expected Outcome**: Tailwind configured with custom dark theme
+**Expected Outcome**: Tailwind configured with custom dark theme as the core colour palette
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -635,7 +637,6 @@ npx shadcn@latest add card button textarea badge table alert
 ### T034: Create base layout component with dark theme applied
 **File**: `packages/frontend/src/components/Layout.tsx`
 **Description**: Create base layout component:
-- Apply `class="dark"` to root element
 - Set background and text colours
 - Include navigation/header (if applicable)
 - Render children

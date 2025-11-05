@@ -260,7 +260,10 @@ The /tasks command will generate tasks.md from Phase 1 artifacts following const
 **From**: research.md Decisions 2, 3 (shadcn/ui, Tailwind dark theme)
 
 - **T032**: Initialize shadcn/ui in frontend package (run `npx shadcn@latest init`)
-- **T033**: Configure Tailwind CSS with custom retrofuturistic dark theme colours
+- **T033**: Configure Tailwind CSS v4 with custom retrofuturistic dark theme colours
+  - Define colours directly in `:root` CSS variables (not `.dark` class)
+  - NO `class="dark"` on HTML element (dark mode is the only mode)
+  - Background: Muddy blacks (oklch), Foreground: Soft greys, Accents: Subdued cyan/magenta
 - **T034**: Install required shadcn components (Card, Button, Textarea, Badge, Table, Alert)
 - **T035**: Create base layout component with dark theme applied
 - **T036**: Integration test: Verify theme applies correctly (visual inspection or screenshot test)

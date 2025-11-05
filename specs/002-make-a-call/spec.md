@@ -131,6 +131,7 @@ As a developer iterating on LLM prompts, I need to execute a system prompt again
 
 #### User Interface Presentation
 - **FR-029**: System MUST use a dark mode colour scheme as the default and only theme
+  - **Implementation Note (T032)**: Dark theme colours are defined directly in `:root` CSS variables (not in a `.dark` class selector). No `class="dark"` on HTML element needed. This is the core and only colour palette for the application.
 - **FR-030**: System MUST apply a retrofuturistic visual style with soft greys, muddy blacks, and subtle cyan/magenta accents
 - **FR-031**: System MUST prioritise clarity and usability over visual sophistication
 - **FR-032**: System MUST organise interface elements in a logical flow: input → execution → results → diagnostics
