@@ -48,7 +48,11 @@ export async function executePrompt(
     );
   }
 
-  const { promptText: validPrompt, apiKey: validApiKey, model: validModel } = validationResult.data;
+  const {
+    promptText: validPrompt,
+    apiKey: validApiKey,
+    model: validModel,
+  } = validationResult.data;
 
   const startTime = Date.now();
 
@@ -77,7 +81,11 @@ export async function executePrompt(
     if (error instanceof Error) {
       const errorMessage = error.message.toLowerCase();
 
-      if (errorMessage.includes("api key") || errorMessage.includes("unauthorized") || errorMessage.includes("invalid_api_key")) {
+      if (
+        errorMessage.includes("api key") ||
+        errorMessage.includes("unauthorized") ||
+        errorMessage.includes("invalid_api_key")
+      ) {
         throw new LLMExecutionError(
           "The API key provided is invalid. Please check your configuration.",
           "authentication",
@@ -95,7 +103,10 @@ export async function executePrompt(
         );
       }
 
-      if (errorMessage.includes("timeout") || errorMessage.includes("timed out")) {
+      if (
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("timed out")
+      ) {
         throw new LLMExecutionError(
           "The LLM request timed out.",
           "timeout",
@@ -104,7 +115,11 @@ export async function executePrompt(
         );
       }
 
-      if (errorMessage.includes("network") || errorMessage.includes("fetch") || errorMessage.includes("econnrefused")) {
+      if (
+        errorMessage.includes("network") ||
+        errorMessage.includes("fetch") ||
+        errorMessage.includes("econnrefused")
+      ) {
         throw new LLMExecutionError(
           "Unable to connect to OpenAI API. Please check your internet connection.",
           "network",

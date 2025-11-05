@@ -359,7 +359,7 @@ Hardcoded fallback (per research.md):
 **Dependencies**: T005 (database ready)
 **Expected Outcome**: Pricing service fetches and caches data, falls back gracefully
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -493,7 +493,7 @@ Use research.md Decision 1 for implementation details.
 **Dependencies**: T019 (exchange rate service), T018 (pricing service)
 **Expected Outcome**: Cost calculation accurate, unit tests pass
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

@@ -108,14 +108,13 @@ describe("llmService", () => {
       ).rejects.toMatchObject({
         errorType: "authentication",
         errorCode: "invalid_api_key",
-        message: "The API key provided is invalid. Please check your configuration.",
+        message:
+          "The API key provided is invalid. Please check your configuration.",
       });
     });
 
     it("should throw authentication error when unauthorized", async () => {
-      mockGenerateText.mockRejectedValueOnce(
-        new Error("Unauthorized access"),
-      );
+      mockGenerateText.mockRejectedValueOnce(new Error("Unauthorized access"));
 
       await expect(
         executePrompt("Test prompt", "bad-key", "gpt-4o-mini"),
@@ -176,7 +175,8 @@ describe("llmService", () => {
       ).rejects.toMatchObject({
         errorType: "network",
         errorCode: "network_error",
-        message: "Unable to connect to OpenAI API. Please check your internet connection.",
+        message:
+          "Unable to connect to OpenAI API. Please check your internet connection.",
       });
     });
 
@@ -217,9 +217,7 @@ describe("llmService", () => {
     });
 
     it("should include execution duration in error context", async () => {
-      mockGenerateText.mockRejectedValueOnce(
-        new Error("Some API error"),
-      );
+      mockGenerateText.mockRejectedValueOnce(new Error("Some API error"));
 
       try {
         await executePrompt("Test prompt", "sk-test-key", "gpt-4o-mini");
@@ -227,7 +225,9 @@ describe("llmService", () => {
         expect(error).toBeInstanceOf(LLMExecutionError);
         if (error instanceof LLMExecutionError) {
           expect(error.additionalContext).toHaveProperty("executionDurationMs");
-          expect(typeof error.additionalContext?.executionDurationMs).toBe("number");
+          expect(typeof error.additionalContext?.executionDurationMs).toBe(
+            "number",
+          );
         }
       }
     });
