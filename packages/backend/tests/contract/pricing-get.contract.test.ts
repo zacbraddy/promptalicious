@@ -1,14 +1,37 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { PricingInfoResponse } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import { initializePricingCache } from "@/services/pricingService";
-import { initializeExchangeRateCache } from "@/services/exchangeRateService";
+import * as pricingService from "@/services/pricingService";
+import * as exchangeRateService from "@/services/exchangeRateService";
+
+vi.mock("@/services/pricingService");
+vi.mock("@/services/exchangeRateService");
 
 describe("GET /pricing - Contract Test", () => {
-  beforeAll(async () => {
-    await initializePricingCache();
-    await initializeExchangeRateCache();
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.mocked(pricingService.getPricingData).mockResolvedValue({
+      id: 1,
+      model: "gpt-4o-mini",
+      provider: "openai",
+      inputTokenPriceUsd: 0.00015,
+      outputTokenPriceUsd: 0.0006,
+      lastUpdated: new Date("2025-01-01T00:00:00.000Z"),
+      isStale: false,
+      daysSinceUpdate: 0,
+    });
+
+    vi.mocked(exchangeRateService.getExchangeRate).mockResolvedValue({
+      id: 1,
+      fromCurrency: "USD",
+      toCurrency: "GBP",
+      rate: 0.79,
+      lastUpdated: new Date("2025-01-01T00:00:00.000Z"),
+      isStale: false,
+      daysSinceUpdate: 0,
+    });
   });
   it("should return 200 status", async () => {
     const response = await app.request("/api/pricing");
