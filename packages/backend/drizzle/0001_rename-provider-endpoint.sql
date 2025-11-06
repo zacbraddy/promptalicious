@@ -1,0 +1,1 @@
+ALTER TABLE "llm_config" RENAME COLUMN "provider_endpoint" TO "base_url";

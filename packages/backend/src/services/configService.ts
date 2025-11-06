@@ -9,13 +9,13 @@ import { logger } from "../lib/logger";
 export interface UpdateConfigData {
   selectedModel?: string;
   apiKey?: string;
-  providerEndpoint?: string;
+  baseURL?: string;
 }
 
 export interface ConfigData {
   id: number;
   selectedModel: string;
-  providerEndpoint: string | null;
+  baseURL: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,7 +35,7 @@ export async function getConfig(): Promise<ConfigData | null> {
       .select({
         id: llmConfig.id,
         selectedModel: llmConfig.selectedModel,
-        providerEndpoint: llmConfig.providerEndpoint,
+        baseURL: llmConfig.baseURL,
         createdAt: llmConfig.createdAt,
         updatedAt: llmConfig.updatedAt,
       })
@@ -66,8 +66,8 @@ export async function updateConfig(
     if (data.apiKey !== undefined) {
       updateData.apiKey = data.apiKey;
     }
-    if (data.providerEndpoint !== undefined) {
-      updateData.providerEndpoint = data.providerEndpoint;
+    if (data.baseURL !== undefined) {
+      updateData.baseURL = data.baseURL;
     }
 
     updateData.updatedAt = new Date();
@@ -82,7 +82,7 @@ export async function updateConfig(
         .returning({
           id: llmConfig.id,
           selectedModel: llmConfig.selectedModel,
-          providerEndpoint: llmConfig.providerEndpoint,
+          baseURL: llmConfig.baseURL,
           createdAt: llmConfig.createdAt,
           updatedAt: llmConfig.updatedAt,
         });
@@ -97,13 +97,13 @@ export async function updateConfig(
         id: 1,
         selectedModel: data.selectedModel || "gpt-4o-mini",
         apiKey: data.apiKey || "",
-        providerEndpoint: data.providerEndpoint || null,
+        baseURL: data.baseURL || null,
       };
 
       const result = await db.insert(llmConfig).values(insertData).returning({
         id: llmConfig.id,
         selectedModel: llmConfig.selectedModel,
-        providerEndpoint: llmConfig.providerEndpoint,
+        baseURL: llmConfig.baseURL,
         createdAt: llmConfig.createdAt,
         updatedAt: llmConfig.updatedAt,
       });
@@ -123,12 +123,14 @@ export async function updateConfig(
 export async function testConnection(
   apiKey: string,
   model: string,
+  baseURL?: string,
 ): Promise<TestConnectionResult> {
   try {
-    logger.info({ model }, "Testing LLM connection");
+    logger.info({ model, baseURL }, "Testing LLM connection");
 
     const openaiProvider = createOpenAI({
       apiKey,
+      ...(baseURL && { baseURL }),
     });
 
     const result = await generateText({

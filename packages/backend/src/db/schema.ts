@@ -18,7 +18,7 @@ export const llmConfig = pgTable(
       .notNull()
       .default("gpt-4o-mini"),
     apiKey: text("api_key").notNull(),
-    providerEndpoint: varchar("provider_endpoint", { length: 255 }),
+    baseURL: varchar("base_url", { length: 255 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

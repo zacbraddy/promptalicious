@@ -17,3 +17,13 @@ export type {
   TestConnectionResponse,
   PricingInfoResponse,
 } from "./types/api";
+
+export {
+  updateConfigSchema,
+  settingsFormSchema,
+  testConnectionSchema,
+  API_KEY_PLACEHOLDER,
+  type UpdateConfigData,
+  type SettingsFormData,
+  type TestConnectionData,
+} from "./validation/config";

@@ -760,7 +760,7 @@ Use react-hook-form in combination with zod to perform validation functionality
 2. Enter valid API key
 3. Click Save
 4. Assert loading state shown
-5. Assert success message displayed
+f5. Assert success message displayed
 6. Assert configuration persisted (verify via GET /config)
 
 Use mocked backend responses.
@@ -768,7 +768,7 @@ Use mocked backend responses.
 **Dependencies**: T040
 **Expected Outcome**: Settings form saves and validates configuration
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

@@ -26,8 +26,8 @@ describe("GET /config - Contract Test", () => {
     expect(typeof data.config.createdAt).toBe("string");
     expect(typeof data.config.updatedAt).toBe("string");
 
-    if (data.config.providerEndpoint !== undefined) {
-      expect(typeof data.config.providerEndpoint).toBe("string");
+    if (data.config.baseURL !== undefined) {
+      expect(typeof data.config.baseURL).toBe("string");
     }
 
     expect(Array.isArray(data.availableModels)).toBe(true);

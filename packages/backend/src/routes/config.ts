@@ -1,12 +1,16 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
 import type {
   ConfigurationResponse,
   UpdateConfigurationSuccessResponse,
   UpdateConfigurationErrorResponse,
   TestConnectionResponse,
+} from "@promptalicious/shared-infra";
+import {
+  updateConfigSchema,
+  testConnectionSchema,
+  API_KEY_PLACEHOLDER,
 } from "@promptalicious/shared-infra";
 
 import {
@@ -19,25 +23,6 @@ import {
 const configRouter = new Hono();
 
 const AVAILABLE_MODELS = ["gpt-4o-mini"];
-
-const updateConfigSchema = z
-  .object({
-    selectedModel: z
-      .enum(["gpt-4o-mini"], {
-        message: `Invalid model. Available models: ${AVAILABLE_MODELS.join(", ")}`,
-      })
-      .optional(),
-    apiKey: z.string().min(1, "API key cannot be empty").optional(),
-    providerEndpoint: z.union([z.url(), z.literal("")]).optional(),
-  })
-  .refine(
-    (data) =>
-      data.selectedModel || data.apiKey || data.providerEndpoint !== undefined,
-    {
-      message:
-        "Request must include at least one field to update (selectedModel, apiKey, or providerEndpoint)",
-    },
-  );
 
 configRouter.get("/", async (c: Context) => {
   try {
@@ -62,7 +47,7 @@ configRouter.get("/", async (c: Context) => {
       config: {
         id: 1,
         selectedModel: config.selectedModel,
-        providerEndpoint: config.providerEndpoint ?? undefined,
+        baseURL: config.baseURL || undefined,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -109,19 +94,42 @@ configRouter.put(
     try {
       const body = c.req.valid("json");
 
-      if (body.apiKey !== undefined) {
+      if (body.apiKey !== undefined || body.baseURL !== undefined) {
         const currentConfig = await getConfig();
+        const apiKeyToTest = body.apiKey || (await getApiKey());
+
+        if (!apiKeyToTest) {
+          return c.json<UpdateConfigurationErrorResponse>(
+            {
+              error: {
+                errorType: "authentication",
+                errorMessage:
+                  "No API key available for validation. Please provide an API key first.",
+              },
+            },
+            400,
+          );
+        }
+
         const modelToTest =
           body.selectedModel || currentConfig?.selectedModel || "gpt-4o-mini";
+        const baseURLToTest =
+          body.baseURL !== undefined
+            ? body.baseURL || undefined
+            : currentConfig?.baseURL || undefined;
 
-        const testResult = await testConnection(body.apiKey, modelToTest);
+        const testResult = await testConnection(
+          apiKeyToTest,
+          modelToTest,
+          baseURLToTest,
+        );
 
         if (!testResult.success) {
           return c.json<UpdateConfigurationErrorResponse>(
             {
               error: {
                 errorType: "authentication",
-                errorMessage: `API key validation failed: ${testResult.message}`,
+                errorMessage: `Configuration validation failed: ${testResult.message}`,
                 additionalContext: {
                   testCallFailed: true,
                   errorType: testResult.error?.errorType,
@@ -140,7 +148,7 @@ configRouter.put(
         config: {
           id: 1,
           selectedModel: updatedConfig.selectedModel,
-          providerEndpoint: updatedConfig.providerEndpoint ?? undefined,
+          baseURL: updatedConfig.baseURL || undefined,
           createdAt: updatedConfig.createdAt.toISOString(),
           updatedAt: updatedConfig.updatedAt.toISOString(),
         },
@@ -170,73 +178,110 @@ configRouter.put(
   },
 );
 
-configRouter.post("/test-connection", async (c: Context) => {
-  try {
-    const config = await getConfig();
-
-    if (!config) {
+configRouter.post(
+  "/test-connection",
+  zValidator("json", testConnectionSchema, (result, c) => {
+    if (!result.success) {
+      const firstError = result.error.issues[0];
       return c.json<TestConnectionResponse>(
         {
           success: false,
-          message:
-            "No configuration found. Please configure API credentials first.",
+          message: firstError?.message || "Validation failed",
           error: {
             errorType: "validation",
+            additionalContext: firstError?.path
+              ? { field: firstError.path.join(".") }
+              : undefined,
           },
         },
         400,
       );
     }
+  }),
+  async (c) => {
+    try {
+      const body = c.req.valid("json");
+      const config = await getConfig();
 
-    const apiKey = await getApiKey();
+      if (!config) {
+        return c.json<TestConnectionResponse>(
+          {
+            success: false,
+            message:
+              "No configuration found. Please configure API credentials first.",
+            error: {
+              errorType: "validation",
+            },
+          },
+          400,
+        );
+      }
 
-    if (!apiKey) {
+      const apiKey =
+        body.apiKey && body.apiKey !== API_KEY_PLACEHOLDER
+          ? body.apiKey
+          : await getApiKey();
+
+      if (!apiKey) {
+        return c.json<TestConnectionResponse>(
+          {
+            success: false,
+            message:
+              "No API key configured. Please configure API credentials first.",
+            error: {
+              errorType: "authentication",
+            },
+          },
+          400,
+        );
+      }
+
+      const modelToTest = body.selectedModel || config.selectedModel;
+      const baseURLToTest =
+        body.baseURL !== undefined
+          ? body.baseURL || undefined
+          : config.baseURL || undefined;
+
+      const testResult = await testConnection(
+        apiKey,
+        modelToTest,
+        baseURLToTest,
+      );
+
+      if (testResult.success) {
+        return c.json<TestConnectionResponse>(
+          {
+            success: true,
+            message: testResult.message,
+          },
+          200,
+        );
+      }
+
+      return c.json<TestConnectionResponse>(
+        {
+          success: false,
+          message: testResult.message,
+          error: testResult.error,
+        },
+        400,
+      );
+    } catch (error) {
       return c.json<TestConnectionResponse>(
         {
           success: false,
           message:
-            "No API key configured. Please configure API credentials first.",
+            error instanceof Error
+              ? error.message
+              : "Failed to test connection",
           error: {
-            errorType: "authentication",
+            errorType: "unknown",
           },
         },
         400,
       );
     }
-
-    const testResult = await testConnection(apiKey, config.selectedModel);
-
-    if (testResult.success) {
-      return c.json<TestConnectionResponse>(
-        {
-          success: true,
-          message: testResult.message,
-        },
-        200,
-      );
-    }
-
-    return c.json<TestConnectionResponse>(
-      {
-        success: false,
-        message: testResult.message,
-        error: testResult.error,
-      },
-      400,
-    );
-  } catch (error) {
-    return c.json<TestConnectionResponse>(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to test connection",
-        error: {
-          errorType: "unknown",
-        },
-      },
-      400,
-    );
-  }
-});
+  },
+);
 
 export default configRouter;

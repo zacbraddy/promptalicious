@@ -125,6 +125,7 @@ describe("SettingsForm", () => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         selectedModel: "gpt-4o-mini",
         apiKey: "test-api-key",
+        baseURL: undefined,
       });
     });
   });

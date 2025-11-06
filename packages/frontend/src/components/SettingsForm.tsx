@@ -1,34 +1,31 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import {
+  settingsFormSchema,
+  type SettingsFormData,
+} from "@promptalicious/shared-infra";
 
 import { Button } from "@/components/ui/button";
 import { LabelledInput } from "@/components/ui/labelled-input";
 import { LabelledSelect } from "@/components/ui/labelled-select";
 import { SelectItem } from "@/components/ui/select";
 
-export const API_KEY_PLACEHOLDER = "    ";
-
-const settingsFormSchema = z.object({
-  selectedModel: z.string().min(1, "Model selection is required"),
-  apiKey: z
-    .string()
-    .min(1, "API key is required")
-    .refine(
-      (val) => val === API_KEY_PLACEHOLDER || val.trim().length > 0,
-      "API key is required",
-    ),
-});
-
-type SettingsFormData = z.infer<typeof settingsFormSchema>;
-
 interface SettingsFormProps {
   availableModels: string[];
   initialModel?: string;
   initialApiKey?: string;
-  onSubmit: (data: { selectedModel: string; apiKey: string }) => Promise<void>;
-  onTestConnection: () => Promise<void>;
+  initialBaseURL?: string;
+  onSubmit: (data: {
+    selectedModel: string;
+    apiKey: string;
+    baseURL?: string;
+  }) => Promise<void>;
+  onTestConnection: (data: {
+    selectedModel: string;
+    apiKey: string;
+    baseURL?: string;
+  }) => Promise<void>;
   isSubmitting: boolean;
   isTestingConnection: boolean;
   onSubmittingChange?: (isSubmitting: boolean) => void;
@@ -38,6 +35,7 @@ export function SettingsForm({
   availableModels,
   initialModel,
   initialApiKey = "",
+  initialBaseURL = "",
   onSubmit,
   onTestConnection,
   isSubmitting,
@@ -55,6 +53,7 @@ export function SettingsForm({
     defaultValues: {
       selectedModel: initialModel || availableModels[0] || "gpt-4o-mini",
       apiKey: initialApiKey,
+      baseURL: initialBaseURL,
     },
   });
 
@@ -66,6 +65,7 @@ export function SettingsForm({
       await onSubmit({
         selectedModel: data.selectedModel,
         apiKey: data.apiKey,
+        baseURL: data.baseURL,
       });
     } finally {
       onSubmittingChange?.(false);
@@ -119,6 +119,22 @@ export function SettingsForm({
         )}
       </div>
 
+      <div>
+        <LabelledInput
+          label="Provider Endpoint"
+          id="baseURL"
+          type="text"
+          {...register("baseURL")}
+          disabled={isSubmitting || isTestingConnection}
+          placeholder="Optional: Custom provider endpoint URL"
+        />
+        {errors.baseURL && (
+          <p className="text-destructive text-sm mt-1">
+            {errors.baseURL.message}
+          </p>
+        )}
+      </div>
+
       <div className="flex justify-between gap-4">
         <Button
           type="button"
@@ -126,7 +142,13 @@ export function SettingsForm({
           disabled={isSubmitting || isTestingConnection}
           className="border-accent/50 text-accent hover:bg-accent/10 hover:text-accent hover:border-accent"
           onClick={() => {
-            void onTestConnection();
+            void handleSubmit(async (data: SettingsFormData) => {
+              await onTestConnection({
+                selectedModel: data.selectedModel,
+                apiKey: data.apiKey,
+                baseURL: data.baseURL,
+              });
+            })();
           }}
         >
           {isTestingConnection && (

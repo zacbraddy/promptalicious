@@ -36,7 +36,7 @@ describe("configService", () => {
       const mockConfig = {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: null,
+        baseURL: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -89,7 +89,7 @@ describe("configService", () => {
       const mockExistingConfig = {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: null,
+        baseURL: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -127,7 +127,7 @@ describe("configService", () => {
       const mockNewConfig = {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: null,
+        baseURL: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -158,7 +158,7 @@ describe("configService", () => {
       const mockExistingConfig = {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: null,
+        baseURL: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

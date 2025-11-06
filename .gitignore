@@ -19,6 +19,7 @@ db-data/
 postgresql/
 
 *.sql
+!packages/backend/drizzle/**/*.sql
 *.dump
 *.backup
 *.db

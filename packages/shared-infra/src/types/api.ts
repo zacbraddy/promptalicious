@@ -47,7 +47,7 @@ export interface LLMConfiguration {
   id: 1;
   selectedModel: string;
   apiKey?: string;
-  providerEndpoint?: string;
+  baseURL?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +91,7 @@ export interface ConfigurationResponse {
 export interface UpdateConfigurationRequest {
   selectedModel?: string;
   apiKey?: string;
-  providerEndpoint?: string;
+  baseURL?: string;
 }
 
 export interface UpdateConfigurationSuccessResponse {
@@ -116,6 +116,7 @@ export interface TestConnectionResponse {
   error?: {
     errorType: string;
     errorCode?: string;
+    additionalContext?: Record<string, unknown>;
   };
 }
 

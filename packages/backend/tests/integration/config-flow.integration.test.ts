@@ -158,7 +158,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
       id: 1,
       selectedModel: "gpt-4o-mini",
       apiKey: "sk-existing-key",
-      providerEndpoint: null,
+      baseURL: null,
     });
 
     const updateModelRes = await app.request("/api/config", {
@@ -167,16 +167,14 @@ describe("Configuration persistence and validation flow (integration)", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        providerEndpoint: "https://api.openai.com/v1",
+        baseURL: "https://api.openai.com/v1",
       } satisfies UpdateConfigurationRequest),
     });
 
     expect(updateModelRes.status).toBe(200);
     const updateResponse =
       (await updateModelRes.json()) as UpdateConfigurationSuccessResponse;
-    expect(updateResponse.config.providerEndpoint).toBe(
-      "https://api.openai.com/v1",
-    );
+    expect(updateResponse.config.baseURL).toBe("https://api.openai.com/v1");
     expect(updateResponse.validationResult.success).toBe(true);
 
     const dbConfigAfterUpdate = await db
@@ -186,9 +184,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
       .limit(1);
 
     expect(dbConfigAfterUpdate).toHaveLength(1);
-    expect(dbConfigAfterUpdate[0]?.providerEndpoint).toBe(
-      "https://api.openai.com/v1",
-    );
+    expect(dbConfigAfterUpdate[0]?.baseURL).toBe("https://api.openai.com/v1");
     expect(dbConfigAfterUpdate[0]?.apiKey).toBe("sk-existing-key");
   });
 
@@ -253,7 +249,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        providerEndpoint: "https://custom.endpoint.com/v1",
+        baseURL: "https://custom.endpoint.com/v1",
       } satisfies UpdateConfigurationRequest),
     });
 
@@ -264,9 +260,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
     });
     const secondGet = (await getAfterSecond.json()) as ConfigurationResponse;
     expect(secondGet.config.selectedModel).toBe("gpt-4o-mini");
-    expect(secondGet.config.providerEndpoint).toBe(
-      "https://custom.endpoint.com/v1",
-    );
+    expect(secondGet.config.baseURL).toBe("https://custom.endpoint.com/v1");
 
     const dbFinalConfig = await db
       .select()
@@ -276,9 +270,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
 
     expect(dbFinalConfig).toHaveLength(1);
     expect(dbFinalConfig[0]?.selectedModel).toBe("gpt-4o-mini");
-    expect(dbFinalConfig[0]?.providerEndpoint).toBe(
-      "https://custom.endpoint.com/v1",
-    );
+    expect(dbFinalConfig[0]?.baseURL).toBe("https://custom.endpoint.com/v1");
     expect(dbFinalConfig[0]?.apiKey).toBe(apiKey);
   });
 });

@@ -1,16 +1,23 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "interactive": true
     },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "build/**"]
     },
     "test": {
-      "cache": false
+      "cache": false,
+      "interactive": true
+    },
+    "test:ci": {
+      "cache": false,
+      "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^build"],

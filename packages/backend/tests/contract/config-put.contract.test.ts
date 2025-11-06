@@ -12,6 +12,7 @@ vi.mock("@/services/configService", () => ({
   getConfig: vi.fn(),
   updateConfig: vi.fn(),
   testConnection: vi.fn(),
+  getApiKey: vi.fn(),
 }));
 
 describe("PUT /config endpoint contract", () => {
@@ -21,7 +22,7 @@ describe("PUT /config endpoint contract", () => {
     vi.mocked(configService.getConfig).mockResolvedValue({
       id: 1,
       selectedModel: "gpt-4o-mini",
-      providerEndpoint: null,
+      baseURL: null,
       createdAt: new Date("2025-01-01T00:00:00.000Z"),
       updatedAt: new Date("2025-01-01T00:00:00.000Z"),
     });
@@ -30,7 +31,7 @@ describe("PUT /config endpoint contract", () => {
       Promise.resolve({
         id: 1,
         selectedModel: data.selectedModel || "gpt-4o-mini",
-        providerEndpoint: data.providerEndpoint || null,
+        baseURL: data.baseURL || null,
         createdAt: new Date("2025-01-01T00:00:00.000Z"),
         updatedAt: new Date(),
       }),
@@ -40,6 +41,10 @@ describe("PUT /config endpoint contract", () => {
       success: true,
       message: "Successfully connected to OpenAI API with gpt-4o-mini",
     });
+
+    vi.mocked(configService.getApiKey).mockResolvedValue(
+      "sk-proj-existing-key",
+    );
   });
   describe("Success responses (200)", () => {
     it("should return 200 with validation success when updating with valid API key", async () => {
@@ -93,14 +98,14 @@ describe("PUT /config endpoint contract", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          providerEndpoint: "https://api.openai.com/v1",
+          baseURL: "https://api.openai.com/v1",
         } satisfies UpdateConfigurationRequest),
       });
 
       const json = (await res.json()) as UpdateConfigurationSuccessResponse;
 
       expect(res.status).toBe(200);
-      expect(json.config.providerEndpoint).toBe("https://api.openai.com/v1");
+      expect(json.config.baseURL).toBe("https://api.openai.com/v1");
       expect(json.validationResult.success).toBe(true);
     });
 
@@ -113,7 +118,7 @@ describe("PUT /config endpoint contract", () => {
         body: JSON.stringify({
           selectedModel: "gpt-4o-mini",
           apiKey: "sk-proj-newkey123456789",
-          providerEndpoint: "https://api.openai.com/v1",
+          baseURL: "https://api.openai.com/v1",
         } satisfies UpdateConfigurationRequest),
       });
 
@@ -121,7 +126,7 @@ describe("PUT /config endpoint contract", () => {
 
       expect(res.status).toBe(200);
       expect(json.config.selectedModel).toBe("gpt-4o-mini");
-      expect(json.config.providerEndpoint).toBe("https://api.openai.com/v1");
+      expect(json.config.baseURL).toBe("https://api.openai.com/v1");
       expect(json.validationResult.success).toBe(true);
     });
   });
@@ -152,7 +157,8 @@ describe("PUT /config endpoint contract", () => {
       expect(res.status).toBe(400);
       expect(json).toHaveProperty("error");
       expect(json.error.errorType).toBe("authentication");
-      expect(json.error.errorMessage).toContain("API key validation failed");
+      expect(json.error.errorMessage).toContain("Configuration validation failed");
+      expect(json.error.errorMessage).toContain("Invalid API key");
       expect(json.error.additionalContext).toBeDefined();
       expect(json.error.additionalContext?.testCallFailed).toBe(true);
     });
@@ -217,7 +223,7 @@ describe("PUT /config endpoint contract", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          providerEndpoint: "not-a-valid-url",
+          baseURL: "not-a-valid-url",
         } satisfies UpdateConfigurationRequest),
       });
 

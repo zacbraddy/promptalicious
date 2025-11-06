@@ -70,10 +70,15 @@ export async function updateConfig(
   }
 }
 
-export async function testConnection(): Promise<TestConnectionResponse> {
+export async function testConnection(data?: {
+  selectedModel?: string;
+  apiKey?: string;
+  baseURL?: string;
+}): Promise<TestConnectionResponse> {
   try {
     const response = await apiClient.post<TestConnectionResponse>(
       "/config/test-connection",
+      data || {},
     );
     return response.data;
   } catch (error) {

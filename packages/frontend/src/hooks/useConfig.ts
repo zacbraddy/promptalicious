@@ -33,7 +33,11 @@ export function useUpdateConfig() {
 }
 
 export function useTestConnection() {
-  return useMutation<TestConnectionResponse, Error, void>({
+  return useMutation<
+    TestConnectionResponse,
+    Error,
+    { selectedModel?: string; apiKey?: string; baseURL?: string } | undefined
+  >({
     mutationFn: testConnection,
   });
 }

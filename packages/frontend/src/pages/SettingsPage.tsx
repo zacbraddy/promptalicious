@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { API_KEY_PLACEHOLDER } from "@promptalicious/shared-infra";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_KEY_PLACEHOLDER, SettingsForm } from "@/components/SettingsForm";
+import { SettingsForm } from "@/components/SettingsForm";
 import {
   useGetConfig,
   useUpdateConfig,
@@ -19,6 +21,7 @@ export function SettingsPage() {
   const handleSubmit = async (formData: {
     selectedModel: string;
     apiKey: string;
+    baseURL?: string;
   }) => {
     try {
       const apiKey =
@@ -27,6 +30,7 @@ export function SettingsPage() {
       await updateConfigMutation.mutateAsync({
         selectedModel: formData.selectedModel,
         apiKey,
+        baseURL: formData.baseURL,
       });
       toast.success("Configuration saved and validated successfully");
     } catch (error) {
@@ -40,9 +44,17 @@ export function SettingsPage() {
     }
   };
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = async (formData: {
+    selectedModel: string;
+    apiKey: string;
+    baseURL?: string;
+  }) => {
     try {
-      await testConnectionMutation.mutateAsync();
+      await testConnectionMutation.mutateAsync({
+        selectedModel: formData.selectedModel,
+        apiKey: formData.apiKey,
+        baseURL: formData.baseURL,
+      });
       toast.success("Connection test successful");
     } catch (error) {
       let errorMessage = "Failed to test connection";
@@ -59,11 +71,13 @@ export function SettingsPage() {
     ? {
         selectedModel: data.config.selectedModel,
         apiKey: API_KEY_PLACEHOLDER,
+        baseURL: data.config.baseURL || "",
       }
     : isError
       ? {
           selectedModel: "gpt-4o-mini",
           apiKey: "",
+          baseURL: "",
         }
       : null;
 
@@ -83,14 +97,16 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             {isLoading || !initialConfig ? (
-              <div className="text-muted-foreground">
-                Loading configuration...
+              <div className="flex items-center justify-center gap-3 py-8 text-accent">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-lg">Loading configuration...</span>
               </div>
             ) : (
               <SettingsForm
                 availableModels={data?.availableModels || ["gpt-4o-mini"]}
                 initialModel={initialConfig.selectedModel}
                 initialApiKey={initialConfig.apiKey}
+                initialBaseURL={initialConfig.baseURL}
                 onSubmit={handleSubmit}
                 onTestConnection={handleTestConnection}
                 isSubmitting={updateConfigMutation.isPending}
