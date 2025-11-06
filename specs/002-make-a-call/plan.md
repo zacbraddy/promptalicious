@@ -246,94 +246,104 @@ The /tasks command will generate tasks.md from Phase 1 artifacts following const
 
 - **T024**: Write contract tests for POST `/execute` endpoint (success response schema)
 - **T025**: Write contract tests for POST `/execute` endpoint (all error response schemas: 400, 401, 429, 500, 504)
-- **T026**: Implement LLM execution service using Vercel AI SDK (call GPT-4o-mini, capture diagnostics)
-- **T027**: Implement cost calculation logic (token counts × pricing × exchange rate)
-- **T028**: Implement error classification and handling (map provider errors to error types)
-- **T029**: Implement POST `/execute` endpoint (orchestrates execution, returns result or error)
-- **T030**: Integration test: Successful prompt execution with full diagnostics
-- **T031**: Integration test: Error scenarios (authentication, validation, network simulation)
+- **T026**: Write contract tests for GET `/execute/status` endpoint (execution in progress, completed states)
+- **T027**: Write contract tests for POST `/execute/abort` endpoint (abort success, no execution scenarios)
+- **T028**: Implement execution state cache service (in-memory storage with AbortController)
+- **T029**: Implement LLM execution service using Vercel AI SDK (call GPT-4o-mini, capture diagnostics, support abort)
+- **T030**: Implement cost calculation logic (token counts × pricing × exchange rate)
+- **T031**: Implement error classification and handling (map provider errors to error types)
+- **T032**: Implement POST `/execute` endpoint (orchestrates execution, returns result or error, manages state cache)
+- **T033**: Implement GET `/execute/status` endpoint (returns current execution state or null)
+- **T034**: Implement POST `/execute/abort` endpoint (aborts execution via AbortController)
+- **T035**: Integration test: Successful prompt execution with full diagnostics
+- **T036**: Integration test: Execution state persistence across endpoint calls
+- **T037**: Integration test: Abort execution mid-flight
+- **T038**: Integration test: Error scenarios (authentication, validation, network simulation)
 
-**Surfacing**: After T031, use curl to execute prompts, observe full response + diagnostics
+**Surfacing**: After T038, use curl to execute prompts, check status, abort execution, observe full response + diagnostics
 
 ### 6. Frontend Setup & Styling
 
 **From**: research.md Decisions 2, 3 (shadcn/ui, Tailwind dark theme)
 
-- **T032**: Initialize shadcn/ui in frontend package (run `npx shadcn@latest init`)
-- **T033**: Configure Tailwind CSS v4 with custom retrofuturistic dark theme colours
+- **T039**: Initialize shadcn/ui in frontend package (run `npx shadcn@latest init`)
+- **T040**: Configure Tailwind CSS v4 with custom retrofuturistic dark theme colours
   - Define colours directly in `:root` CSS variables (not `.dark` class)
   - NO `class="dark"` on HTML element (dark mode is the only mode)
   - Background: Muddy blacks (oklch), Foreground: Soft greys, Accents: Subdued cyan/magenta
-- **T034**: Install required shadcn components (Card, Button, Textarea, Badge, Table, Alert)
-- **T035**: Create base layout component with dark theme applied
-- **T036**: Integration test: Verify theme applies correctly (visual inspection or screenshot test)
+- **T041**: Install required shadcn components (Card, Button, Textarea, Badge, Table, Alert)
+- **T042**: Create base layout component with dark theme applied
+- **T043**: Integration test: Verify theme applies correctly (visual inspection or screenshot test)
 
-**Surfacing**: After T036, `pnpm dev` shows styled dark mode UI (even if empty)
+**Surfacing**: After T043, `pnpm dev` shows styled dark mode UI (even if empty)
 
 ### 7. Settings Page (Frontend)
 
 **From**: quickstart.md Scenario "Setup: First-Time Configuration"
 
-- **T037**: Create settings page component structure
-- **T038**: Implement API client service for configuration endpoints (GET, PUT, test-connection)
-- **T039**: Implement settings form (model selection, API key input, endpoint input)
-- **T040**: Implement automatic validation on save (FR-024) with loading state
-- **T041**: Implement manual "Test Connection" button (FR-024a)
-- **T042**: Integration test: Settings form saves and validates configuration
-- **T043**: Integration test: Test connection button validates credentials independently
+- **T044**: Create settings page component structure
+- **T045**: Implement API client service for configuration endpoints (GET, PUT, test-connection)
+- **T046**: Implement settings form (model selection, API key input, endpoint input)
+- **T047**: Implement automatic validation on save (FR-024) with loading state
+- **T048**: Implement manual "Test Connection" button (FR-024a)
+- **T049**: Integration test: Settings form saves and validates configuration
+- **T050**: Integration test: Test connection button validates credentials independently
 
-**Surfacing**: After T043, navigate to `/settings`, save API key, test connection, observe validation
+**Surfacing**: After T050, navigate to `/settings`, save API key, test connection, observe validation
 
 ### 8. Prompt Execution Page (Frontend)
 
-**From**: quickstart.md Scenarios 1, 2, 7 (successful execution, iteration, large responses)
+**From**: quickstart.md Scenarios 1, 2, 7 (successful execution, iteration, large responses) + FR-003 series (abort, status polling)
 
-- **T044**: Create prompt execution page component structure
-- **T045**: Implement API client service for `/execute` endpoint
-- **T046**: Implement prompt input area (Textarea with character count)
-- **T047**: Implement Execute button with loading state and disabled logic (FR-003, FR-004)
-- **T048**: Implement response display card (full text, scrollable, FR-006)
-- **T049**: Implement diagnostics display (tabular format, FR-009-014)
-- **T050**: Implement error display with error type classification (FR-015-019)
-- **T051**: Integration test: Successful execution flow (prompt → execute → see results)
-- **T052**: Integration test: Iterative refinement (prompt preserved, new execution replaces result)
+- **T051**: Create prompt execution page component structure
+- **T052**: Implement API client service for `/execute` endpoint (execute, status, abort)
+- **T053**: Implement prompt input area (Textarea with character count)
+- **T054**: Implement Execute/Cancel button with loading state and toggle logic (FR-003, FR-004, FR-004a)
+- **T055**: Implement execution status polling logic for page refresh recovery (FR-003b)
+- **T056**: Implement response display card (full text, scrollable, FR-006)
+- **T057**: Implement diagnostics display (tabular format, FR-009-014)
+- **T058**: Implement error display with error type classification (FR-015-019)
+- **T059**: Integration test: Successful execution flow (prompt → execute → see results)
+- **T060**: Integration test: Cancel execution mid-flight
+- **T061**: Integration test: Page refresh during execution (status polling and recovery)
+- **T062**: Integration test: Iterative refinement (prompt preserved, new execution replaces result)
 
-**Surfacing**: After T052, full end-to-end test via UI (type prompt, execute, see diagnostics)
+**Surfacing**: After T062, full end-to-end test via UI (type prompt, execute, cancel, refresh during execution, see diagnostics)
 
 ### 9. Pricing Display & Staleness Warning
 
 **From**: quickstart.md Scenario 6 (viewing pricing, staleness)
 
-- **T053**: Create pricing info component (displays current pricing data)
-- **T054**: Implement staleness warning display (>7 days, FR-028)
-- **T055**: Integration test: Pricing display shows current data
-- **T056**: Integration test: Staleness warning appears when pricing is old
+- **T063**: Create pricing info component (displays current pricing data)
+- **T064**: Implement staleness warning display (>7 days, FR-028)
+- **T065**: Integration test: Pricing display shows current data
+- **T066**: Integration test: Staleness warning appears when pricing is old
 
-**Surfacing**: After T056, view pricing info, manually set old timestamp in DB, verify warning
+**Surfacing**: After T066, view pricing info, manually set old timestamp in DB, verify warning
 
 ### 10. Edge Cases & Polish
 
 **From**: quickstart.md Scenarios 3-5, 8-9 (error scenarios, validation, special chars)
 
-- **T057**: Implement empty prompt validation (client-side and/or server-side)
-- **T058**: Test special characters in prompts (ensure no corruption, FR edge case)
-- **T059**: Test all error types display correctly (authentication, network, rate_limit, etc.)
-- **T060**: Integration test: Empty prompt is rejected gracefully
-- **T061**: Integration test: Special characters handled correctly
-- **T062**: E2E test: Full quickstart scenarios 1-10 pass
+- **T067**: Implement empty prompt validation (client-side and/or server-side)
+- **T068**: Test special characters in prompts (ensure no corruption, FR edge case)
+- **T069**: Test all error types display correctly (authentication, network, rate_limit, etc.)
+- **T070**: Integration test: Empty prompt is rejected gracefully
+- **T071**: Integration test: Special characters handled correctly
+- **T072**: E2E test: Full quickstart scenarios 1-12 pass (including abort and refresh scenarios)
 
-**Surfacing**: After T062, run full quickstart guide to validate all scenarios
+**Surfacing**: After T072, run full quickstart guide to validate all scenarios
 
 ### 11. Quality & Documentation
 
 **From**: Constitution quality gates
 
-- **T063**: Run quality gates (typecheck, lint, format) and fix all issues
-- **T064**: Review test coverage and add unit tests for complex logic (cost calculation, error classification)
-- **T065**: Update CLAUDE.md with feature completion notes
-- **T066**: Increment version to 0.2.0 in package.json
+- **T073**: Run quality gates (typecheck, lint, format) and fix all issues
+- **T074**: Review test coverage and add unit tests for complex logic (cost calculation, error classification, execution state management)
+- **T075**: Update CLAUDE.md with feature completion notes
+- **T076**: Increment version to 0.2.0 in package.json
 
-**Surfacing**: After T066, all quality gates pass, feature is production-ready
+**Surfacing**: After T076, all quality gates pass, feature is production-ready
 
 ---
 
@@ -343,7 +353,7 @@ The /tasks command will generate tasks.md from Phase 1 artifacts following const
 - **Parallel Opportunities**: Marked [P] for tasks that touch different files (database schema, contract tests, frontend setup)
 - **Dolphin Surfacing**: After logical groups (foundation, backend services, frontend pages), clear test instructions provided
 
-**Estimated Output**: 66 tasks, grouped into 11 logical phases
+**Estimated Output**: 76 tasks, grouped into 11 logical phases
 
 **Critical Security Task**: T002 verifies .gitignore protects database files - API keys stored in DB are only safe if DB cannot be committed
 

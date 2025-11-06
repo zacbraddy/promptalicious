@@ -3,7 +3,7 @@
 **Feature**: 002-make-a-call
 **Branch**: `002-make-a-call`
 **Generated**: 2025-11-04
-**Total Tasks**: 66
+**Total Tasks**: 79
 **Based On**: [plan.md](./plan.md), [data-model.md](./data-model.md), [contracts/api-contracts.yaml](./contracts/api-contracts.yaml), [quickstart.md](./quickstart.md)
 
 ---
@@ -838,23 +838,158 @@ Use mocked backend responses.
 
 ---
 
-### T046: Implement Execute button with loading state and disabled logic
-**File**: `packages/frontend/src/components/ExecuteButton.tsx`
-**Description**: Create execute button component:
-- Disabled when prompt is empty (FR-003)
-- Disabled during execution (FR-004)
-- Loading indicator shown during execution
-- Calls execute handler on click
+### T046: Retrofit - Add execution state cache service to backend
+**File**: `packages/backend/src/services/executionStateCacheService.ts`
+**Description**: Create in-memory execution state cache service to track currently executing prompts:
+- `setCurrentExecution(executionId, promptText, abortController)`: Store execution state
+- `setExecutionResult(result)`: Store results when execution completes (keeps execution state)
+- `getCurrentExecution()`: Retrieve current state/results or null
+- `clearCache()`: Remove all execution data
+- `abortCurrentExecution()`: Trigger abort signal
+- Lifecycle: Execute clears cache → stores state → completion stores results → status retrieval clears cache
 
-**Test**: Unit test disabled states
-**Dependencies**: T033
-**Expected Outcome**: Button disables appropriately, shows loading
+**Test**: Unit tests for cache operations
+**Dependencies**: T044 (backend structure exists)
+**Expected Outcome**: State cache service ready for execute endpoint integration
 
 - [ ] **Complete**
 
 ---
 
-### T047: Implement response display card (full text, scrollable)
+### T047: Retrofit - Update LLM service to support abort signals
+**File**: `packages/backend/src/services/llmService.ts`
+**Description**: Update existing LLM execution service to accept AbortSignal:
+- Add `abortSignal` parameter to `executePrompt()`
+- Pass signal to Vercel AI SDK's `generateText()` call
+- Handle abort errors appropriately
+
+**Test**: Unit test abort mid-execution (mock Vercel AI SDK)
+**Dependencies**: T046
+**Expected Outcome**: LLM service supports cancellation
+
+- [ ] **Complete**
+
+---
+
+### T048: Retrofit - Update error classification to handle aborts
+**File**: `packages/backend/src/services/errorClassificationService.ts`
+**Description**: Add abort error type to existing error classification service:
+- Map abort errors to `aborted` error type
+- Ensure abort errors return appropriate error structure
+
+**Test**: Unit test for abort error classification
+**Dependencies**: None (updates existing service)
+**Expected Outcome**: Abort errors correctly classified
+
+- [ ] **Complete**
+
+---
+
+### T049: Retrofit - Update POST /execute to use state cache and support abort
+**File**: `packages/backend/src/routes/execute.ts`
+**Description**: Update existing POST /execute endpoint:
+- Clear any existing cache at start
+- Check for in-progress execution (return 409 if found)
+- Create AbortController and store in cache before calling LLM service
+- Pass abort signal to LLM service
+- On completion (success or error), store results in cache instead of clearing
+- Handle abort errors appropriately
+
+**Test**: Existing contract tests still pass, new test for 409 on concurrent execution
+**Dependencies**: T046, T047, T048
+**Expected Outcome**: Execute endpoint manages state cache, prevents concurrent execution
+
+- [ ] **Complete**
+
+---
+
+### T050: Retrofit - Add GET /execute/status endpoint
+**File**: `packages/backend/src/routes/execute.ts`
+**Description**: Create new GET /execute/status endpoint:
+- Return `isExecuting: true` with prompt details if execution in progress
+- Return `isExecuting: false` with results if execution completed
+- Clear cache after returning completed results
+- Return `isExecuting: false` with null if no execution
+
+**Test**: Contract test for status endpoint (various states)
+**Dependencies**: T046
+**Expected Outcome**: Status endpoint returns execution state, clears cache after returning results
+
+- [ ] **Complete**
+
+---
+
+### T051: Retrofit - Add POST /execute/abort endpoint
+**File**: `packages/backend/src/routes/execute.ts`
+**Description**: Create new POST /execute/abort endpoint:
+- Call `executionStateCacheService.abortCurrentExecution()`
+- Return success if execution was aborted
+- Return 400 if no execution in progress
+- Abort errors get stored in cache like other errors
+
+**Test**: Contract test for abort endpoint (success and no-execution scenarios)
+**Dependencies**: T046
+**Expected Outcome**: Abort endpoint cancels execution, stores abort result
+
+- [ ] **Complete**
+
+---
+
+### T052: Retrofit - Integration test for backend execution lifecycle
+**File**: `packages/backend/tests/integration/execute-lifecycle.integration.test.ts`
+**Description**: Write integration test covering full lifecycle:
+1. POST /execute (execution starts)
+2. GET /execute/status (in progress)
+3. Attempt another POST /execute (409 error)
+4. Wait for completion
+5. GET /execute/status (returns results, clears cache)
+6. GET /execute/status again (no results, cache cleared)
+7. POST /execute again (new execution starts successfully)
+
+**Test**: Full backend lifecycle validated
+**Dependencies**: T049, T050, T051
+**Expected Outcome**: Backend state management works end-to-end
+
+- [ ] **Complete**
+
+---
+
+### T053: Retrofit - Integration test for abort functionality
+**File**: `packages/backend/tests/integration/execute-abort.integration.test.ts`
+**Description**: Write integration test for abort:
+1. POST /execute (execution starts)
+2. POST /execute/abort (aborts execution)
+3. GET /execute/status (returns abort error)
+4. GET /execute/status again (cache cleared)
+5. POST /execute/abort with no execution (400 error)
+
+**Test**: Abort flow validated
+**Dependencies**: T049, T050, T051
+**Expected Outcome**: Abort successfully cancels and stores error
+
+**Surfacing**: After T053, backend supports abort/status. Use curl to test: execute, check status, abort mid-flight, verify state management
+
+- [ ] **Complete**
+
+---
+
+### T054: Implement Execute and Cancel buttons
+**File**: `packages/frontend/src/components/ExecuteControls.tsx`
+**Description**: Create execute controls component with two buttons:
+- Execute button: Disabled when prompt is empty (FR-003) or when execution in progress
+- Cancel button: Only enabled during execution (FR-004a), disabled otherwise
+- Loading indicator shown during execution
+- Execute button calls execute handler, Cancel button calls abort handler
+
+**Test**: Unit test for both buttons (enabled/disabled states)
+**Dependencies**: T033
+**Expected Outcome**: Two separate buttons with correct enabled/disabled logic, no double-click cancel issue
+
+- [ ] **Complete**
+
+---
+
+### T055: Implement response display card (full text, scrollable)
 **File**: `packages/frontend/src/components/ResponseDisplay.tsx`
 **Description**: Create response display component:
 - Display full response text (FR-006)
@@ -869,7 +1004,7 @@ Use mocked backend responses.
 
 ---
 
-### T048: Implement diagnostics display (tabular format)
+### T056: Implement diagnostics display (tabular format)
 **File**: `packages/frontend/src/components/DiagnosticsDisplay.tsx`
 **Description**: Create diagnostics table component:
 - Display input tokens, output tokens, total tokens
@@ -886,7 +1021,7 @@ Use mocked backend responses.
 
 ---
 
-### T049: Implement error display with error type classification
+### T057: Implement error display with error type classification
 **File**: `packages/frontend/src/components/ErrorDisplay.tsx`
 **Description**: Create error display component:
 - Display error type (authentication, network, etc.) per FR-017
@@ -903,7 +1038,7 @@ Use mocked backend responses.
 
 ---
 
-### T050: Integrate all components in ExecutePromptPage with state management
+### T058: Integrate all components in ExecutePromptPage with state management
 **File**: `packages/frontend/src/pages/ExecutePromptPage.tsx` (update)
 **Description**: Wire up components with React state:
 - useState for prompt text, isExecuting, result, error
@@ -912,14 +1047,95 @@ Use mocked backend responses.
 - Conditionally render ResponseDisplay or ErrorDisplay
 
 **Test**: Integration test for full page interaction
-**Dependencies**: T045-T049
+**Dependencies**: T054-T057
 **Expected Outcome**: Page functional, can execute prompts
 
 - [ ] **Complete**
 
 ---
 
-### T051: Integration test for successful execution flow (prompt → execute → see results)
+### T059: Update API client to include status and abort endpoints
+**File**: `packages/frontend/src/services/apiClient.ts` (update)
+**Description**: Add new methods to existing apiClient:
+- `getExecutionStatus()`: GET /execute/status
+- `abortExecution()`: POST /execute/abort
+- Keep existing `executePrompt()` method
+
+**Test**: Unit tests with mocked fetch for new methods
+**Dependencies**: T044 (API client exists)
+**Expected Outcome**: API client supports status and abort endpoints
+
+- [ ] **Complete**
+
+---
+
+### T060: Add execution status polling hook
+**File**: `packages/frontend/src/hooks/useExecutionStatus.ts`
+**Description**: Create custom React hook for status polling:
+- On mount, check GET /execute/status
+- If execution in progress, restore UI state (prompt, loading)
+- Poll every 2 seconds until execution completes
+- Update UI when complete, stop polling
+
+**Test**: Unit test for polling logic (mock API, test intervals)
+**Dependencies**: T059
+**Expected Outcome**: Hook handles page refresh recovery via polling
+
+- [ ] **Complete**
+
+---
+
+### T061: Update ExecutePromptPage to support abort and polling
+**File**: `packages/frontend/src/pages/ExecutePromptPage.tsx` (update)
+**Description**: Update existing page to add abort/polling:
+- Integrate useExecutionStatus hook
+- Add abort handler that calls apiClient.abortExecution()
+- Pass isExecuting state to Execute/Cancel button
+- Handle abort errors in error display
+
+**Test**: Integration test for cancel and refresh scenarios
+**Dependencies**: T058, T059, T060
+**Expected Outcome**: Page supports cancel and recovers from refresh
+
+- [ ] **Complete**
+
+---
+
+### T062: Integration test for cancel execution
+**File**: `packages/frontend/tests/integration/execute-cancel.test.tsx`
+**Description**: Write integration test:
+1. Enter prompt and execute
+2. Click Cancel button (mock slow response)
+3. Mock successful abort
+4. Assert UI returns to ready state
+5. Can execute new prompt
+
+**Dependencies**: T061
+**Expected Outcome**: Cancel flow validated
+
+- [ ] **Complete**
+
+---
+
+### T063: Integration test for page refresh recovery
+**File**: `packages/frontend/tests/integration/execute-refresh.test.tsx`
+**Description**: Write integration test:
+1. Mock execution in progress from status endpoint
+2. Mount page (simulates refresh)
+3. Assert loading state restored
+4. Mock polling → completion
+5. Assert results displayed
+
+**Dependencies**: T061
+**Expected Outcome**: Refresh recovery validated
+
+**Surfacing**: After T063, full abort/cancel/refresh functionality complete. Test end-to-end: execute, cancel, refresh during execution
+
+- [ ] **Complete**
+
+---
+
+### T064: Integration test for successful execution flow (prompt → execute → see results)
 **File**: `packages/frontend/tests/integration/execute-success.test.tsx`
 **Description**: Write integration test:
 1. Render ExecutePromptPage
@@ -930,14 +1146,14 @@ Use mocked backend responses.
 6. Assert response displayed
 7. Assert diagnostics displayed
 
-**Dependencies**: T050
+**Dependencies**: T061
 **Expected Outcome**: Full execution flow validated in test
 
 - [ ] **Complete**
 
 ---
 
-### T052: Integration test for iterative refinement (prompt preserved, new execution replaces result)
+### T065: Integration test for iterative refinement (prompt preserved, new execution replaces result)
 **File**: `packages/frontend/tests/integration/execute-iteration.test.tsx`
 **Description**: Write integration test:
 1. Execute prompt (mock success response)
@@ -947,8 +1163,8 @@ Use mocked backend responses.
 5. Verify new result replaces old (FR-033)
 6. Verify prompt text preserved (FR-001a)
 
-**Dependencies**: T051
-**Surfacing**: After T052, test full end-to-end via UI (type prompt, execute, see diagnostics)
+**Dependencies**: T064
+**Surfacing**: After T065, Phase 8 complete - full prompt execution UI with abort/cancel/refresh functionality working
 
 - [ ] **Complete**
 
@@ -958,7 +1174,7 @@ Use mocked backend responses.
 
 **Goal**: Display pricing information and warn when data is stale
 
-### T053: Create pricing info component (displays current pricing data)
+### T066: Create pricing info component (displays current pricing data)
 **File**: `packages/frontend/src/components/PricingInfo.tsx`
 **Description**: Create pricing info component:
 - Display model, provider, input/output token prices
@@ -974,7 +1190,7 @@ Use mocked backend responses.
 
 ---
 
-### T054: Implement staleness warning display (>7 days, FR-028)
+### T067: Implement staleness warning display (>7 days, FR-028)
 **File**: `packages/frontend/src/components/PricingInfo.tsx` (update)
 **Description**: Add staleness warning:
 - Check `isStale` flag from API response
@@ -989,7 +1205,7 @@ Use mocked backend responses.
 
 ---
 
-### T055: Integration test for pricing display shows current data
+### T068: Integration test for pricing display shows current data
 **File**: `packages/frontend/tests/integration/pricing-display.test.tsx`
 **Description**: Write integration test:
 1. Fetch pricing data (mock API response)
@@ -1004,7 +1220,7 @@ Use mocked backend responses.
 
 ---
 
-### T056: Integration test for staleness warning appears when pricing is old
+### T069: Integration test for staleness warning appears when pricing is old
 **File**: `packages/frontend/tests/integration/pricing-staleness.test.tsx`
 **Description**: Write integration test:
 1. Mock API response with stale pricing (isStale: true, daysSinceUpdate: 10)
@@ -1023,7 +1239,7 @@ Use mocked backend responses.
 
 **Goal**: Handle edge cases, validate all error scenarios, run full quickstart
 
-### T057: Implement empty prompt validation (client-side and/or server-side)
+### T070: Implement empty prompt validation (client-side and/or server-side)
 **File**: `packages/frontend/src/components/PromptInput.tsx` (update)
 **Description**: Add validation logic:
 - Disable Execute button if prompt is empty or whitespace-only
@@ -1037,7 +1253,7 @@ Use mocked backend responses.
 
 ---
 
-### T058: Test special characters in prompts (ensure no corruption)
+### T071: Test special characters in prompts (ensure no corruption)
 **File**: `packages/backend/tests/integration/execute-special-chars.integration.test.ts`
 **Description**: Write integration test:
 - Execute prompt with special characters: `\n`, `\t`, `&&`, `||`, `>=`, etc.
@@ -1051,7 +1267,7 @@ Use mocked backend responses.
 
 ---
 
-### T059: Test all error types display correctly (authentication, network, rate_limit, etc.)
+### T072: Test all error types display correctly (authentication, network, rate_limit, etc.)
 **File**: `packages/frontend/tests/integration/error-display.test.tsx`
 **Description**: Write integration test:
 - Mock each error type from api-contracts.yaml
@@ -1065,7 +1281,7 @@ Use mocked backend responses.
 
 ---
 
-### T060: Integration test for empty prompt rejection
+### T073: Integration test for empty prompt rejection
 **File**: `packages/frontend/tests/integration/empty-prompt.test.tsx`
 **Description**: Write integration test:
 1. Render ExecutePromptPage
@@ -1080,7 +1296,7 @@ Use mocked backend responses.
 
 ---
 
-### T061: Integration test for special characters handled correctly
+### T074: Integration test for special characters handled correctly
 **File**: `packages/frontend/tests/integration/special-chars.test.tsx`
 **Description**: Write integration test:
 1. Enter prompt with special characters
@@ -1095,7 +1311,7 @@ Use mocked backend responses.
 
 ---
 
-### T062: E2E test covering full quickstart scenarios 1-10
+### T075: E2E test covering full quickstart scenarios 1-10
 **File**: `packages/backend/tests/e2e/quickstart.e2e.test.ts`
 **Description**: Write end-to-end test covering major scenarios from quickstart.md:
 1. Configure API key
@@ -1121,7 +1337,7 @@ Use real backend + frontend (or comprehensive mocks).
 
 **Goal**: Pass all quality gates, document feature completion, increment version
 
-### T063: Run quality gates and fix all issues (typecheck, lint, format)
+### T076: Run quality gates and fix all issues (typecheck, lint, format)
 **Commands**:
 ```bash
 pnpm typecheck  # Fix all type errors
@@ -1138,7 +1354,7 @@ pnpm test       # Ensure all tests pass
 
 ---
 
-### T064: Review test coverage and add unit tests for complex logic
+### T077: Review test coverage and add unit tests for complex logic
 **Files**: Various (unit tests for costCalculationService, errorClassificationService, etc.)
 **Description**:
 - Review test coverage report
@@ -1156,7 +1372,7 @@ pnpm test       # Ensure all tests pass
 
 ---
 
-### T065: Update CLAUDE.md with feature completion notes
+### T078: Update CLAUDE.md with feature completion notes
 **File**: `CLAUDE.md`
 **Description**: Update project CLAUDE.md:
 - Add to "Recent Changes" section
@@ -1171,7 +1387,7 @@ pnpm test       # Ensure all tests pass
 
 ---
 
-### T066: Increment version to 0.2.0 in package.json
+### T079: Increment version to 0.2.0 in package.json
 **Files**: `package.json` (root and packages)
 **Description**: Update version number:
 - Root: 0.1.0 → 0.2.0
@@ -1196,10 +1412,10 @@ pnpm test       # Ensure all tests pass
 | 5. LLM Execution Core | T023-T030 | Prompt execution with diagnostics | T023-T024 parallel |
 | 6. Frontend Setup | T031-T035 | shadcn/ui, Tailwind theme | - |
 | 7. Settings Page | T036-T042 | Configuration UI | - |
-| 8. Execution Page | T043-T052 | Prompt execution UI | - |
-| 9. Pricing Display | T053-T056 | Pricing info with staleness warning | - |
-| 10. Edge Cases | T057-T062 | Validation, error handling, E2E | - |
-| 11. Quality & Docs | T063-T066 | Quality gates, coverage, version bump | - |
+| 8. Execution Page | T043-T065 | Prompt execution UI + retrofit (abort/cancel/refresh) | Backend retrofit: T046-T053, Frontend retrofit: T054, T059-T063 |
+| 9. Pricing Display | T066-T069 | Pricing info with staleness warning | - |
+| 10. Edge Cases | T070-T075 | Validation, error handling, E2E | - |
+| 11. Quality & Docs | T076-T079 | Quality gates, coverage, version bump | - |
 
 ---
 

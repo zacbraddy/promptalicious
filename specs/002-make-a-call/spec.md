@@ -73,13 +73,26 @@ As a developer iterating on LLM prompts, I need to execute a system prompt again
 
 7. **Given** I have completed a prompt execution (successful or failed), **When** I view the interface, **Then** my entered prompt text remains visible in the input area so I can tweak and try again
 
+8. **Given** a prompt is executing, **When** I click the cancel button, **Then** the execution is aborted and I can initiate a new execution
+
+9. **Given** I accidentally started a prompt execution, **When** I click cancel during execution, **Then** the system stops the LLM call and returns to a ready state
+
+10. **Given** I refresh the page (F5) during prompt execution, **When** the page reloads, **Then** the system detects the running prompt and restores the UI state showing the execution in progress
+
+11. **Given** the page has been refreshed during execution, **When** I view the interface, **Then** I see all screen elements are populated with the parameters I had set for the currently running prompt, screen elements are in a loading state so I can't interact with them (except the cancel button) but under the hood the application is polling for the execution status until it completes
+
+12. **Given** a prompt is executing when I refresh, **When** the execution completes, **Then** I see the full results and diagnostics just as if I hadn't refreshed
+
 ### Edge Cases
 - When the LLM provider is unavailable or times out, the system displays the error details; the prompt remains in the input area for the user to resubmit
 - Extremely large responses may use progressive disclosure patterns (e.g., "show more") to aid digestibility, but such patterns must prioritise analysis over compactness—users must be able to easily access all information without frustration
 - If API credentials are missing or invalid, the system displays authentication error details (user can navigate to settings to correct credentials, then resubmit)
 - Prompts containing special characters or extremely long text are transmitted as-is to the LLM provider; any provider-specific validation errors are surfaced to the user
-- Multiple simultaneous calls are prevented by FR-003 (UI prevents new execution whilst one is in progress)
+- Multiple simultaneous calls are prevented by FR-003 series (backend cache ensures only one execution at a time, even across page refreshes)
 - Partial responses or streaming responses are handled according to the LLM provider's behaviour; if streaming is supported, the full response is displayed once complete
+- If a user refreshes the page during execution, the frontend polls the execution status endpoint until completion
+- If the backend restarts during execution, the in-memory cache is lost and the execution is effectively abandoned (user can start a new execution)
+- Cancel requests during the brief moment between execution completion and cache cleanup are handled gracefully (no-op)
 
 ## Requirements *(mandatory)*
 
@@ -90,8 +103,14 @@ As a developer iterating on LLM prompts, I need to execute a system prompt again
 - **FR-001a**: System MUST retain the prompt text in the input area after execution (successful or failed) to support iterative tweaking
 - **FR-002**: System MUST provide a mechanism to initiate prompt execution
 - **FR-003**: System MUST prevent users from initiating a new execution while one is already in progress
+- **FR-003a**: System MUST maintain an in-memory cache of the currently executing prompt on the backend to prevent concurrent executions
+- **FR-003b**: System MUST provide an endpoint to check if a prompt is currently executing
+- **FR-003c**: System MUST allow only one prompt execution at a time (single-execution pattern)
 - **FR-004**: System MUST provide visual indication during prompt execution (loading state)
+- **FR-004a**: System MUST display a separate cancel button alongside the execute button that is only enabled during execution
 - **FR-005**: System MUST transmit the entered prompt to the LLM processing service
+- **FR-005a**: System MUST support aborting an in-progress prompt execution
+- **FR-005b**: System MUST clean up execution state cache when execution completes (success, failure, or abort)
 
 #### LLM Response Display
 - **FR-006**: System MUST display the complete response received from the LLM
@@ -158,6 +177,10 @@ As a developer iterating on LLM prompts, I need to execute a system prompt again
 
 - **Pricing Information**: Cost data for token usage
   - Attributes: model identifier, provider, input token price, output token price, currency, last updated timestamp
+
+- **Execution State Cache**: In-memory tracking of currently executing prompt (backend only, not persisted)
+  - Attributes: prompt execution identifier, prompt text, start timestamp, abort controller signal, status (in_progress)
+  - Lifecycle: Created on execution start, cleared on completion/abort/error
 
 ---
 

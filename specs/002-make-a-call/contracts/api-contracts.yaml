@@ -175,6 +175,146 @@ paths:
                       errorType: "timeout"
                       errorMessage: "The LLM request timed out after 60 seconds."
                       timestamp: "2025-11-04T10:36:00.000Z"
+        '409':
+          description: Conflict - execution already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                      - errorType
+                      - errorMessage
+                    properties:
+                      errorType:
+                        type: string
+                        enum: [conflict]
+                      errorMessage:
+                        type: string
+                        example: "An execution is already in progress. Please wait for it to complete or cancel it before starting a new one."
+              examples:
+                executionInProgress:
+                  summary: Concurrent execution attempted
+                  value:
+                    error:
+                      errorType: "conflict"
+                      errorMessage: "An execution is already in progress. Please wait for it to complete or cancel it before starting a new one."
+
+  /execute/status:
+    get:
+      operationId: getExecutionStatus
+      summary: Get current execution status
+      description: |
+        Returns the current execution status. Used for page refresh recovery and polling.
+        - If execution in progress: returns prompt details and in_progress status
+        - If execution completed: returns full results, then clears cache
+        - If no execution: returns null state
+
+        Functional Requirements: FR-003b
+      tags:
+        - Prompt Execution
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStatusResponse'
+              examples:
+                executionInProgress:
+                  summary: Execution currently running
+                  value:
+                    isExecuting: true
+                    execution:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+                      executionTimestamp: "2025-11-04T10:37:00.000Z"
+                      status: "in_progress"
+                      targetModel: "gpt-4o-mini"
+                executionCompleted:
+                  summary: Execution completed (results returned once, then cache cleared)
+                  value:
+                    isExecuting: false
+                    execution:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+                      executionTimestamp: "2025-11-04T10:37:00.000Z"
+                      status: "completed"
+                      targetModel: "gpt-4o-mini"
+                    result:
+                      id: "660e8400-e29b-41d4-a716-446655440001"
+                      promptExecutionId: "550e8400-e29b-41d4-a716-446655440000"
+                      responseText: "Quantum computing is a type of computing that uses quantum mechanics..."
+                      inputTokenCount: 15
+                      outputTokenCount: 120
+                      totalTokenCount: 135
+                      executionDurationMs: 1842
+                      estimatedCostGBP: 0.0012
+                executionAborted:
+                  summary: Execution was aborted
+                  value:
+                    isExecuting: false
+                    execution:
+                      id: "770e8400-e29b-41d4-a716-446655440002"
+                      promptText: "Test prompt"
+                      executionTimestamp: "2025-11-04T10:38:00.000Z"
+                      status: "aborted"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "880e8400-e29b-41d4-a716-446655440003"
+                      promptExecutionId: "770e8400-e29b-41d4-a716-446655440002"
+                      errorType: "aborted"
+                      errorMessage: "Execution was cancelled by user"
+                      timestamp: "2025-11-04T10:38:01.000Z"
+                noExecution:
+                  summary: No execution in progress or completed
+                  value:
+                    isExecuting: false
+                    execution: null
+
+  /execute/abort:
+    post:
+      operationId: abortExecution
+      summary: Abort currently executing prompt
+      description: |
+        Aborts the currently executing prompt by triggering the AbortController signal.
+        Returns success if execution was aborted, error if no execution in progress.
+
+        Functional Requirements: FR-005a
+      tags:
+        - Prompt Execution
+      responses:
+        '200':
+          description: Execution aborted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbortExecutionResponse'
+              examples:
+                abortSuccess:
+                  summary: Successfully aborted
+                  value:
+                    success: true
+                    message: "Execution aborted successfully"
+        '400':
+          description: No execution in progress to abort
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbortExecutionResponse'
+              examples:
+                noExecutionToAbort:
+                  summary: Nothing to abort
+                  value:
+                    success: false
+                    message: "No execution in progress to abort"
+                    error:
+                      errorType: "validation"
+                      errorMessage: "No execution is currently in progress"
 
   /config:
     get:
@@ -425,7 +565,7 @@ components:
           description: ISO 8601 timestamp of when execution started
         status:
           type: string
-          enum: [pending, in_progress, completed, failed]
+          enum: [pending, in_progress, completed, failed, aborted]
           description: Current status of the execution
         targetModel:
           type: string
@@ -493,7 +633,7 @@ components:
           format: uuid
         errorType:
           type: string
-          enum: [authentication, network, api_error, timeout, rate_limit, validation, unknown]
+          enum: [authentication, network, api_error, timeout, rate_limit, validation, aborted, unknown]
           description: Classification of the error for debugging
         errorCode:
           type: string
@@ -513,6 +653,51 @@ components:
           type: string
           format: date-time
           description: ISO 8601 timestamp of when error occurred
+
+    ExecutionStatusResponse:
+      type: object
+      required:
+        - isExecuting
+      properties:
+        isExecuting:
+          type: boolean
+          description: True if execution currently in progress
+        execution:
+          allOf:
+            - $ref: '#/components/schemas/PromptExecution'
+            - nullable: true
+          description: Execution details (null if no execution)
+        result:
+          allOf:
+            - $ref: '#/components/schemas/ExecutionResult'
+            - nullable: true
+          description: Results if execution completed successfully (only returned once)
+        error:
+          allOf:
+            - $ref: '#/components/schemas/ExecutionError'
+            - nullable: true
+          description: Error if execution failed or was aborted (only returned once)
+
+    AbortExecutionResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: True if abort was successful
+        message:
+          type: string
+          description: Human-readable result message
+        error:
+          type: object
+          nullable: true
+          properties:
+            errorType:
+              type: string
+            errorMessage:
+              type: string
 
     ConfigurationResponse:
       type: object
