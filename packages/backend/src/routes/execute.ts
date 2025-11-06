@@ -70,6 +70,34 @@ router.get("/status", (c: Context) => {
   return c.json(response, 200);
 });
 
+router.post("/abort", (c: Context) => {
+  const aborted = executionStateCacheService.abortCurrentExecution();
+
+  if (!aborted) {
+    return c.json(
+      {
+        success: false,
+        message: "No execution in progress to abort",
+        error: {
+          errorType: "validation",
+          errorMessage: "No execution is currently in progress",
+        },
+      },
+      400,
+    );
+  }
+
+  logger.info("Execution aborted by user");
+
+  return c.json(
+    {
+      success: true,
+      message: "Execution aborted successfully",
+    },
+    200,
+  );
+});
+
 router.post("/", async (c: Context) => {
   const existingExecution = executionStateCacheService.getCurrentExecution();
   if (existingExecution && existingExecution.status === "in_progress") {

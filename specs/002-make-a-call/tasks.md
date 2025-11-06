@@ -931,7 +931,7 @@ Use mocked backend responses.
 **Dependencies**: T046
 **Expected Outcome**: Abort endpoint cancels execution, stores abort result
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

@@ -136,3 +136,12 @@ export interface ExecutionStatusResponse {
   result?: ExecutionResult;
   error?: ExecutionError;
 }
+
+export interface AbortExecutionResponse {
+  success: boolean;
+  message: string;
+  error?: {
+    errorType: string;
+    errorMessage: string;
+  };
+}

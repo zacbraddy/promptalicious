@@ -11,6 +11,7 @@ export type {
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
   ExecutionStatusResponse,
+  AbortExecutionResponse,
   ConfigurationResponse,
   UpdateConfigurationRequest,
   UpdateConfigurationSuccessResponse,
