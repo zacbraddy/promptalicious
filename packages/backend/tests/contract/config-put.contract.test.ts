@@ -157,7 +157,9 @@ describe("PUT /config endpoint contract", () => {
       expect(res.status).toBe(400);
       expect(json).toHaveProperty("error");
       expect(json.error.errorType).toBe("authentication");
-      expect(json.error.errorMessage).toContain("Configuration validation failed");
+      expect(json.error.errorMessage).toContain(
+        "Configuration validation failed",
+      );
       expect(json.error.errorMessage).toContain("Invalid API key");
       expect(json.error.additionalContext).toBeDefined();
       expect(json.error.additionalContext?.testCallFailed).toBe(true);
