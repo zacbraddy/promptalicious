@@ -7,6 +7,54 @@ import {
 
 describe("errorClassificationService", () => {
   describe("classifyError", () => {
+    describe("abort errors", () => {
+      it("should classify AbortError by name as aborted error", () => {
+        const error = new Error("The operation was aborted");
+        Object.defineProperty(error, "name", { value: "AbortError" });
+
+        const result = classifyError(error);
+
+        expect(result.errorType).toBe("aborted");
+        expect(result.errorCode).toBe("execution_aborted");
+        expect(result.errorMessage).toBe(
+          "The execution was cancelled by the user.",
+        );
+        expect(result.additionalContext).toEqual({
+          originalError: "The operation was aborted",
+        });
+      });
+
+      it("should classify error with 'abort' in message as aborted error", () => {
+        const error = new Error("Request was aborted");
+
+        const result = classifyError(error);
+
+        expect(result.errorType).toBe("aborted");
+        expect(result.errorCode).toBe("execution_aborted");
+        expect(result.errorMessage).toBe(
+          "The execution was cancelled by the user.",
+        );
+      });
+
+      it("should classify error with 'aborted' in message as aborted error", () => {
+        const error = new Error("Execution aborted by user");
+
+        const result = classifyError(error);
+
+        expect(result.errorType).toBe("aborted");
+        expect(result.errorCode).toBe("execution_aborted");
+      });
+
+      it("should classify error with uppercase 'ABORT' in message as aborted error", () => {
+        const error = new Error("OPERATION ABORT REQUESTED");
+
+        const result = classifyError(error);
+
+        expect(result.errorType).toBe("aborted");
+        expect(result.errorCode).toBe("execution_aborted");
+      });
+    });
+
     describe("authentication errors", () => {
       it("should classify error with 'api key' in message as authentication error", () => {
         const error = new Error("Invalid api key provided");

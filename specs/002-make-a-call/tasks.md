@@ -881,7 +881,7 @@ Use mocked backend responses.
 **Dependencies**: None (updates existing service)
 **Expected Outcome**: Abort errors correctly classified
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

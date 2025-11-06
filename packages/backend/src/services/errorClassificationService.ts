@@ -16,6 +16,18 @@ export function classifyError(error: unknown): ClassifiedError {
       (error as Error & { additionalContext?: Record<string, unknown> })
         .additionalContext || {};
 
+    if (error.name === "AbortError" || errorMessage.includes("abort")) {
+      return {
+        errorType: "aborted",
+        errorCode: "execution_aborted",
+        errorMessage: "The execution was cancelled by the user.",
+        additionalContext: {
+          originalError: error.message,
+          ...existingContext,
+        },
+      };
+    }
+
     if (
       errorMessage.includes("api key") ||
       errorMessage.includes("unauthorized") ||
