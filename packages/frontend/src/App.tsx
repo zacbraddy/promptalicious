@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
 import { Toaster } from "./components/ui/sonner";
-import { HomePage } from "./pages/HomePage";
+import { ExecutePromptPage } from "./pages/ExecutePromptPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 const queryClient = new QueryClient({
@@ -20,7 +20,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Layout>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<ExecutePromptPage />} />
+          <Route path="/execute" element={<ExecutePromptPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
         <Toaster expand={true} visibleToasts={5} richColors />

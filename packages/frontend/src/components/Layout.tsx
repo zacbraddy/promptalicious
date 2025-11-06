@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Rocket, Settings } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,7 +18,14 @@ export function Layout({ children }: LayoutProps) {
               promptalicious
             </h1>
           </Link>
-          <nav>
+          <nav className="flex items-center gap-6">
+            <Link
+              to="/execute"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Rocket className="h-5 w-5" />
+              <span>Execute</span>
+            </Link>
             <Link
               to="/settings"
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
