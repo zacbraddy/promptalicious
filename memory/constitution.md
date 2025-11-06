@@ -319,12 +319,18 @@ However, if we're regularly going 5+ tasks without something to show, we're doin
 
 ## Quality Gates
 
-All code MUST pass before commit:
+All code MUST pass before commit and before marking task complete:
 
 1. **Type Checking**: `pnpm typecheck` (zero errors)
 2. **Linting**: `pnpm lint` (zero errors, zero warnings), use `pnpm lint:fix` to apply formatting changes without you having to do it.
-3. **Formatting**: `pnpm format:check` (or auto-format applied)
+3. **Formatting**: `pnpm format:check` (MUST pass - if fails, run `pnpm format` then recheck)
 4. **Tests**: `pnpm test` (all tests passing, or failures justified)
+
+**Formatting Protocol**:
+- ALWAYS run `pnpm format:check` first
+- If it fails, run `pnpm format` to auto-fix
+- Then run `pnpm format:check` again to verify
+- Never skip this step - formatting must pass before task completion
 
 Husky pre-commit hooks MUST enforce these gates.
 

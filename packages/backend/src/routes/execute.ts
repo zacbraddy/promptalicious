@@ -17,11 +17,41 @@ import { calculateCost } from "@/services/costCalculationService";
 import { createExecutionError } from "@/services/errorClassificationService";
 import { getPricingData } from "@/services/pricingService";
 import { getExchangeRate } from "@/services/exchangeRateService";
+import { executionStateCacheService } from "@/services/executionStateCacheService";
 import { logger } from "@/lib/logger";
 
 const router = new Hono();
 
 router.post("/", async (c: Context) => {
+  const existingExecution = executionStateCacheService.getCurrentExecution();
+  if (existingExecution && existingExecution.status === "in_progress") {
+    const execution: PromptExecution = {
+      id: existingExecution.executionId,
+      promptText: existingExecution.promptText,
+      executionTimestamp: existingExecution.startTimestamp.toISOString(),
+      status: "in_progress",
+      targetModel: "gpt-4o-mini",
+    };
+
+    const error: ExecutionError = {
+      id: randomUUID(),
+      promptExecutionId: existingExecution.executionId,
+      errorType: "validation",
+      errorMessage:
+        "An execution is already in progress. Please wait or cancel it first.",
+      timestamp: new Date().toISOString(),
+    };
+
+    const response: ExecutePromptErrorResponse = {
+      execution,
+      error,
+    };
+
+    return c.json(response, 409);
+  }
+
+  executionStateCacheService.clearCache();
+
   const executionId = randomUUID();
   const executionTimestamp = new Date().toISOString();
 
@@ -74,6 +104,13 @@ router.post("/", async (c: Context) => {
       targetModel: config.selectedModel,
     };
 
+    const abortController = new AbortController();
+    executionStateCacheService.setCurrentExecution(
+      executionId,
+      promptText,
+      abortController,
+    );
+
     logger.info(
       { executionId, model: config.selectedModel },
       "Executing LLM prompt",
@@ -84,6 +121,7 @@ router.post("/", async (c: Context) => {
         promptText,
         apiKey,
         config.selectedModel,
+        abortController.signal,
       );
 
       const pricingData = await getPricingData();
@@ -114,6 +152,8 @@ router.post("/", async (c: Context) => {
         estimatedCostGBP,
       };
 
+      executionStateCacheService.setExecutionResult(result);
+
       const response: ExecutePromptSuccessResponse = {
         execution,
         result,
@@ -139,6 +179,8 @@ router.post("/", async (c: Context) => {
         error,
         error instanceof Error ? error.stack : undefined,
       );
+
+      executionStateCacheService.setExecutionResult(executionError);
 
       const response: ExecutePromptErrorResponse = {
         execution,

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
+  ExecutePromptErrorResponse,
 } from "@promptalicious/shared-infra";
 
 import app from "@/app";
@@ -10,6 +11,7 @@ import * as costCalculationService from "@/services/costCalculationService";
 import * as exchangeRateService from "@/services/exchangeRateService";
 import * as llmService from "@/services/llmService";
 import * as pricingService from "@/services/pricingService";
+import { executionStateCacheService } from "@/services/executionStateCacheService";
 
 vi.mock("@/services/llmService");
 vi.mock("@/services/costCalculationService");
@@ -271,6 +273,53 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       const data = (await response.json()) as ExecutePromptSuccessResponse;
 
       expect(data.result.promptExecutionId).toBe(data.execution.id);
+    });
+  });
+
+  describe("Concurrent execution prevention", () => {
+    it("should return 409 when execution is already in progress", async () => {
+      executionStateCacheService.setCurrentExecution(
+        "test-execution-id",
+        "Test prompt text",
+        new AbortController(),
+      );
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validRequest),
+      });
+
+      expect(response.status).toBe(409);
+
+      executionStateCacheService.clearCache();
+    });
+
+    it("should return error response with validation error type for concurrent execution", async () => {
+      executionStateCacheService.setCurrentExecution(
+        "test-execution-id",
+        "Test prompt text",
+        new AbortController(),
+      );
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validRequest),
+      });
+
+      const data = (await response.json()) as ExecutePromptErrorResponse;
+
+      expect(data).toHaveProperty("execution");
+      expect(data).toHaveProperty("error");
+      expect(data.error.errorType).toBe("validation");
+      expect(data.error.errorMessage).toContain("already in progress");
+
+      executionStateCacheService.clearCache();
     });
   });
 });

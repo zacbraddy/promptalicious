@@ -25,12 +25,19 @@ See `memory/development-protocols.md` for complete stack details and rationales.
 
 ### Quality Gates
 
+**MUST be run after every code change, before marking task complete:**
+
 ```bash
-pnpm typecheck  # Zero errors
-pnpm lint       # Zero errors/warnings (use pnpm lint:fix)
-pnpm format
-pnpm test       # All passing (or justified failures)
+pnpm typecheck      # Zero errors
+pnpm lint           # Zero errors/warnings (use pnpm lint:fix)
+pnpm format:check   # All files formatted (if fails, run pnpm format then recheck)
+pnpm test           # All passing (or justified failures)
 ```
+
+**Formatting protocol:**
+- ALWAYS run `pnpm format:check` first
+- If it fails, run `pnpm format` to fix, then run `pnpm format:check` again to verify
+- Never skip format checking - it must pass before task completion
 
 ### Before Any Code Work - MCP Activation Checklist
 

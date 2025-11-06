@@ -10,10 +10,10 @@ pnpm --filter @promptalicious/frontend dev
 pnpm --filter @promptalicious/backend dev
 ```
 
-## Quality Gates (Run Before Commit)
+## Quality Gates (Run Before Commit AND Before Marking Task Complete)
 ```bash
-# Run all quality gates
-pnpm typecheck && pnpm lint && pnpm format:check
+# Run all quality gates in order (MANDATORY)
+pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 
 # Type checking (zero errors required)
 pnpm typecheck
@@ -25,9 +25,16 @@ pnpm lint
 pnpm lint:fix  # Auto-fix issues
 pnpm --filter @promptalicious/frontend lint
 
-# Formatting
-pnpm format       # Format all files
-pnpm format:check # Check formatting without modifying
+# Formatting (MANDATORY - must pass before task completion)
+pnpm format:check   # Check formatting without modifying (run this FIRST)
+pnpm format         # Format all files (run if format:check fails)
+# Then run format:check again to verify
+
+# Formatting Protocol:
+# 1. Run pnpm format:check
+# 2. If it fails, run pnpm format
+# 3. Run pnpm format:check again to verify
+# 4. Never skip this - must pass before task completion
 ```
 
 ## Testing
@@ -37,6 +44,10 @@ pnpm test
 
 # Run frontend tests
 pnpm --filter @promptalicious/frontend test
+
+# Run backend tests
+pnpm --filter @promptalicious/backend test
+pnpm --filter @promptalicious/backend test:ci  # Unit tests only
 
 # Run tests in watch mode
 pnpm --filter @promptalicious/frontend test:watch
@@ -78,7 +89,7 @@ pnpm outdated -r
 ## Git Workflow
 ```bash
 # Pre-commit hooks run automatically via Husky
-# (runs typecheck, lint, format:check)
+# (runs typecheck, lint, format:check, test:ci)
 
 # Commit changes
 git add .

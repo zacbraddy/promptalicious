@@ -534,16 +534,23 @@ export default {
 - Git hooks: ✅ Configured (Husky pre-commit)
 - Tests: Required for all feature code
 
-**Quality Gate Commands**:
+**Quality Gate Commands** (MUST be run after every code change, before marking task complete):
 ```bash
-pnpm typecheck  # Zero errors (non-negotiable)
-pnpm lint       # Zero errors/warnings (use pnpm lint:fix for auto-fix)
-pnpm format     # Format all code
-pnpm test       # All passing (or justified failures)
+pnpm typecheck      # Zero errors (non-negotiable)
+pnpm lint           # Zero errors/warnings (use pnpm lint:fix for auto-fix)
+pnpm format:check   # All files formatted (if fails, run pnpm format then recheck)
+pnpm test           # All passing (or justified failures)
 ```
+
+**Formatting Protocol**:
+- ALWAYS run `pnpm format:check` first
+- If it fails, run `pnpm format` to fix, then run `pnpm format:check` again to verify
+- Never skip format checking - it must pass before task completion
+- Formatting is enforced in pre-commit hooks
 
 **Source**: Consolidated from CLAUDE.md § Project Health Metrics
 **Established**: 2025-11-04
+**Updated**: 2025-01-06 (added format:check requirement)
 
 ---
 
