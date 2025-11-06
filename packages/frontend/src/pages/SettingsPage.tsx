@@ -1,25 +1,58 @@
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_KEY_PLACEHOLDER, SettingsForm } from "@/components/SettingsForm";
-import { useGetConfig, useUpdateConfig } from "@/hooks/useConfig";
+import {
+  useGetConfig,
+  useUpdateConfig,
+  useTestConnection,
+} from "@/hooks/useConfig";
+import { ApiError } from "@/services/apiClient";
 
 export function SettingsPage() {
   const { data, isLoading, isError } = useGetConfig();
   const updateConfigMutation = useUpdateConfig();
+  const testConnectionMutation = useTestConnection();
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   const handleSubmit = async (formData: {
     selectedModel: string;
     apiKey: string;
   }) => {
-    const apiKey =
-      formData.apiKey === API_KEY_PLACEHOLDER ? undefined : formData.apiKey;
+    try {
+      const apiKey =
+        formData.apiKey === API_KEY_PLACEHOLDER ? undefined : formData.apiKey;
 
-    await updateConfigMutation.mutateAsync({
-      selectedModel: formData.selectedModel,
-      apiKey,
-    });
+      await updateConfigMutation.mutateAsync({
+        selectedModel: formData.selectedModel,
+        apiKey,
+      });
+      toast.success("Configuration saved and validated successfully");
+    } catch (error) {
+      let errorMessage = "Failed to save configuration";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      await testConnectionMutation.mutateAsync();
+      toast.success("Connection test successful");
+    } catch (error) {
+      let errorMessage = "Failed to test connection";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    }
   };
 
   const initialConfig = data
@@ -59,6 +92,9 @@ export function SettingsPage() {
                 initialModel={initialConfig.selectedModel}
                 initialApiKey={initialConfig.apiKey}
                 onSubmit={handleSubmit}
+                onTestConnection={handleTestConnection}
+                isSubmitting={updateConfigMutation.isPending}
+                isTestingConnection={testConnectionMutation.isPending}
                 onSubmittingChange={setIsFormSubmitting}
               />
             )}

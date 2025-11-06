@@ -8,7 +8,6 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { toast } from "sonner";
 
 import { SettingsForm } from "@/components/SettingsForm";
 
@@ -21,10 +20,12 @@ vi.mock("sonner", () => ({
 
 describe("SettingsForm", () => {
   const mockOnSubmit = vi.fn();
+  const mockOnTestConnection = vi.fn();
   const availableModels = ["gpt-4o-mini"];
 
   beforeEach(() => {
     mockOnSubmit.mockClear();
+    mockOnTestConnection.mockClear();
     vi.clearAllMocks();
   });
 
@@ -37,6 +38,9 @@ describe("SettingsForm", () => {
       <SettingsForm
         availableModels={availableModels}
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -52,6 +56,9 @@ describe("SettingsForm", () => {
       <SettingsForm
         availableModels={availableModels}
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -66,6 +73,9 @@ describe("SettingsForm", () => {
         initialModel="gpt-4o-mini"
         initialApiKey="test-key"
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -80,6 +90,9 @@ describe("SettingsForm", () => {
       <SettingsForm
         availableModels={availableModels}
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -97,6 +110,9 @@ describe("SettingsForm", () => {
       <SettingsForm
         availableModels={availableModels}
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -113,36 +129,25 @@ describe("SettingsForm", () => {
     });
   });
 
-  it("shows loading state during submission", async () => {
-    const user = userEvent.setup();
-    let resolveSubmit: () => void;
-    const submitPromise = new Promise<void>((resolve) => {
-      resolveSubmit = resolve;
-    });
-    mockOnSubmit.mockReturnValue(submitPromise);
-
+  it("shows loading state during submission", () => {
     render(
       <SettingsForm
         availableModels={availableModels}
         initialApiKey="test-key"
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={true}
+        isTestingConnection={false}
       />,
     );
 
     const submitButton = screen.getByRole("button", {
-      name: /save configuration/i,
+      name: /saving\.\.\./i,
     });
-    await user.click(submitButton);
 
-    expect(screen.getByText(/saving\.\.\./i)).toBeInTheDocument();
     expect(submitButton).toBeDisabled();
     expect(screen.getByLabelText(/model/i)).toBeDisabled();
     expect(screen.getByLabelText(/api key/i)).toBeDisabled();
-
-    resolveSubmit!();
-    await waitFor(() => {
-      expect(screen.getByText(/save configuration/i)).toBeInTheDocument();
-    });
   });
 
   it("renders API key input with password type", () => {
@@ -150,6 +155,9 @@ describe("SettingsForm", () => {
       <SettingsForm
         availableModels={availableModels}
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -192,7 +200,7 @@ describe("SettingsForm", () => {
     expect(selectedValue).toHaveTextContent("gpt-4o-mini");
   });
 
-  it("displays success toast when form submission succeeds", async () => {
+  it("calls onSubmit when form is submitted", async () => {
     const user = userEvent.setup();
     mockOnSubmit.mockResolvedValue(undefined);
 
@@ -201,6 +209,9 @@ describe("SettingsForm", () => {
         availableModels={availableModels}
         initialApiKey="test-key"
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
       />,
     );
 
@@ -209,63 +220,29 @@ describe("SettingsForm", () => {
     );
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(
-        "Configuration saved and validated successfully",
-      );
+      expect(mockOnSubmit).toHaveBeenCalled();
     });
   });
 
-  it("displays error toast when form submission fails", async () => {
-    const user = userEvent.setup();
-    const errorMessage = "Invalid API key";
-    mockOnSubmit.mockRejectedValue(new Error(errorMessage));
-
+  it("displays spinner on button during submission", () => {
     render(
       <SettingsForm
         availableModels={availableModels}
         initialApiKey="test-key"
         onSubmit={mockOnSubmit}
-      />,
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: /save configuration/i }),
-    );
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(errorMessage);
-    });
-  });
-
-  it("displays spinner on button during submission", async () => {
-    const user = userEvent.setup();
-    let resolveSubmit: () => void;
-    const submitPromise = new Promise<void>((resolve) => {
-      resolveSubmit = resolve;
-    });
-    mockOnSubmit.mockReturnValue(submitPromise);
-
-    render(
-      <SettingsForm
-        availableModels={availableModels}
-        initialApiKey="test-key"
-        onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={true}
+        isTestingConnection={false}
       />,
     );
 
     const submitButton = screen.getByRole("button", {
-      name: /save configuration/i,
+      name: /saving.../i,
     });
-    await user.click(submitButton);
 
     const spinner = submitButton.querySelector("svg");
     expect(spinner).toBeInTheDocument();
     expect(spinner).toHaveClass("animate-spin");
-
-    resolveSubmit!();
-    await waitFor(() => {
-      expect(screen.getByText(/save configuration/i)).toBeInTheDocument();
-    });
   });
 
   it("calls onSubmittingChange during submission", async () => {
@@ -282,6 +259,9 @@ describe("SettingsForm", () => {
         availableModels={availableModels}
         initialApiKey="test-key"
         onSubmit={mockOnSubmit}
+        onTestConnection={mockOnTestConnection}
+        isSubmitting={false}
+        isTestingConnection={false}
         onSubmittingChange={onSubmittingChange}
       />,
     );

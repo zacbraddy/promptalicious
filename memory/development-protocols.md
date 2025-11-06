@@ -177,6 +177,143 @@ export default createEslintConfig({
 
 ---
 
+## Frontend State Management - TanStack Query
+
+**Decision**: Use TanStack Query (React Query) for all server state management
+
+**Rationale**:
+- Server state (API calls, caching) is fundamentally different from UI state
+- Eliminates boilerplate for loading/error states
+- Automatic request deduplication and caching
+- Optimistic updates and background refetching
+- Type-safe mutations and queries
+
+**When to Use TanStack Query**:
+- **ALWAYS** for API calls (GET, POST, PUT, DELETE, etc.)
+- **ALWAYS** for any backend data fetching
+- **NEVER** bypass with direct `fetch` or `axios` calls in components
+
+**Architecture Pattern**:
+```
+packages/frontend/src/
+├── services/
+│   └── apiClient.ts          # Axios/fetch wrappers (low-level)
+├── hooks/
+│   └── useConfig.ts           # TanStack Query hooks (high-level)
+└── components/
+    └── SettingsForm.tsx       # Uses hooks via props from parent
+```
+
+**Implementation Pattern**:
+
+1. **API Client Layer** (`services/apiClient.ts`):
+   - Pure functions that return promises
+   - No React dependencies
+   - Handle HTTP details (headers, error mapping)
+   ```typescript
+   export async function getConfig(): Promise<ConfigurationResponse> {
+     const response = await apiClient.get<ConfigurationResponse>("/config");
+     return response.data;
+   }
+   ```
+
+2. **Hook Layer** (`hooks/useConfig.ts`):
+   - Wraps API client functions with TanStack Query
+   - Defines query keys for caching
+   - Handles invalidation and optimistic updates
+   ```typescript
+   export function useGetConfig() {
+     return useQuery<ConfigurationResponse>({
+       queryKey: ["config"],
+       queryFn: getConfig,
+     });
+   }
+
+   export function useUpdateConfig() {
+     const queryClient = useQueryClient();
+     return useMutation<SuccessResponse, Error, UpdateRequest>({
+       mutationFn: updateConfig,
+       onSuccess: () => {
+         void queryClient.invalidateQueries({ queryKey: ["config"] });
+       },
+     });
+   }
+   ```
+
+3. **Page/Container Component** (e.g., `pages/SettingsPage.tsx`):
+   - Uses TanStack Query hooks
+   - Handles success/error at container level
+   - Passes mutation functions down to child components
+   ```typescript
+   export function SettingsPage() {
+     const { data, isLoading } = useGetConfig();
+     const updateMutation = useUpdateConfig();
+
+     return <SettingsForm onSubmit={updateMutation.mutateAsync} />;
+   }
+   ```
+
+4. **Presentation Component** (e.g., `components/SettingsForm.tsx`):
+   - Receives mutation functions as props
+   - Does NOT import hooks or API client directly
+   - Handles UI-specific logic (form validation, local state)
+   - Calls mutation via props
+   ```typescript
+   interface SettingsFormProps {
+     onSubmit: (data: FormData) => Promise<void>;
+     isSubmitting: boolean;
+   }
+   ```
+
+**Error Handling Pattern**:
+
+**CORRECT** ✅ - Handle errors in mutation callbacks:
+```typescript
+// In page component
+const updateMutation = useUpdateConfig();
+
+const handleSubmit = async (data: FormData) => {
+  try {
+    await updateMutation.mutateAsync(data);
+    toast.success("Saved successfully");
+  } catch (error) {
+    // Error already handled by TanStack Query
+    // Just show user feedback
+    toast.error(error.message);
+  }
+};
+```
+
+**WRONG** ❌ - Don't import API client in components:
+```typescript
+// In component
+import { updateConfig } from "@/services/apiClient";
+
+const handleSubmit = async () => {
+  await updateConfig(data); // Bypasses TanStack Query!
+};
+```
+
+**Query Key Conventions**:
+- Use arrays for hierarchical keys: `["config"]`, `["users", userId]`
+- Export constants for reuse: `const CONFIG_QUERY_KEY = ["config"] as const`
+- Group related queries: `["pricing", "current"]`, `["pricing", "history"]`
+
+**Mutation Side Effects**:
+- Use `onSuccess` to invalidate related queries
+- Use `onError` for global error handling
+- Use `onSettled` for cleanup (loading states, etc.)
+
+**Provider Setup**:
+- QueryClient configured in `App.tsx`
+- Set sensible defaults (staleTime, cacheTime, retry logic)
+- Use React Query DevTools in development
+
+**Source**: Established pattern from spec 002-make-a-call implementation
+**Established**: 2025-01-06
+
+---
+
 ## Backend Stack - Node.js + TypeScript
 
 **Decision**: Use Node.js LTS with TypeScript, no framework initially

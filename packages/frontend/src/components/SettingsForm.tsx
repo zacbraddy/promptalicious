@@ -2,13 +2,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { LabelledInput } from "@/components/ui/labelled-input";
 import { LabelledSelect } from "@/components/ui/labelled-select";
 import { SelectItem } from "@/components/ui/select";
-import { ApiError } from "@/services/apiClient";
 
 export const API_KEY_PLACEHOLDER = "    ";
 
@@ -30,6 +28,9 @@ interface SettingsFormProps {
   initialModel?: string;
   initialApiKey?: string;
   onSubmit: (data: { selectedModel: string; apiKey: string }) => Promise<void>;
+  onTestConnection: () => Promise<void>;
+  isSubmitting: boolean;
+  isTestingConnection: boolean;
   onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
@@ -38,6 +39,9 @@ export function SettingsForm({
   initialModel,
   initialApiKey = "",
   onSubmit,
+  onTestConnection,
+  isSubmitting,
+  isTestingConnection,
   onSubmittingChange,
 }: SettingsFormProps) {
   const {
@@ -45,7 +49,7 @@ export function SettingsForm({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
@@ -57,21 +61,12 @@ export function SettingsForm({
   const selectedModel = watch("selectedModel");
 
   const onFormSubmit = async (data: SettingsFormData) => {
+    onSubmittingChange?.(true);
     try {
-      onSubmittingChange?.(true);
       await onSubmit({
         selectedModel: data.selectedModel,
         apiKey: data.apiKey,
       });
-      toast.success("Configuration saved and validated successfully");
-    } catch (error) {
-      let errorMessage = "Failed to save configuration";
-      if (error instanceof ApiError) {
-        errorMessage = error.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      toast.error(errorMessage);
     } finally {
       onSubmittingChange?.(false);
     }
@@ -91,7 +86,7 @@ export function SettingsForm({
         onValueChange={(value) => {
           if (value) setValue("selectedModel", value);
         }}
-        disabled={isSubmitting}
+        disabled={isSubmitting || isTestingConnection}
         required
         placeholder="Select a model"
       >
@@ -113,7 +108,7 @@ export function SettingsForm({
           id="apiKey"
           type="password"
           {...register("apiKey")}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isTestingConnection}
           required
           placeholder="Enter your API key"
         />
@@ -124,10 +119,27 @@ export function SettingsForm({
         )}
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isSubmitting ? "Saving..." : "Save Configuration"}
-      </Button>
+      <div className="flex justify-between gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSubmitting || isTestingConnection}
+          className="border-accent/50 text-accent hover:bg-accent/10 hover:text-accent hover:border-accent"
+          onClick={() => {
+            void onTestConnection();
+          }}
+        >
+          {isTestingConnection && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          {isTestingConnection ? "Testing..." : "Test Connection"}
+        </Button>
+
+        <Button type="submit" disabled={isSubmitting || isTestingConnection}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? "Saving..." : "Save Configuration"}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -23,7 +23,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
-        <Toaster />
+        <Toaster expand={true} visibleToasts={5} richColors />
       </Layout>
     </QueryClientProvider>
   );

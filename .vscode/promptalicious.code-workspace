@@ -1,0 +1,39 @@
+{
+	"folders": [
+		{
+			"name": "✨ promptalicious",
+			"path": ".."
+		},
+		{
+			"name": "🚀 @promptalicious/frontend",
+			"path": "../packages/frontend"
+		},
+		{
+			"name": "📦 @promptalicious/backend",
+			"path": "../packages/backend"
+		},
+		{
+			"name": "📦 @promptalicious/shared-infra",
+			"path": "../packages/shared-infra"
+		},
+		{
+			"name": "📖 docs",
+			"path": "../docs"
+		},
+		{
+			"name": "📦 specs",
+			"path": "../specs"
+		},
+		{
+			"name": "📦 memory",
+			"path": "../memory"
+		},
+		{
+			"name": "😼 scratch",
+			"path": "../scratch"
+		},
+	],
+	"settings": {
+		"editor.formatOnSave": true
+	},
+}
