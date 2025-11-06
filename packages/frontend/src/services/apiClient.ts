@@ -5,6 +5,9 @@ import type {
   UpdateConfigurationSuccessResponse,
   UpdateConfigurationErrorResponse,
   TestConnectionResponse,
+  ExecutePromptRequest,
+  ExecutePromptSuccessResponse,
+  ExecutePromptErrorResponse,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -83,5 +86,34 @@ export async function testConnection(data?: {
     return response.data;
   } catch (error) {
     handleAxiosError(error);
+  }
+}
+
+export async function executePrompt(
+  data: ExecutePromptRequest,
+): Promise<ExecutePromptSuccessResponse> {
+  try {
+    const response = await apiClient.post<ExecutePromptSuccessResponse>(
+      "/execute",
+      data,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ExecutePromptErrorResponse>;
+      const errorData = axiosError.response?.data;
+      const statusCode = axiosError.response?.status || 500;
+
+      if (errorData && "error" in errorData) {
+        throw new ApiError(errorData.error.errorMessage, statusCode, errorData);
+      }
+
+      throw new ApiError(
+        `HTTP ${statusCode}: ${axiosError.message}`,
+        statusCode,
+      );
+    }
+
+    throw error;
   }
 }

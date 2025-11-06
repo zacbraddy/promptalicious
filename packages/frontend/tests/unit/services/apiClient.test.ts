@@ -5,6 +5,9 @@ import type {
   UpdateConfigurationRequest,
   UpdateConfigurationSuccessResponse,
   TestConnectionResponse,
+  ExecutePromptRequest,
+  ExecutePromptSuccessResponse,
+  ExecutePromptErrorResponse,
 } from "@promptalicious/shared-infra";
 
 import {
@@ -12,6 +15,7 @@ import {
   getConfig,
   updateConfig,
   testConnection,
+  executePrompt,
   ApiError,
 } from "@/services/apiClient";
 
@@ -133,6 +137,234 @@ describe("API Client", () => {
       mock.onPost("/config/test-connection").networkError();
 
       await expect(testConnection()).rejects.toThrow();
+    });
+  });
+
+  describe("executePrompt", () => {
+    it("should execute prompt successfully", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "You are a helpful assistant. Explain quantum computing.",
+      };
+
+      const mockResponse: ExecutePromptSuccessResponse = {
+        execution: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          promptText: "You are a helpful assistant. Explain quantum computing.",
+          executionTimestamp: "2025-11-04T10:30:00.000Z",
+          status: "completed",
+          targetModel: "gpt-4o-mini",
+        },
+        result: {
+          id: "660e8400-e29b-41d4-a716-446655440001",
+          promptExecutionId: "550e8400-e29b-41d4-a716-446655440000",
+          responseText: "Quantum computing is a type of computing...",
+          inputTokenCount: 15,
+          outputTokenCount: 120,
+          totalTokenCount: 135,
+          executionDurationMs: 1842,
+          estimatedCostGBP: 0.0012,
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(200, mockResponse);
+
+      const result = await executePrompt(requestData);
+      expect(result).toEqual(mockResponse);
+      expect(result.execution.status).toBe("completed");
+      expect(result.result.responseText).toBe(
+        "Quantum computing is a type of computing...",
+      );
+    });
+
+    it("should throw ApiError on validation error (400)", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "",
+      };
+
+      const mockErrorResponse: ExecutePromptErrorResponse = {
+        execution: {
+          id: "770e8400-e29b-41d4-a716-446655440002",
+          promptText: "",
+          executionTimestamp: "2025-11-04T10:31:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "880e8400-e29b-41d4-a716-446655440003",
+          promptExecutionId: "770e8400-e29b-41d4-a716-446655440002",
+          errorType: "validation",
+          errorMessage: "Prompt text cannot be empty",
+          timestamp: "2025-11-04T10:31:00.100Z",
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(400, mockErrorResponse);
+
+      await expect(executePrompt(requestData)).rejects.toThrow(ApiError);
+      await expect(executePrompt(requestData)).rejects.toThrow(
+        "Prompt text cannot be empty",
+      );
+
+      try {
+        await executePrompt(requestData);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.statusCode).toBe(400);
+          expect(error.response).toEqual(mockErrorResponse);
+        }
+      }
+    });
+
+    it("should throw ApiError on authentication error (401)", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "Test prompt",
+      };
+
+      const mockErrorResponse: ExecutePromptErrorResponse = {
+        execution: {
+          id: "990e8400-e29b-41d4-a716-446655440004",
+          promptText: "Test prompt",
+          executionTimestamp: "2025-11-04T10:32:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "aa0e8400-e29b-41d4-a716-446655440005",
+          promptExecutionId: "990e8400-e29b-41d4-a716-446655440004",
+          errorType: "authentication",
+          errorCode: "invalid_api_key",
+          errorMessage:
+            "The API key provided is invalid. Please check your configuration.",
+          timestamp: "2025-11-04T10:32:00.200Z",
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(401, mockErrorResponse);
+
+      await expect(executePrompt(requestData)).rejects.toThrow(
+        "The API key provided is invalid. Please check your configuration.",
+      );
+
+      try {
+        await executePrompt(requestData);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.statusCode).toBe(401);
+        }
+      }
+    });
+
+    it("should throw ApiError on rate limit error (429)", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "Another prompt",
+      };
+
+      const mockErrorResponse: ExecutePromptErrorResponse = {
+        execution: {
+          id: "bb0e8400-e29b-41d4-a716-446655440006",
+          promptText: "Another prompt",
+          executionTimestamp: "2025-11-04T10:33:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "cc0e8400-e29b-41d4-a716-446655440007",
+          promptExecutionId: "bb0e8400-e29b-41d4-a716-446655440006",
+          errorType: "rate_limit",
+          errorCode: "rate_limit_exceeded",
+          errorMessage: "Rate limit exceeded. Please try again in 60 seconds.",
+          additionalContext: {
+            retryAfter: 60,
+          },
+          timestamp: "2025-11-04T10:33:00.300Z",
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(429, mockErrorResponse);
+
+      await expect(executePrompt(requestData)).rejects.toThrow(
+        "Rate limit exceeded. Please try again in 60 seconds.",
+      );
+
+      try {
+        await executePrompt(requestData);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.statusCode).toBe(429);
+        }
+      }
+    });
+
+    it("should throw ApiError on network error (500)", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "Yet another prompt",
+      };
+
+      const mockErrorResponse: ExecutePromptErrorResponse = {
+        execution: {
+          id: "dd0e8400-e29b-41d4-a716-446655440008",
+          promptText: "Yet another prompt",
+          executionTimestamp: "2025-11-04T10:34:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "ee0e8400-e29b-41d4-a716-446655440009",
+          promptExecutionId: "dd0e8400-e29b-41d4-a716-446655440008",
+          errorType: "network",
+          errorMessage:
+            "Unable to connect to OpenAI API. Please check your internet connection.",
+          timestamp: "2025-11-04T10:34:00.400Z",
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(500, mockErrorResponse);
+
+      await expect(executePrompt(requestData)).rejects.toThrow(
+        "Unable to connect to OpenAI API. Please check your internet connection.",
+      );
+    });
+
+    it("should throw ApiError on timeout error (504)", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "Timeout test prompt",
+      };
+
+      const mockErrorResponse: ExecutePromptErrorResponse = {
+        execution: {
+          id: "ff0e8400-e29b-41d4-a716-446655440010",
+          promptText: "Timeout test prompt",
+          executionTimestamp: "2025-11-04T10:35:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "000e8400-e29b-41d4-a716-446655440011",
+          promptExecutionId: "ff0e8400-e29b-41d4-a716-446655440010",
+          errorType: "timeout",
+          errorMessage: "The LLM request timed out after 60 seconds.",
+          timestamp: "2025-11-04T10:36:00.000Z",
+        },
+      };
+
+      mock.onPost("/execute", requestData).reply(504, mockErrorResponse);
+
+      await expect(executePrompt(requestData)).rejects.toThrow(
+        "The LLM request timed out after 60 seconds.",
+      );
+    });
+
+    it("should handle network error without response", async () => {
+      const requestData: ExecutePromptRequest = {
+        promptText: "Network error test",
+      };
+
+      mock.onPost("/execute", requestData).networkError();
+
+      await expect(executePrompt(requestData)).rejects.toThrow();
     });
   });
 

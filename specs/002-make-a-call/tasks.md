@@ -804,7 +804,7 @@ Use mocked backend responses.
 **Dependencies**: T034
 **Expected Outcome**: Execution page renders with empty cards
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -819,7 +819,7 @@ Use mocked backend responses.
 **Dependencies**: T037
 **Expected Outcome**: Execute API client method works, typed, tested
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
