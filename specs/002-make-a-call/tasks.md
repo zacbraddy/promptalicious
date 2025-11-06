@@ -697,14 +697,14 @@ Use `fetch` or axios, handle errors, return typed responses.
 **Dependencies**: T008 (shared types for request/response)
 **Expected Outcome**: API client methods work, typed, tested
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
 ### T038: Implement settings form (model selection, API key input, endpoint input)
 **File**: `packages/frontend/src/components/SettingsForm.tsx`
 **Description**: Create settings form component:
-- Model selection dropdown (read-only for gpt-4o-mini in this iteration)
+- Model selection dropdown (only has one option available to make it so that we don't get unexpected requests make the dropdown default to this option and turn off the ability to clear the dropdown)
 - API key input field (password type)
 - Optional provider endpoint input field
 - Save button
