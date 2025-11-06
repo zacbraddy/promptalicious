@@ -1,8 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
+import { SettingsForm } from "@/components/SettingsForm";
 
 export function SettingsPage() {
+  const handleSubmit = (_data: {
+    selectedModel: string;
+    apiKey: string;
+    providerEndpoint?: string;
+  }) => {
+    return Promise.resolve();
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -18,12 +26,10 @@ export function SettingsPage() {
             <CardTitle>LLM Configuration</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Settings form will be implemented here
-              </p>
-              <Button variant="default">Save Configuration</Button>
-            </div>
+            <SettingsForm
+              availableModels={["gpt-4o-mini"]}
+              onSubmit={handleSubmit}
+            />
           </CardContent>
         </Card>
       </div>

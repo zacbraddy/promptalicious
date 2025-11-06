@@ -714,7 +714,7 @@ Use `fetch` or axios, handle errors, return typed responses.
 **Dependencies**: T033 (shadcn components)
 **Expected Outcome**: Form renders, user can input API key
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -726,6 +726,8 @@ Use `fetch` or axios, handle errors, return typed responses.
 3. Display success message if validation passes
 4. Display error message if validation fails
 5. Keep form editable for correction
+
+Use react-hook-form in combination with zod to perform validation functionality
 
 **Test**: Integration test with mocked API client
 **Dependencies**: T038, T037
