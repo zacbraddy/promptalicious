@@ -7,6 +7,7 @@ import type {
 export interface ExecutionState {
   executionId: string;
   promptText: string;
+  targetModel: string;
   startTimestamp: Date;
   abortController: AbortController;
   status: ExecutionStatus;
@@ -23,11 +24,13 @@ class ExecutionStateCacheService {
   setCurrentExecution(
     executionId: string,
     promptText: string,
+    targetModel: string,
     abortController: AbortController,
   ): void {
     this.currentExecution = {
       executionId,
       promptText,
+      targetModel,
       startTimestamp: new Date(),
       abortController,
       status: "in_progress",

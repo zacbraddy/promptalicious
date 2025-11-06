@@ -6,6 +6,7 @@ import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
+  ExecutionStatusResponse,
   PromptExecution,
   ExecutionResult,
   ExecutionError,
@@ -21,6 +22,53 @@ import { executionStateCacheService } from "@/services/executionStateCacheServic
 import { logger } from "@/lib/logger";
 
 const router = new Hono();
+
+router.get("/status", (c: Context) => {
+  const currentExecution = executionStateCacheService.getCurrentExecution();
+
+  if (!currentExecution) {
+    const response: ExecutionStatusResponse = {
+      isExecuting: false,
+      execution: null,
+    };
+    return c.json(response, 200);
+  }
+
+  const execution: PromptExecution = {
+    id: currentExecution.executionId,
+    promptText: currentExecution.promptText,
+    executionTimestamp: currentExecution.startTimestamp.toISOString(),
+    status: currentExecution.status,
+    targetModel: currentExecution.targetModel,
+  };
+
+  if (currentExecution.status === "in_progress") {
+    const response: ExecutionStatusResponse = {
+      isExecuting: true,
+      execution,
+    };
+    return c.json(response, 200);
+  }
+
+  const response: ExecutionStatusResponse = {
+    isExecuting: false,
+    execution,
+    result: currentExecution.result,
+    error: currentExecution.error,
+  };
+
+  executionStateCacheService.clearCache();
+
+  logger.info(
+    {
+      executionId: currentExecution.executionId,
+      status: currentExecution.status,
+    },
+    "Execution status retrieved and cache cleared",
+  );
+
+  return c.json(response, 200);
+});
 
 router.post("/", async (c: Context) => {
   const existingExecution = executionStateCacheService.getCurrentExecution();
@@ -108,6 +156,7 @@ router.post("/", async (c: Context) => {
     executionStateCacheService.setCurrentExecution(
       executionId,
       promptText,
+      config.selectedModel,
       abortController,
     );
 

@@ -281,6 +281,7 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-id",
         "Test prompt text",
+        "gpt-4o-mini",
         new AbortController(),
       );
 
@@ -301,6 +302,7 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-id",
         "Test prompt text",
+        "gpt-4o-mini",
         new AbortController(),
       );
 

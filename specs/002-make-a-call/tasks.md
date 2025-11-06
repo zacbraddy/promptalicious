@@ -915,7 +915,7 @@ Use mocked backend responses.
 **Dependencies**: T046
 **Expected Outcome**: Status endpoint returns execution state, clears cache after returning results
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

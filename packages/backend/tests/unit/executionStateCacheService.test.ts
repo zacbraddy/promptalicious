@@ -20,6 +20,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         executionId,
         promptText,
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -41,12 +42,14 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         firstExecutionId,
         "First prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
       executionStateCacheService.setCurrentExecution(
         secondExecutionId,
         "Second prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -62,6 +65,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "execution-1",
         "First prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -74,6 +78,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "execution-2",
         "Second prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -94,6 +99,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         executionId,
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -123,6 +129,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         executionId,
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -168,6 +175,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         executionId,
         promptText,
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -198,6 +206,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -229,6 +238,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -268,6 +278,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         executionId,
         promptText,
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -283,6 +294,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -312,6 +324,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -328,6 +341,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "first-execution",
         "First prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -336,6 +350,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "second-execution",
         "Second prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -361,6 +376,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -382,6 +398,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -399,6 +416,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -427,6 +445,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 
@@ -460,6 +479,7 @@ describe("executionStateCacheService", () => {
       executionStateCacheService.setCurrentExecution(
         "test-execution-123",
         "Test prompt",
+        "gpt-4o-mini",
         abortController,
       );
 

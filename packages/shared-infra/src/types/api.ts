@@ -129,3 +129,10 @@ export interface PricingInfoResponse {
     daysSinceUpdate: number;
   };
 }
+
+export interface ExecutionStatusResponse {
+  isExecuting: boolean;
+  execution: PromptExecution | null;
+  result?: ExecutionResult;
+  error?: ExecutionError;
+}

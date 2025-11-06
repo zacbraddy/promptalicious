@@ -10,6 +10,7 @@ export type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
+  ExecutionStatusResponse,
   ConfigurationResponse,
   UpdateConfigurationRequest,
   UpdateConfigurationSuccessResponse,
