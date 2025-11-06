@@ -27,3 +27,5 @@ export {
   type SettingsFormData,
   type TestConnectionData,
 } from "./validation/config";
+
+export { MAX_PROMPT_LENGTH } from "./validation/prompt";

@@ -834,7 +834,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Prompt input renders, character count visible
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
