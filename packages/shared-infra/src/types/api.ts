@@ -11,6 +11,7 @@ export type ErrorType =
   | "timeout"
   | "rate_limit"
   | "validation"
+  | "aborted"
   | "unknown";
 
 export interface PromptExecution {

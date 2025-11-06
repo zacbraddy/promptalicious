@@ -257,5 +257,109 @@ describe("llmService", () => {
         totalTokenCount: 0,
       });
     });
+
+    it("should accept an optional abortSignal parameter", async () => {
+      const mockResponse = {
+        text: "Test response",
+        usage: {
+          inputTokens: 5,
+          outputTokens: 10,
+          totalTokens: 15,
+        },
+      };
+
+      mockGenerateText.mockResolvedValueOnce(mockResponse as never);
+
+      const abortController = new AbortController();
+      const result = await executePrompt(
+        "Test prompt",
+        "sk-test-key",
+        "gpt-4o-mini",
+        abortController.signal,
+      );
+
+      expect(result).toMatchObject({
+        responseText: "Test response",
+        inputTokenCount: 5,
+        outputTokenCount: 10,
+        totalTokenCount: 15,
+      });
+
+      expect(mockGenerateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          abortSignal: abortController.signal,
+        }),
+      );
+    });
+
+    it("should throw aborted error when execution is aborted via AbortError", async () => {
+      const abortError = new Error("The operation was aborted");
+      abortError.name = "AbortError";
+
+      mockGenerateText.mockRejectedValueOnce(abortError);
+
+      const abortController = new AbortController();
+
+      await expect(
+        executePrompt(
+          "Test prompt",
+          "sk-test-key",
+          "gpt-4o-mini",
+          abortController.signal,
+        ),
+      ).rejects.toMatchObject({
+        errorType: "aborted",
+        errorCode: "execution_aborted",
+        message: "Execution was cancelled by user",
+      });
+    });
+
+    it("should throw aborted error when error message contains 'abort'", async () => {
+      mockGenerateText.mockRejectedValueOnce(
+        new Error("Request aborted by client"),
+      );
+
+      const abortController = new AbortController();
+
+      await expect(
+        executePrompt(
+          "Test prompt",
+          "sk-test-key",
+          "gpt-4o-mini",
+          abortController.signal,
+        ),
+      ).rejects.toMatchObject({
+        errorType: "aborted",
+        errorCode: "execution_aborted",
+        message: "Execution was cancelled by user",
+      });
+    });
+
+    it("should include execution duration in abort error context", async () => {
+      const abortError = new Error("The operation was aborted");
+      abortError.name = "AbortError";
+
+      mockGenerateText.mockRejectedValueOnce(abortError);
+
+      const abortController = new AbortController();
+
+      try {
+        await executePrompt(
+          "Test prompt",
+          "sk-test-key",
+          "gpt-4o-mini",
+          abortController.signal,
+        );
+      } catch (error) {
+        expect(error).toBeInstanceOf(LLMExecutionError);
+        if (error instanceof LLMExecutionError) {
+          expect(error.additionalContext).toHaveProperty("executionDurationMs");
+          expect(typeof error.additionalContext?.executionDurationMs).toBe(
+            "number",
+          );
+          expect(error.errorType).toBe("aborted");
+        }
+      }
+    });
   });
 });

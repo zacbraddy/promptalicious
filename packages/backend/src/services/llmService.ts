@@ -33,6 +33,7 @@ export async function executePrompt(
   promptText: string,
   apiKey: string,
   model: string,
+  abortSignal?: AbortSignal,
 ): Promise<LLMExecutionResult> {
   const validationResult = executePromptInputSchema.safeParse({
     promptText,
@@ -64,6 +65,7 @@ export async function executePrompt(
     const result = await generateText({
       model: provider(validModel),
       prompt: validPrompt,
+      abortSignal,
     });
 
     const executionDurationMs = Date.now() - startTime;
@@ -80,6 +82,15 @@ export async function executePrompt(
 
     if (error instanceof Error) {
       const errorMessage = error.message.toLowerCase();
+
+      if (error.name === "AbortError" || errorMessage.includes("abort")) {
+        throw new LLMExecutionError(
+          "Execution was cancelled by user",
+          "aborted",
+          "execution_aborted",
+          { originalError: error.message, executionDurationMs },
+        );
+      }
 
       if (
         errorMessage.includes("api key") ||

@@ -867,7 +867,7 @@ Use mocked backend responses.
 **Dependencies**: T046
 **Expected Outcome**: LLM service supports cancellation
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1010,7 +1010,7 @@ Use mocked backend responses.
 - Display input tokens, output tokens, total tokens
 - Display execution duration (ms)
 - Display estimated cost (GBP)
-- Use shadcn Table component
+- Use shadcn Table component integrated with Tanstack Table functionality
 - No status indicators/thresholds per FR-032a (raw data only)
 
 **Test**: Unit test rendering with sample diagnostics
@@ -1074,7 +1074,7 @@ Use mocked backend responses.
 **Description**: Create custom React hook for status polling:
 - On mount, check GET /execute/status
 - If execution in progress, restore UI state (prompt, loading)
-- Poll every 2 seconds until execution completes
+- Poll every 2 seconds until execution completes, make sure polling is stopped when the hook the dismounts to avoid execution leaks.
 - Update UI when complete, stop polling
 
 **Test**: Unit test for polling logic (mock API, test intervals)
@@ -1379,7 +1379,6 @@ pnpm test       # Ensure all tests pass
 - Add to "Recent Changes" section
 - Update "Active Spec Progress" to mark 002-make-a-call complete
 - Document any deviations or learnings from implementation
-- Keep under 150 lines (extract details to memory if needed)
 
 **Dependencies**: T064
 **Expected Outcome**: CLAUDE.md updated with completion notes
@@ -1393,7 +1392,6 @@ pnpm test       # Ensure all tests pass
 **Description**: Update version number:
 - Root: 0.1.0 → 0.2.0
 - Packages: Update @promptalicious/* packages to 0.2.0
-- Commit message: "chore: bump version to 0.2.0 after feature 002-make-a-call completion"
 
 **Dependencies**: T065
 **Surfacing**: After T066, all quality gates pass, feature is production-ready ✅
