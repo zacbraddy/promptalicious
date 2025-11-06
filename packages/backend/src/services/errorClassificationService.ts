@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 
 import type { ErrorType, ExecutionError } from "@promptalicious/shared-infra";
 
+import { LLMExecutionError } from "./llmService";
+
 export interface ClassifiedError {
   errorType: ErrorType;
   errorCode?: string;
@@ -10,6 +12,15 @@ export interface ClassifiedError {
 }
 
 export function classifyError(error: unknown): ClassifiedError {
+  if (error instanceof LLMExecutionError) {
+    return {
+      errorType: error.errorType,
+      errorCode: error.errorCode,
+      errorMessage: error.message,
+      additionalContext: error.additionalContext,
+    };
+  }
+
   if (error instanceof Error) {
     const errorMessage = error.message.toLowerCase();
     const existingContext =

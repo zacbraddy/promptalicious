@@ -60,7 +60,10 @@ class ExecutionStateCacheService {
   }
 
   abortCurrentExecution(): boolean {
-    if (!this.currentExecution) {
+    if (
+      !this.currentExecution ||
+      this.currentExecution.status !== "in_progress"
+    ) {
       return false;
     }
 

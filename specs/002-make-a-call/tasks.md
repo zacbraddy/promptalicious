@@ -969,7 +969,7 @@ Use mocked backend responses.
 
 **Surfacing**: After T053, backend supports abort/status. Use curl to test: execute, check status, abort mid-flight, verify state management
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

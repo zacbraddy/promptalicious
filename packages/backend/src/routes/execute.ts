@@ -280,6 +280,9 @@ router.post("/", async (c: Context) => {
           case "timeout":
             statusCode = 504;
             break;
+          case "aborted":
+            statusCode = 500;
+            break;
           case "network":
           case "api_error":
           case "unknown":
@@ -300,6 +303,9 @@ router.post("/", async (c: Context) => {
             break;
           case "timeout":
             statusCode = 504;
+            break;
+          case "aborted":
+            statusCode = 500;
             break;
           case "network":
           case "api_error":
