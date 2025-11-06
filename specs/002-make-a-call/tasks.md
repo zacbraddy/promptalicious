@@ -852,7 +852,7 @@ Use mocked backend responses.
 **Dependencies**: T044 (backend structure exists)
 **Expected Outcome**: State cache service ready for execute endpoint integration
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1311,6 +1311,7 @@ Use mocked backend responses.
 
 ---
 
+**Cancelled by Zac: We can't automate this without writing an API into the codebase so I'll just have to do this manually.*
 ### T075: E2E test covering full quickstart scenarios 1-10
 **File**: `packages/backend/tests/e2e/quickstart.e2e.test.ts`
 **Description**: Write end-to-end test covering major scenarios from quickstart.md:
