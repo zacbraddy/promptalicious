@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import { Layout } from "@/components/Layout";
 
@@ -10,9 +11,11 @@ describe("Theme Application Integration Test", () => {
 
   it("should render Layout component with dark theme applied", () => {
     render(
-      <Layout>
-        <div>Test content</div>
-      </Layout>,
+      <MemoryRouter>
+        <Layout>
+          <div>Test content</div>
+        </Layout>
+      </MemoryRouter>,
     );
 
     const mainElement = screen.getByRole("main");
@@ -29,9 +32,11 @@ describe("Theme Application Integration Test", () => {
 
   it("should apply correct background and text color classes", () => {
     const { container } = render(
-      <Layout>
-        <div>Test content</div>
-      </Layout>,
+      <MemoryRouter>
+        <Layout>
+          <div>Test content</div>
+        </Layout>
+      </MemoryRouter>,
     );
 
     const rootDiv = container.firstChild as HTMLElement;
@@ -42,9 +47,11 @@ describe("Theme Application Integration Test", () => {
 
   it("should apply primary color to header title", () => {
     render(
-      <Layout>
-        <div>Test content</div>
-      </Layout>,
+      <MemoryRouter>
+        <Layout>
+          <div>Test content</div>
+        </Layout>
+      </MemoryRouter>,
     );
 
     const title = screen.getByRole("heading", { name: "promptalicious" });
@@ -53,9 +60,11 @@ describe("Theme Application Integration Test", () => {
 
   it("should apply border styling to header", () => {
     render(
-      <Layout>
-        <div>Test content</div>
-      </Layout>,
+      <MemoryRouter>
+        <Layout>
+          <div>Test content</div>
+        </Layout>
+      </MemoryRouter>,
     );
 
     const headerElement = screen.getByRole("banner");
@@ -65,9 +74,11 @@ describe("Theme Application Integration Test", () => {
 
   it("should have CSS variable-based theming structure (verify bg-background class applies)", () => {
     const { container } = render(
-      <Layout>
-        <div>Test content</div>
-      </Layout>,
+      <MemoryRouter>
+        <Layout>
+          <div>Test content</div>
+        </Layout>
+      </MemoryRouter>,
     );
 
     const rootDiv = container.firstChild as HTMLElement;

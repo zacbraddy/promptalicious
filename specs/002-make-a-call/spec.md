@@ -136,6 +136,8 @@ As a developer iterating on LLM prompts, I need to execute a system prompt again
 - **FR-031**: System MUST prioritise clarity and usability over visual sophistication
 - **FR-032**: System MUST organise interface elements in a logical flow: input → execution → results → diagnostics
 - **FR-032a**: System MUST display raw timing and diagnostic metrics without status indicators or thresholds (analysis is not a concern for this iteration)
+- **FR-032b**: System MUST use the 😋 (face savouring food) emoji as the application logo and favicon
+  - Rationale: Simple, playful branding that complements the "promptalicious" name. Universally supported across operating systems. Appears in favicon and navbar alongside the application name.
 
 #### Data Persistence
 - **FR-033**: System MUST display only the most recent prompt execution and results (execution history is deferred to future feature)

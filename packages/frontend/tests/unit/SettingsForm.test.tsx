@@ -8,8 +8,16 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 
 import { SettingsForm } from "@/components/SettingsForm";
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 describe("SettingsForm", () => {
   const mockOnSubmit = vi.fn();
@@ -17,6 +25,7 @@ describe("SettingsForm", () => {
 
   beforeEach(() => {
     mockOnSubmit.mockClear();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -33,9 +42,6 @@ describe("SettingsForm", () => {
 
     expect(screen.getByLabelText(/model/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/api key/i)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/provider endpoint \(optional\)/i),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /save configuration/i }),
     ).toBeInTheDocument();
@@ -59,7 +65,6 @@ describe("SettingsForm", () => {
         availableModels={availableModels}
         initialModel="gpt-4o-mini"
         initialApiKey="test-key"
-        initialProviderEndpoint="https://test.com"
         onSubmit={mockOnSubmit}
       />,
     );
@@ -67,9 +72,6 @@ describe("SettingsForm", () => {
     const modelSelect = screen.getByRole("combobox");
     expect(modelSelect).toHaveTextContent("gpt-4o-mini");
     expect(screen.getByLabelText(/api key/i)).toHaveValue("test-key");
-    expect(screen.getByLabelText(/provider endpoint/i)).toHaveValue(
-      "https://test.com",
-    );
   });
 
   it("handles API key input changes", async () => {
@@ -87,21 +89,6 @@ describe("SettingsForm", () => {
     expect(apiKeyInput).toHaveValue("my-secret-key");
   });
 
-  it("handles provider endpoint input changes", async () => {
-    const user = userEvent.setup();
-    render(
-      <SettingsForm
-        availableModels={availableModels}
-        onSubmit={mockOnSubmit}
-      />,
-    );
-
-    const endpointInput = screen.getByLabelText(/provider endpoint/i);
-    await user.type(endpointInput, "https://custom.api.com");
-
-    expect(endpointInput).toHaveValue("https://custom.api.com");
-  });
-
   it("submits form with correct data", async () => {
     const user = userEvent.setup();
     mockOnSubmit.mockResolvedValue(undefined);
@@ -114,10 +101,6 @@ describe("SettingsForm", () => {
     );
 
     await user.type(screen.getByLabelText(/api key/i), "test-api-key");
-    await user.type(
-      screen.getByLabelText(/provider endpoint/i),
-      "https://test.com",
-    );
     await user.click(
       screen.getByRole("button", { name: /save configuration/i }),
     );
@@ -126,7 +109,6 @@ describe("SettingsForm", () => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         selectedModel: "gpt-4o-mini",
         apiKey: "test-api-key",
-        providerEndpoint: "https://test.com",
       });
     });
   });
@@ -156,36 +138,10 @@ describe("SettingsForm", () => {
     expect(submitButton).toBeDisabled();
     expect(screen.getByLabelText(/model/i)).toBeDisabled();
     expect(screen.getByLabelText(/api key/i)).toBeDisabled();
-    expect(screen.getByLabelText(/provider endpoint/i)).toBeDisabled();
 
     resolveSubmit!();
     await waitFor(() => {
       expect(screen.getByText(/save configuration/i)).toBeInTheDocument();
-    });
-  });
-
-  it("omits provider endpoint from submission when empty", async () => {
-    const user = userEvent.setup();
-    mockOnSubmit.mockResolvedValue(undefined);
-
-    render(
-      <SettingsForm
-        availableModels={availableModels}
-        onSubmit={mockOnSubmit}
-      />,
-    );
-
-    await user.type(screen.getByLabelText(/api key/i), "test-api-key");
-    await user.click(
-      screen.getByRole("button", { name: /save configuration/i }),
-    );
-
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        selectedModel: "gpt-4o-mini",
-        apiKey: "test-api-key",
-        providerEndpoint: undefined,
-      });
     });
   });
 
@@ -199,18 +155,6 @@ describe("SettingsForm", () => {
 
     const apiKeyInput = screen.getByLabelText(/api key/i);
     expect(apiKeyInput).toHaveAttribute("type", "password");
-  });
-
-  it("renders provider endpoint input with url type", () => {
-    render(
-      <SettingsForm
-        availableModels={availableModels}
-        onSubmit={mockOnSubmit}
-      />,
-    );
-
-    const endpointInput = screen.getByLabelText(/provider endpoint/i);
-    expect(endpointInput).toHaveAttribute("type", "url");
   });
 
   it("prevents clearing the model selection", () => {
@@ -246,5 +190,111 @@ describe("SettingsForm", () => {
     fireEvent.change(select, { target: { value: "" } });
 
     expect(selectedValue).toHaveTextContent("gpt-4o-mini");
+  });
+
+  it("displays success toast when form submission succeeds", async () => {
+    const user = userEvent.setup();
+    mockOnSubmit.mockResolvedValue(undefined);
+
+    render(
+      <SettingsForm
+        availableModels={availableModels}
+        initialApiKey="test-key"
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /save configuration/i }),
+    );
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        "Configuration saved and validated successfully",
+      );
+    });
+  });
+
+  it("displays error toast when form submission fails", async () => {
+    const user = userEvent.setup();
+    const errorMessage = "Invalid API key";
+    mockOnSubmit.mockRejectedValue(new Error(errorMessage));
+
+    render(
+      <SettingsForm
+        availableModels={availableModels}
+        initialApiKey="test-key"
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /save configuration/i }),
+    );
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(errorMessage);
+    });
+  });
+
+  it("displays spinner on button during submission", async () => {
+    const user = userEvent.setup();
+    let resolveSubmit: () => void;
+    const submitPromise = new Promise<void>((resolve) => {
+      resolveSubmit = resolve;
+    });
+    mockOnSubmit.mockReturnValue(submitPromise);
+
+    render(
+      <SettingsForm
+        availableModels={availableModels}
+        initialApiKey="test-key"
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    const submitButton = screen.getByRole("button", {
+      name: /save configuration/i,
+    });
+    await user.click(submitButton);
+
+    const spinner = submitButton.querySelector("svg");
+    expect(spinner).toBeInTheDocument();
+    expect(spinner).toHaveClass("animate-spin");
+
+    resolveSubmit!();
+    await waitFor(() => {
+      expect(screen.getByText(/save configuration/i)).toBeInTheDocument();
+    });
+  });
+
+  it("calls onSubmittingChange during submission", async () => {
+    const user = userEvent.setup();
+    const onSubmittingChange = vi.fn();
+    let resolveSubmit: () => void;
+    const submitPromise = new Promise<void>((resolve) => {
+      resolveSubmit = resolve;
+    });
+    mockOnSubmit.mockReturnValue(submitPromise);
+
+    render(
+      <SettingsForm
+        availableModels={availableModels}
+        initialApiKey="test-key"
+        onSubmit={mockOnSubmit}
+        onSubmittingChange={onSubmittingChange}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /save configuration/i }),
+    );
+
+    expect(onSubmittingChange).toHaveBeenCalledWith(true);
+
+    resolveSubmit!();
+    await waitFor(() => {
+      expect(onSubmittingChange).toHaveBeenCalledWith(false);
+    });
   });
 });

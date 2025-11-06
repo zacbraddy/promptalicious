@@ -733,7 +733,7 @@ Use react-hook-form in combination with zod to perform validation functionality
 **Dependencies**: T038, T037
 **Expected Outcome**: Save triggers validation, user sees feedback
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
