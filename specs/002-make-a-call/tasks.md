@@ -785,7 +785,7 @@ Use mocked backend responses.
 **Dependencies**: T041
 **Surfacing**: After T042, navigate to `/settings`, save API key, test connection, observe validation
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
