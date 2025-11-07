@@ -16,13 +16,12 @@ describe("DiagnosticsDisplay", () => {
     estimatedCostGBP: 0.0012,
   };
 
-  it("renders diagnostic information card with title", () => {
+  it("renders diagnostic information card", () => {
     render(<DiagnosticsDisplay result={mockResult} />);
 
-    expect(screen.getByText(/diagnostic information/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/token usage, timing, and cost metrics/i),
-    ).toBeInTheDocument();
+    // Card is rendered (checking for diagnostic metrics)
+    expect(screen.getByText("Input Tokens")).toBeInTheDocument();
+    expect(screen.getByText("Output Tokens")).toBeInTheDocument();
   });
 
   it("displays input token count", () => {
@@ -53,11 +52,11 @@ describe("DiagnosticsDisplay", () => {
     expect(screen.getByText("1,523 ms")).toBeInTheDocument();
   });
 
-  it("displays estimated cost in GBP with 4 decimal places", () => {
+  it("displays estimated cost in GBP with 6 decimal places", () => {
     render(<DiagnosticsDisplay result={mockResult} />);
 
     expect(screen.getByText("Estimated Cost")).toBeInTheDocument();
-    expect(screen.getByText("£0.0012")).toBeInTheDocument();
+    expect(screen.getByText("£0.001200")).toBeInTheDocument();
   });
 
   it("formats large token counts with thousand separators", () => {

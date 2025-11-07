@@ -22,10 +22,10 @@ describe("costCalculationService", () => {
       const expectedCost =
         (inputTokens * inputPriceUSD + outputTokens * outputPriceUSD) *
         exchangeRate;
-      expect(result).toBe(Number(expectedCost.toFixed(2)));
+      expect(result).toBe(Number(expectedCost.toFixed(6)));
     });
 
-    it("should round to 2 decimal places", () => {
+    it("should round to 6 decimal places", () => {
       const inputTokens = 123;
       const outputTokens = 456;
       const inputPriceUSD = 0.00015;
@@ -41,7 +41,7 @@ describe("costCalculationService", () => {
       );
 
       const decimalPlaces = (result.toString().split(".")[1] || "").length;
-      expect(decimalPlaces).toBeLessThanOrEqual(2);
+      expect(decimalPlaces).toBeLessThanOrEqual(6);
     });
 
     it("should handle zero input tokens", () => {
@@ -60,7 +60,7 @@ describe("costCalculationService", () => {
       );
 
       const expectedCost = outputTokens * outputPriceUSD * exchangeRate;
-      expect(result).toBe(Number(expectedCost.toFixed(2)));
+      expect(result).toBe(Number(expectedCost.toFixed(6)));
     });
 
     it("should handle zero output tokens", () => {
@@ -79,7 +79,7 @@ describe("costCalculationService", () => {
       );
 
       const expectedCost = inputTokens * inputPriceUSD * exchangeRate;
-      expect(result).toBe(Number(expectedCost.toFixed(2)));
+      expect(result).toBe(Number(expectedCost.toFixed(6)));
     });
 
     it("should return 0 when both token counts are zero", () => {
@@ -137,7 +137,7 @@ describe("costCalculationService", () => {
       const expectedCost =
         (inputTokens * inputPriceUSD + outputTokens * outputPriceUSD) *
         exchangeRate;
-      expect(result).toBe(Number(expectedCost.toFixed(2)));
+      expect(result).toBe(Number(expectedCost.toFixed(6)));
     });
 
     it("should handle different exchange rates", () => {
@@ -157,7 +157,7 @@ describe("costCalculationService", () => {
 
       const expectedCostUSD =
         inputTokens * inputPriceUSD + outputTokens * outputPriceUSD;
-      expect(result).toBe(Number(expectedCostUSD.toFixed(2)));
+      expect(result).toBe(Number(expectedCostUSD.toFixed(6)));
     });
 
     it("should calculate cost accurately with GPT-4o-mini pricing", () => {
@@ -179,7 +179,7 @@ describe("costCalculationService", () => {
 
       const expectedCost =
         (inputPricePerMillionUSD + outputPricePerMillionUSD) * exchangeRate;
-      expect(result).toBe(Number(expectedCost.toFixed(2)));
+      expect(result).toBe(Number(expectedCost.toFixed(6)));
     });
 
     it("should handle rounding edge cases correctly", () => {
@@ -202,7 +202,7 @@ describe("costCalculationService", () => {
       const resultString = result.toString();
       if (resultString.includes(".")) {
         const decimalPlaces = resultString.split(".")[1]?.length ?? 0;
-        expect(decimalPlaces).toBeLessThanOrEqual(2);
+        expect(decimalPlaces).toBeLessThanOrEqual(6);
       }
     });
   });

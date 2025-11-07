@@ -7,13 +7,7 @@ import {
 } from "@tanstack/react-table";
 import type { ExecutionResult } from "@promptalicious/shared-infra";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -55,7 +49,7 @@ export function DiagnosticsDisplay({ result }: DiagnosticsDisplayProps) {
       },
       {
         metric: "Estimated Cost",
-        value: `£${result.estimatedCostGBP.toFixed(4)}`,
+        value: `£${result.estimatedCostGBP.toFixed(6)}`,
       },
     ],
     [result],
@@ -83,11 +77,7 @@ export function DiagnosticsDisplay({ result }: DiagnosticsDisplayProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Diagnostic Information</CardTitle>
-        <CardDescription>Token usage, timing, and cost metrics</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

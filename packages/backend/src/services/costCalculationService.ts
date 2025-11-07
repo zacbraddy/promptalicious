@@ -10,5 +10,5 @@ export function calculateCost(
   const totalCostUSD = inputCostUSD + outputCostUSD;
   const totalCostGBP = totalCostUSD * exchangeRate;
 
-  return Number(totalCostGBP.toFixed(2));
+  return Number(totalCostGBP.toFixed(6));
 }

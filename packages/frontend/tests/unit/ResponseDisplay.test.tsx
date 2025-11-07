@@ -23,14 +23,12 @@ describe("ResponseDisplay", () => {
     ...overrides,
   });
 
-  it("renders card with title and description", () => {
+  it("renders response display card", () => {
     const mockResult = createMockResult();
     render(<ResponseDisplay result={mockResult} />);
 
-    expect(screen.getByText(/llm response/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/complete response from the model/i),
-    ).toBeInTheDocument();
+    // Card is rendered (checking for the response text content)
+    expect(screen.getByText(mockResult.responseText)).toBeInTheDocument();
   });
 
   it("displays the full response text", () => {
