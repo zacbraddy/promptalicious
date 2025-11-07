@@ -1000,7 +1000,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Response displays in full, scrollable
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
