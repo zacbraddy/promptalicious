@@ -60,26 +60,33 @@ For complete technical context, see:
 
 ---
 
-### 2025-11-04: No Backend Framework (Yet)
+### 2025-11-04: Hono as Backend API Framework
 
-**Context**: Backend package needs to exist for monorepo structure, but no API requirements specified yet.
+**Context**: Backend needs web framework for REST API endpoints (configuration, LLM execution, pricing data).
 
-**Decision**: Create backend package with TypeScript entry point, no web framework.
+**Decision**: Use Hono v4 as the backend API framework.
 
 **Rationale**:
-- Avoid framework lock-in until requirements are clear
-- Simple executable entry point for future expansion
-- Can add Express/Fastify/Hono when API needs are understood
+- **Exceptional TypeScript support**: Type-safe routing, context, and middleware out of the box
+- **Modern design**: Clean API, method chaining, intuitive patterns
+- **Performance**: One of the fastest Node.js frameworks
+- **Minimal dependencies**: Lightweight, aligns with "no cargo-culting" principle
+- **Built-in middleware**: CORS, logger, error handling included
+- **Future-ready**: Works on Node.js, Bun, Deno, Cloudflare Workers (if we ever need edge deployment)
 
 **Alternatives Considered**:
-- Express now: Premature - no API requirements yet
-- NestJS: Heavy framework, inappropriate without clear need
+- **Fastify**: More mature ecosystem but heavier, JSON Schema validation less TypeScript-native
+- **Express**: De facto standard but poor TypeScript support, older callback-based patterns
+- **NestJS**: Full framework overkill for our simple API needs
 
-**Future Decision Point**: When first API endpoint is specified, evaluate Express (minimal), Fastify (performance), or Hono (modern, edge-ready).
+**Implementation**:
+- `app.ts`: Hono app with CORS, logging, error handling middleware
+- `index.ts`: Server entry point using `@hono/node-server`
+- Health check endpoint: `GET /health` returns status + timestamp
 
-**Impact**: Backend package exists but minimal until feature specs define API requirements.
+**Impact**: All API endpoints use Hono routing patterns. Middleware composition follows Hono conventions.
 
-**Source**: spec 001-project-scaffold-i
+**Source**: Task T006 (spec 002-make-a-call), research.md preliminary recommendation validated during implementation
 
 ---
 
@@ -156,6 +163,52 @@ Use this template for future decisions:
 
 **Source**: Which spec/document drove this decision?
 ```
+
+---
+
+### 2025-11-04: Centralised Configuration Pattern
+
+**Context**: Backend needs to access environment variables (port, database URL, API keys, etc.) in a consistent, testable way across all modules.
+
+**Decision**: All environment variable access goes through a centralised `config/index.ts` module that exports a typed configuration object.
+
+**Rationale**:
+- **Single source of truth**: All environment variables documented in one place
+- **Type safety**: Configuration object is fully typed, IDE autocomplete works
+- **Testability**: Easy to mock configuration in tests by importing and overriding config object
+- **Validation**: Environment variable parsing and validation happens once at startup
+- **Documentation**: New developers can see all required/optional env vars in one file
+- **No scattered `process.env` calls**: Eliminates bugs from typos in environment variable names
+
+**Implementation**:
+```typescript
+// config/index.ts
+export const config = {
+  server: {
+    port: Number(getEnvVar("PORT", "3000")),
+  },
+  database: {
+    url: getEnvVar("DATABASE_URL", "postgresql://..."),
+  },
+  // ... other config sections
+} as const;
+
+// Other files import config instead of using process.env directly
+import { config } from './config/index.js';
+const port = config.server.port; // Not: process.env.PORT
+```
+
+**Alternatives Considered**:
+- Direct `process.env` access throughout codebase: Rejected due to lack of type safety, scattered validation, difficult to test
+- Environment validation libraries (envalid, zod-env): Good option but overkill for current needs, can migrate later if validation complexity grows
+- Per-module config files: Rejected due to fragmentation, harder to see full picture
+
+**Impact**:
+- All new environment variables MUST be added to `config/index.ts` with appropriate defaults and validation
+- Code MUST import from `config/index.ts` instead of accessing `process.env` directly
+- Benefits compound over time as configuration complexity grows
+
+**Source**: Task T006 (spec 002-make-a-call) - discovered during Hono setup when port configuration was initially using `process.env.PORT` directly
 
 ---
 

@@ -1,0 +1,43 @@
+---
+coalesced_date: 2025-11-07
+spec_name: 002-make-a-call
+spec_completion: 100%
+
+knowledge_extracted_to:
+  memory/development-protocols.md:
+    - Feature Completion History (1 section)
+    - Implementation Decisions from Spec 002 (4 clarifications)
+    - Architectural Patterns Established (1 section)
+    - Pricing & Exchange Rate System (3 sections)
+    - Frontend Styling Patterns (2 sections)
+    - LLM Integration Pattern (1 section)
+    - UI Component Strategy (1 section)
+    - Frontend State Management (1 section)
+    - Security Considerations (1 section)
+    - Database Patterns (1 section)
+    Total: ~360 lines added
+
+  memory/constitution.md:
+    - Spec 002 Constitutional Compliance (full compliance analysis)
+    - Approved Complexity Deferrals (3 deferrals documented)
+    Total: ~105 lines added
+
+  docs/api/:
+    - api-contracts.md: Complete API reference extracted from contracts/api-contracts.yaml
+    Total: 1 new file created (~350 lines)
+
+provisional_items_processed:
+  established: 0
+  removed: 0
+  kept_provisional: 0
+  skipped: 0
+
+notes: |
+  No provisional content existed from mid-spec runs (spec was completed in one run without /coalesce-knowledge mid-way).
+
+  All architectural decisions, implementation patterns, and technical knowledge from spec 002 have been preserved in permanent locations.
+
+  CLAUDE.md reduced from 266 lines to ~220 lines while maintaining all critical quick reference material.
+
+  Spec files (spec.md, plan.md, research.md, data-model.md, contracts/) remain in specs/002-make-a-call/ as historical record.
+---

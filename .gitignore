@@ -5,12 +5,25 @@ dist/
 build/
 .turbo/
 
-pnpm-lock.yaml
 .pnpm-debug.log
 
 .env
 .env.local
 .env.*.local
+
+postgres-data/
+pgdata/
+db-data/
+.postgres/
+postgresql/
+
+*.sql
+!packages/backend/drizzle/**/*.sql
+*.dump
+*.backup
+*.db
+*.sqlite
+*.sqlite3
 
 *.log
 .DS_Store

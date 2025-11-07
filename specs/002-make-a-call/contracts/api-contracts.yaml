@@ -1,0 +1,910 @@
+openapi: 3.1.0
+info:
+  title: promptalicious API
+  description: API for LLM prompt execution and diagnostics
+  version: 0.2.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+paths:
+  /execute:
+    post:
+      operationId: executePrompt
+      summary: Execute a system prompt against configured LLM
+      description: |
+        Sends the provided system prompt to the configured LLM (GPT-4o-mini initially)
+        and returns the response with comprehensive diagnostic information.
+
+        Functional Requirements: FR-002, FR-003, FR-005, FR-006, FR-009-014, FR-015-019
+      tags:
+        - Prompt Execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutePromptRequest'
+            examples:
+              basicPrompt:
+                summary: Basic system prompt
+                value:
+                  promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+              longPrompt:
+                summary: Longer technical prompt
+                value:
+                  promptText: "You are an expert code reviewer. Review the following TypeScript code for bugs, performance issues, and best practices: [code here]"
+      responses:
+        '200':
+          description: Execution successful - returns result and diagnostics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptSuccessResponse'
+              examples:
+                successfulExecution:
+                  summary: Successful LLM response
+                  value:
+                    execution:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+                      executionTimestamp: "2025-11-04T10:30:00.000Z"
+                      status: "completed"
+                      targetModel: "gpt-4o-mini"
+                    result:
+                      id: "660e8400-e29b-41d4-a716-446655440001"
+                      promptExecutionId: "550e8400-e29b-41d4-a716-446655440000"
+                      responseText: "Quantum computing is a type of computing that uses quantum mechanics..."
+                      inputTokenCount: 15
+                      outputTokenCount: 120
+                      totalTokenCount: 135
+                      executionDurationMs: 1842
+                      estimatedCostGBP: 0.0012
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptErrorResponse'
+              examples:
+                emptyPrompt:
+                  summary: Empty prompt text
+                  value:
+                    execution:
+                      id: "770e8400-e29b-41d4-a716-446655440002"
+                      promptText: ""
+                      executionTimestamp: "2025-11-04T10:31:00.000Z"
+                      status: "failed"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "880e8400-e29b-41d4-a716-446655440003"
+                      promptExecutionId: "770e8400-e29b-41d4-a716-446655440002"
+                      errorType: "validation"
+                      errorMessage: "Prompt text cannot be empty"
+                      timestamp: "2025-11-04T10:31:00.100Z"
+        '401':
+          description: Authentication error - invalid or missing API credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptErrorResponse'
+              examples:
+                invalidApiKey:
+                  summary: Invalid API key configured
+                  value:
+                    execution:
+                      id: "990e8400-e29b-41d4-a716-446655440004"
+                      promptText: "Test prompt"
+                      executionTimestamp: "2025-11-04T10:32:00.000Z"
+                      status: "failed"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "aa0e8400-e29b-41d4-a716-446655440005"
+                      promptExecutionId: "990e8400-e29b-41d4-a716-446655440004"
+                      errorType: "authentication"
+                      errorCode: "invalid_api_key"
+                      errorMessage: "The API key provided is invalid. Please check your configuration."
+                      timestamp: "2025-11-04T10:32:00.200Z"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptErrorResponse'
+              examples:
+                rateLimitExceeded:
+                  summary: API rate limit hit
+                  value:
+                    execution:
+                      id: "bb0e8400-e29b-41d4-a716-446655440006"
+                      promptText: "Another prompt"
+                      executionTimestamp: "2025-11-04T10:33:00.000Z"
+                      status: "failed"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "cc0e8400-e29b-41d4-a716-446655440007"
+                      promptExecutionId: "bb0e8400-e29b-41d4-a716-446655440006"
+                      errorType: "rate_limit"
+                      errorCode: "rate_limit_exceeded"
+                      errorMessage: "Rate limit exceeded. Please try again in 60 seconds."
+                      additionalContext:
+                        retryAfter: 60
+                      timestamp: "2025-11-04T10:33:00.300Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptErrorResponse'
+              examples:
+                networkError:
+                  summary: Network connectivity issue
+                  value:
+                    execution:
+                      id: "dd0e8400-e29b-41d4-a716-446655440008"
+                      promptText: "Yet another prompt"
+                      executionTimestamp: "2025-11-04T10:34:00.000Z"
+                      status: "failed"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "ee0e8400-e29b-41d4-a716-446655440009"
+                      promptExecutionId: "dd0e8400-e29b-41d4-a716-446655440008"
+                      errorType: "network"
+                      errorMessage: "Unable to connect to OpenAI API. Please check your internet connection."
+                      timestamp: "2025-11-04T10:34:00.400Z"
+        '504':
+          description: Gateway timeout - LLM call exceeded time limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutePromptErrorResponse'
+              examples:
+                timeoutError:
+                  summary: Request timed out
+                  value:
+                    execution:
+                      id: "ff0e8400-e29b-41d4-a716-446655440010"
+                      promptText: "Timeout test prompt"
+                      executionTimestamp: "2025-11-04T10:35:00.000Z"
+                      status: "failed"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "000e8400-e29b-41d4-a716-446655440011"
+                      promptExecutionId: "ff0e8400-e29b-41d4-a716-446655440010"
+                      errorType: "timeout"
+                      errorMessage: "The LLM request timed out after 60 seconds."
+                      timestamp: "2025-11-04T10:36:00.000Z"
+        '409':
+          description: Conflict - execution already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                      - errorType
+                      - errorMessage
+                    properties:
+                      errorType:
+                        type: string
+                        enum: [conflict]
+                      errorMessage:
+                        type: string
+                        example: "An execution is already in progress. Please wait for it to complete or cancel it before starting a new one."
+              examples:
+                executionInProgress:
+                  summary: Concurrent execution attempted
+                  value:
+                    error:
+                      errorType: "conflict"
+                      errorMessage: "An execution is already in progress. Please wait for it to complete or cancel it before starting a new one."
+
+  /execute/status:
+    get:
+      operationId: getExecutionStatus
+      summary: Get current execution status
+      description: |
+        Returns the current execution status. Used for page refresh recovery and polling.
+        - If execution in progress: returns prompt details and in_progress status
+        - If execution completed: returns full results, then clears cache
+        - If no execution: returns null state
+
+        Functional Requirements: FR-003b
+      tags:
+        - Prompt Execution
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStatusResponse'
+              examples:
+                executionInProgress:
+                  summary: Execution currently running
+                  value:
+                    isExecuting: true
+                    execution:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+                      executionTimestamp: "2025-11-04T10:37:00.000Z"
+                      status: "in_progress"
+                      targetModel: "gpt-4o-mini"
+                executionCompleted:
+                  summary: Execution completed (results returned once, then cache cleared)
+                  value:
+                    isExecuting: false
+                    execution:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      promptText: "You are a helpful assistant. Explain quantum computing in simple terms."
+                      executionTimestamp: "2025-11-04T10:37:00.000Z"
+                      status: "completed"
+                      targetModel: "gpt-4o-mini"
+                    result:
+                      id: "660e8400-e29b-41d4-a716-446655440001"
+                      promptExecutionId: "550e8400-e29b-41d4-a716-446655440000"
+                      responseText: "Quantum computing is a type of computing that uses quantum mechanics..."
+                      inputTokenCount: 15
+                      outputTokenCount: 120
+                      totalTokenCount: 135
+                      executionDurationMs: 1842
+                      estimatedCostGBP: 0.0012
+                executionAborted:
+                  summary: Execution was aborted
+                  value:
+                    isExecuting: false
+                    execution:
+                      id: "770e8400-e29b-41d4-a716-446655440002"
+                      promptText: "Test prompt"
+                      executionTimestamp: "2025-11-04T10:38:00.000Z"
+                      status: "aborted"
+                      targetModel: "gpt-4o-mini"
+                    error:
+                      id: "880e8400-e29b-41d4-a716-446655440003"
+                      promptExecutionId: "770e8400-e29b-41d4-a716-446655440002"
+                      errorType: "aborted"
+                      errorMessage: "Execution was cancelled by user"
+                      timestamp: "2025-11-04T10:38:01.000Z"
+                noExecution:
+                  summary: No execution in progress or completed
+                  value:
+                    isExecuting: false
+                    execution: null
+
+  /execute/abort:
+    post:
+      operationId: abortExecution
+      summary: Abort currently executing prompt
+      description: |
+        Aborts the currently executing prompt by triggering the AbortController signal.
+        Returns success if execution was aborted, error if no execution in progress.
+
+        Functional Requirements: FR-005a
+      tags:
+        - Prompt Execution
+      responses:
+        '200':
+          description: Execution aborted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbortExecutionResponse'
+              examples:
+                abortSuccess:
+                  summary: Successfully aborted
+                  value:
+                    success: true
+                    message: "Execution aborted successfully"
+        '400':
+          description: No execution in progress to abort
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbortExecutionResponse'
+              examples:
+                noExecutionToAbort:
+                  summary: Nothing to abort
+                  value:
+                    success: false
+                    message: "No execution in progress to abort"
+                    error:
+                      errorType: "validation"
+                      errorMessage: "No execution is currently in progress"
+
+  /config:
+    get:
+      operationId: getConfiguration
+      summary: Get current LLM configuration
+      description: |
+        Returns the current LLM configuration (model selection, endpoint).
+        API key is never returned for security reasons.
+
+        Functional Requirements: FR-020, FR-023
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+              examples:
+                defaultConfig:
+                  summary: Default configuration
+                  value:
+                    config:
+                      id: 1
+                      selectedModel: "gpt-4o-mini"
+                      providerEndpoint: null
+                      createdAt: "2025-11-04T09:00:00.000Z"
+                      updatedAt: "2025-11-04T09:00:00.000Z"
+                    availableModels:
+                      - "gpt-4o-mini"
+
+    put:
+      operationId: updateConfiguration
+      summary: Update LLM configuration
+      description: |
+        Updates the LLM configuration (model selection, API key, endpoint).
+        Automatically validates credentials via test call before saving.
+
+        Functional Requirements: FR-020, FR-021, FR-022, FR-023, FR-024, FR-024a
+      tags:
+        - Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigurationRequest'
+            examples:
+              updateApiKey:
+                summary: Update API key
+                value:
+                  apiKey: "sk-proj-newkey123456789"
+              updateModel:
+                summary: Change model (future expansion)
+                value:
+                  selectedModel: "gpt-4o-mini"
+              fullUpdate:
+                summary: Update multiple fields
+                value:
+                  selectedModel: "gpt-4o-mini"
+                  apiKey: "sk-proj-newkey123456789"
+                  providerEndpoint: "https://api.openai.com/v1"
+      responses:
+        '200':
+          description: Configuration updated and validated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfigurationSuccessResponse'
+              examples:
+                successfulUpdate:
+                  summary: Configuration saved after validation
+                  value:
+                    config:
+                      id: 1
+                      selectedModel: "gpt-4o-mini"
+                      providerEndpoint: null
+                      updatedAt: "2025-11-04T10:40:00.000Z"
+                    validationResult:
+                      success: true
+                      message: "API credentials validated successfully"
+        '400':
+          description: Validation failed - invalid credentials or configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfigurationErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Test call failed
+                  value:
+                    error:
+                      errorType: "authentication"
+                      errorMessage: "API key validation failed: invalid credentials"
+                      additionalContext:
+                        testCallFailed: true
+
+  /config/test-connection:
+    post:
+      operationId: testConnection
+      summary: Test LLM API connection
+      description: |
+        Manually test the connection to the LLM provider using current configuration.
+        Does not save any changes - purely for validation.
+
+        Functional Requirements: FR-024a
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: Connection test successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestConnectionResponse'
+              examples:
+                connectionSuccess:
+                  summary: Valid credentials
+                  value:
+                    success: true
+                    message: "Successfully connected to OpenAI API with GPT-4o-mini"
+        '400':
+          description: Connection test failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestConnectionResponse'
+              examples:
+                connectionFailure:
+                  summary: Invalid credentials
+                  value:
+                    success: false
+                    message: "Connection failed: Invalid API key"
+                    error:
+                      errorType: "authentication"
+                      errorCode: "invalid_api_key"
+
+  /pricing:
+    get:
+      operationId: getPricingInfo
+      summary: Get current pricing information
+      description: |
+        Returns cached pricing data for token costs and staleness indicator.
+        Used by frontend to display cost estimates and warnings about stale data.
+
+        Functional Requirements: FR-025, FR-025a, FR-025b, FR-028
+      tags:
+        - Pricing
+      responses:
+        '200':
+          description: Pricing information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingInfoResponse'
+              examples:
+                freshPricing:
+                  summary: Recently updated pricing
+                  value:
+                    pricing:
+                      model: "gpt-4o-mini"
+                      provider: "openai"
+                      inputTokenPriceUSD: 0.00000015
+                      outputTokenPriceUSD: 0.0000006
+                      lastUpdated: "2025-11-04T09:00:00.000Z"
+                    exchangeRate:
+                      fromCurrency: "USD"
+                      toCurrency: "GBP"
+                      rate: 0.79
+                      lastUpdated: "2025-11-04T09:00:00.000Z"
+                    staleness:
+                      isStale: false
+                      daysSinceUpdate: 0
+                stalePricing:
+                  summary: Stale pricing data (>7 days)
+                  value:
+                    pricing:
+                      model: "gpt-4o-mini"
+                      provider: "openai"
+                      inputTokenPriceUSD: 0.00000015
+                      outputTokenPriceUSD: 0.0000006
+                      lastUpdated: "2025-10-20T09:00:00.000Z"
+                    exchangeRate:
+                      fromCurrency: "USD"
+                      toCurrency: "GBP"
+                      rate: 0.79
+                      lastUpdated: "2025-10-20T09:00:00.000Z"
+                    staleness:
+                      isStale: true
+                      daysSinceUpdate: 15
+
+components:
+  schemas:
+    ExecutePromptRequest:
+      type: object
+      required:
+        - promptText
+      properties:
+        promptText:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: The system prompt to send to the LLM
+          example: "You are a helpful assistant. Explain quantum computing in simple terms."
+
+    ExecutePromptSuccessResponse:
+      type: object
+      required:
+        - execution
+        - result
+      properties:
+        execution:
+          $ref: '#/components/schemas/PromptExecution'
+        result:
+          $ref: '#/components/schemas/ExecutionResult'
+
+    ExecutePromptErrorResponse:
+      type: object
+      required:
+        - execution
+        - error
+      properties:
+        execution:
+          $ref: '#/components/schemas/PromptExecution'
+        error:
+          $ref: '#/components/schemas/ExecutionError'
+
+    PromptExecution:
+      type: object
+      required:
+        - id
+        - promptText
+        - executionTimestamp
+        - status
+        - targetModel
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this execution
+        promptText:
+          type: string
+          description: The prompt that was executed
+        executionTimestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when execution started
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed, aborted]
+          description: Current status of the execution
+        targetModel:
+          type: string
+          description: The LLM model used
+          example: "gpt-4o-mini"
+
+    ExecutionResult:
+      type: object
+      required:
+        - id
+        - promptExecutionId
+        - responseText
+        - inputTokenCount
+        - outputTokenCount
+        - totalTokenCount
+        - executionDurationMs
+        - estimatedCostGBP
+      properties:
+        id:
+          type: string
+          format: uuid
+        promptExecutionId:
+          type: string
+          format: uuid
+        responseText:
+          type: string
+          description: The complete LLM response
+        inputTokenCount:
+          type: integer
+          minimum: 1
+          description: Number of tokens in the prompt
+        outputTokenCount:
+          type: integer
+          minimum: 0
+          description: Number of tokens in the response
+        totalTokenCount:
+          type: integer
+          minimum: 1
+          description: Sum of input and output tokens
+        executionDurationMs:
+          type: integer
+          minimum: 1
+          description: Time taken for the LLM call in milliseconds
+        estimatedCostGBP:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Estimated cost in British pounds (2 decimal places)
+          example: 0.0012
+
+    ExecutionError:
+      type: object
+      required:
+        - id
+        - promptExecutionId
+        - errorType
+        - errorMessage
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        promptExecutionId:
+          type: string
+          format: uuid
+        errorType:
+          type: string
+          enum: [authentication, network, api_error, timeout, rate_limit, validation, aborted, unknown]
+          description: Classification of the error for debugging
+        errorCode:
+          type: string
+          description: Provider-specific error code (optional)
+          example: "insufficient_quota"
+        errorMessage:
+          type: string
+          description: Human-readable error description
+        stackTrace:
+          type: string
+          description: Technical stack trace (backend errors only, optional)
+        additionalContext:
+          type: object
+          additionalProperties: true
+          description: Structured error context (optional)
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when error occurred
+
+    ExecutionStatusResponse:
+      type: object
+      required:
+        - isExecuting
+      properties:
+        isExecuting:
+          type: boolean
+          description: True if execution currently in progress
+        execution:
+          allOf:
+            - $ref: '#/components/schemas/PromptExecution'
+            - nullable: true
+          description: Execution details (null if no execution)
+        result:
+          allOf:
+            - $ref: '#/components/schemas/ExecutionResult'
+            - nullable: true
+          description: Results if execution completed successfully (only returned once)
+        error:
+          allOf:
+            - $ref: '#/components/schemas/ExecutionError'
+            - nullable: true
+          description: Error if execution failed or was aborted (only returned once)
+
+    AbortExecutionResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: True if abort was successful
+        message:
+          type: string
+          description: Human-readable result message
+        error:
+          type: object
+          nullable: true
+          properties:
+            errorType:
+              type: string
+            errorMessage:
+              type: string
+
+    ConfigurationResponse:
+      type: object
+      required:
+        - config
+        - availableModels
+      properties:
+        config:
+          $ref: '#/components/schemas/LLMConfiguration'
+        availableModels:
+          type: array
+          items:
+            type: string
+          description: List of available model identifiers
+          example: ["gpt-4o-mini"]
+
+    LLMConfiguration:
+      type: object
+      required:
+        - id
+        - selectedModel
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          enum: [1]
+          description: Always 1 (single-row table)
+        selectedModel:
+          type: string
+          description: Currently selected model
+          example: "gpt-4o-mini"
+        providerEndpoint:
+          type: string
+          format: uri
+          nullable: true
+          description: Custom endpoint URL (optional)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        # Note: apiKey intentionally excluded from response schema for security
+
+    UpdateConfigurationRequest:
+      type: object
+      properties:
+        selectedModel:
+          type: string
+          description: Model to use (must be in availableModels list)
+          example: "gpt-4o-mini"
+        apiKey:
+          type: string
+          description: API key for the provider (will be encrypted)
+          minLength: 1
+        providerEndpoint:
+          type: string
+          format: uri
+          description: Custom endpoint URL (optional)
+      # At least one field must be provided
+      minProperties: 1
+
+    UpdateConfigurationSuccessResponse:
+      type: object
+      required:
+        - config
+        - validationResult
+      properties:
+        config:
+          $ref: '#/components/schemas/LLMConfiguration'
+        validationResult:
+          type: object
+          required:
+            - success
+            - message
+          properties:
+            success:
+              type: boolean
+              enum: [true]
+            message:
+              type: string
+              example: "API credentials validated successfully"
+
+    UpdateConfigurationErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - errorType
+            - errorMessage
+          properties:
+            errorType:
+              type: string
+              enum: [authentication, validation]
+            errorMessage:
+              type: string
+            additionalContext:
+              type: object
+              additionalProperties: true
+
+    TestConnectionResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        error:
+          type: object
+          properties:
+            errorType:
+              type: string
+            errorCode:
+              type: string
+
+    PricingInfoResponse:
+      type: object
+      required:
+        - pricing
+        - exchangeRate
+        - staleness
+      properties:
+        pricing:
+          $ref: '#/components/schemas/PricingInformation'
+        exchangeRate:
+          $ref: '#/components/schemas/ExchangeRate'
+        staleness:
+          type: object
+          required:
+            - isStale
+            - daysSinceUpdate
+          properties:
+            isStale:
+              type: boolean
+              description: True if pricing data is >7 days old
+            daysSinceUpdate:
+              type: integer
+              minimum: 0
+              description: Number of days since pricing was last updated
+
+    PricingInformation:
+      type: object
+      required:
+        - model
+        - provider
+        - inputTokenPriceUSD
+        - outputTokenPriceUSD
+        - lastUpdated
+      properties:
+        model:
+          type: string
+          example: "gpt-4o-mini"
+        provider:
+          type: string
+          example: "openai"
+        inputTokenPriceUSD:
+          type: number
+          format: decimal
+          description: Cost per input token in USD (high precision)
+          example: 0.00000015
+        outputTokenPriceUSD:
+          type: number
+          format: decimal
+          description: Cost per output token in USD (high precision)
+          example: 0.0000006
+        lastUpdated:
+          type: string
+          format: date-time
+
+    ExchangeRate:
+      type: object
+      required:
+        - fromCurrency
+        - toCurrency
+        - rate
+        - lastUpdated
+      properties:
+        fromCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: "USD"
+        toCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: "GBP"
+        rate:
+          type: number
+          format: decimal
+          description: Exchange rate with 6 decimal precision
+          example: 0.79
+        lastUpdated:
+          type: string
+          format: date-time
+
+tags:
+  - name: Prompt Execution
+    description: Execute prompts and view results with diagnostics
+  - name: Configuration
+    description: Manage LLM provider configuration
+  - name: Pricing
+    description: View token pricing and cost information

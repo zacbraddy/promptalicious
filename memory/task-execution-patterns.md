@@ -142,12 +142,25 @@ T012: Verify all quickstart.md scenarios pass
 
 ## Quality Gates Enforcement
 
-**Pre-Commit Quality Gates**:
+**Pre-Commit Quality Gates** (MUST run after every code change, before marking task complete):
 ```bash
-pnpm typecheck  # Zero errors (non-negotiable)
-pnpm lint       # Zero errors/warnings (use pnpm lint:fix)
-pnpm format:check  # Code formatted correctly
+pnpm typecheck      # Zero errors (non-negotiable)
+pnpm lint           # Zero errors/warnings (use pnpm lint:fix)
+pnpm format:check   # Code formatted correctly (if fails, run pnpm format then recheck)
+pnpm test:ci        # All passing (or justified failures) - use test:ci for non-interactive mode
 ```
+
+**Test Execution Protocol**:
+- **Interactive mode**: `pnpm test` (watch mode, for development)
+- **CI mode**: `pnpm test:ci` (non-interactive, for audits and validation)
+- **When auditing**: ALWAYS use `pnpm test:ci` to avoid hanging on interactive prompts
+- **Per-package**: Use `pnpm --filter <package> test:ci` for specific package tests
+
+**Formatting Protocol**:
+- ALWAYS run `pnpm format:check` first
+- If it fails, run `pnpm format` to auto-fix
+- Then run `pnpm format:check` again to verify
+- Never skip this step - formatting must pass before task completion
 
 **Enforcement**:
 - Husky pre-commit hook runs all quality gates
@@ -219,12 +232,13 @@ pnpm format:check  # Code formatted correctly
 
 ### Rule 4: Finish Clean
 
-Before marking task complete:
-- Run linting (`pnpm lint`, use `pnpm lint:fix` to auto-fix)
+Before marking task complete, run ALL quality gates:
 - Run type checking (`pnpm typecheck`)
+- Run linting (`pnpm lint`, use `pnpm lint:fix` to auto-fix)
+- Run formatting check (`pnpm format:check`, if fails run `pnpm format` then recheck)
 - Run tests (`pnpm test`)
 - Check for errors in files you touched AND didn't touch
-- Only mark complete when quality gates pass (or failures justified by project state)
+- Only mark complete when ALL quality gates pass (or failures justified by project state)
 
 ### Rule 5: Surface After Each Task (Dolphin Protocol)
 

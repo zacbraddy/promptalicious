@@ -319,12 +319,18 @@ However, if we're regularly going 5+ tasks without something to show, we're doin
 
 ## Quality Gates
 
-All code MUST pass before commit:
+All code MUST pass before commit and before marking task complete:
 
 1. **Type Checking**: `pnpm typecheck` (zero errors)
 2. **Linting**: `pnpm lint` (zero errors, zero warnings), use `pnpm lint:fix` to apply formatting changes without you having to do it.
-3. **Formatting**: `pnpm format:check` (or auto-format applied)
+3. **Formatting**: `pnpm format:check` (MUST pass - if fails, run `pnpm format` then recheck)
 4. **Tests**: `pnpm test` (all tests passing, or failures justified)
+
+**Formatting Protocol**:
+- ALWAYS run `pnpm format:check` first
+- If it fails, run `pnpm format` to auto-fix
+- Then run `pnpm format:check` again to verify
+- Never skip this step - formatting must pass before task completion
 
 Husky pre-commit hooks MUST enforce these gates.
 
@@ -429,3 +435,109 @@ This constitution fails if:
 1. Review `/templates/*.md` for constitutional alignment
 2. Update `.claude/commands/*.md` to reference Context7/Selena usage
 3. Begin feature specification for first iteration (GPT-4o-mini debugging interface)
+
+---
+
+## Spec 002 Constitutional Compliance
+
+**Verification Date**: 2025-11-07
+**Spec**: 002-make-a-call (LLM Prompt Execution & Diagnostics Interface)
+**Overall Compliance**: ✅ Aligned with all core principles
+
+### Principle 1: Visibility Above All
+
+✅ **Full Compliance**
+
+**Evidence**:
+- FR-009 through FR-014: Comprehensive diagnostics display (tokens, timing, cost)
+- FR-015 through FR-019: All error types surfaced with actionable context
+- FR-028: Staleness indicator for pricing data
+- FR-004: Execution status polling for page refresh recovery
+- UI requirement (FR-029-032): Retrofuturistic dark theme prioritises information visibility
+
+**Implementation Patterns**:
+- Backend returns full execution metadata on every call
+- Frontend displays all diagnostic info without hidden state
+- Errors classified and displayed with provider-specific details
+- No silent failures - all states explicitly communicated
+
+### Principle 2: Good Architecture Without Cargo-Culting
+
+✅ **Full Compliance**
+
+**Justified Patterns**:
+- Single-row configuration table (id=1 constraint): Solves "one config" requirement simply
+- Execution state cache: In-memory cache enables abort and page refresh without database complexity
+- Pricing cache: Solves live pricing lookup problem without per-call overhead
+
+**Architecture: EVERY feature as library? DEFERRED**
+- Rationale: First iteration prioritises working software over perfect abstraction
+- Plan: Extract reusable patterns after 2-3 specs when clear patterns emerge
+- Justification: Aligns with Focused Flexibility (build for now, design for extension)
+
+**Dependencies point inward? ✅**
+- Domain models defined independently of persistence layer
+- HTTP layer depends on service layer, not vice versa
+- Separation between API contracts and internal implementation
+
+### Principle 3: Focused Flexibility
+
+✅ **Full Compliance**
+
+**Immediate Need**:
+- GPT-4o-mini via Vercel AI SDK: Implemented as primary use case
+- Single model, single provider (OpenAI)
+- Configuration UI enables API key setup
+
+**Extension Points Designed**:
+- Model selection: Database field + UI ready for dropdown (future)
+- Provider endpoint: Optional field supports custom endpoints
+- Vercel AI SDK: Abstracts away provider details, enables future multi-provider support
+
+**Not Built (YAGNI)**:
+- Multiple simultaneous providers
+- Model comparison tools
+- Execution history persistence (deferred to future spec per FR-033)
+
+### Principle 4: Dolphin-Based Development
+
+✅ **Full Compliance**
+
+**Implementation Strategy**:
+- 79 tasks across 11 phases with frequent surface points
+- Each phase designed to deliver testable capability
+- Surface after every 5-10 tasks maximum
+
+**Surface Points Delivered**:
+- Phase 1: Database schema testable via migrations
+- Phase 2: Configuration API testable via curl
+- Phase 3: Frontend settings page testable in browser
+- Phase 4: Pricing system testable via API endpoint
+- Phase 5: Execution API testable via curl
+- Phases 6-11: Full UI flow testable in browser
+
+**Success Metric**: At end of each phase, stakeholder could test new capability
+
+---
+
+## Approved Complexity Deferrals
+
+### From Spec 002-make-a-call
+
+**Library Extraction** (Architecture Principle 2)
+- **Decision**: Keep code in packages (frontend/backend) for first iteration
+- **Rationale**: Premature to extract libraries without clear pattern reuse
+- **Revisit**: After 2-3 specs, evaluate common patterns for extraction
+- **Approved**: 2025-11-07
+
+**Frontend Logs → Backend** (Visibility Principle 1)
+- **Decision**: Frontend logs to browser console only (no backend persistence)
+- **Rationale**: Local development tool - browser DevTools sufficient for debugging
+- **Revisit**: If users request centralised logging across sessions
+- **Approved**: 2025-11-07
+
+**Execution History Persistence** (from FR-033)
+- **Decision**: Display-only for most recent execution (no database persistence)
+- **Rationale**: Simplifies first iteration, focus on core execution workflow
+- **Future Spec**: Execution history with filtering/pagination/search
+- **Approved**: 2025-11-07 (per spec requirements)

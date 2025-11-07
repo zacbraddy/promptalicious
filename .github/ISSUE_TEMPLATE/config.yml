@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/zacbraddy/promptalicious/tree/main/docs
+    about: Check the docs for setup guides, architecture, and troubleshooting
+  - name: 💬 Discussions
+    url: https://github.com/zacbraddy/promptalicious/discussions
+    about: Ask questions, share ideas, or show what you've built (if enabled)
+  - name: 🔒 Security Issue
+    url: https://github.com/zacbraddy/promptalicious/security/advisories/new
+    about: Report a security vulnerability privately

@@ -1,35 +1,32 @@
-import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Routes } from "react-router-dom";
 
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { Layout } from "./components/Layout";
+import { Toaster } from "./components/ui/sonner";
+import { ExecutePromptPage } from "./pages/ExecutePromptPage";
+import { SettingsPage } from "./pages/SettingsPage";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      retry: 3,
+    },
+  },
+});
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<ExecutePromptPage />} />
+          <Route path="/execute" element={<ExecutePromptPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+        <Toaster expand={true} visibleToasts={5} richColors />
+      </Layout>
+    </QueryClientProvider>
   );
 }
 
