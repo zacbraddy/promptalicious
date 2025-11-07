@@ -1216,7 +1216,7 @@ Use mocked backend responses.
 **Dependencies**: T054
 **Expected Outcome**: Pricing display validated
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
