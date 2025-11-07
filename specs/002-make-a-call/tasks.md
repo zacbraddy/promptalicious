@@ -1097,7 +1097,7 @@ Use mocked backend responses.
 **Dependencies**: T058, T059, T060
 **Expected Outcome**: Page supports cancel and recovers from refresh
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

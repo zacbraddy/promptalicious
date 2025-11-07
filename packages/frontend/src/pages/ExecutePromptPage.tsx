@@ -11,10 +11,12 @@ import { ExecuteControls } from "@/components/ExecuteControls";
 import { ResponseDisplay } from "@/components/ResponseDisplay";
 import { DiagnosticsDisplay } from "@/components/DiagnosticsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
-import { executePrompt } from "@/services/apiClient";
+import { executePrompt, abortExecution } from "@/services/apiClient";
+import { useExecutionStatus } from "@/hooks/useExecutionStatus";
 
 export function ExecutePromptPage() {
-  const [promptText, setPromptText] = useState("");
+  const { status: executionStatus } = useExecutionStatus();
+  const [localPromptText, setLocalPromptText] = useState("");
 
   const executePromptMutation = useMutation<
     ExecutePromptSuccessResponse,
@@ -24,17 +26,31 @@ export function ExecutePromptPage() {
     mutationFn: executePrompt,
   });
 
+  const abortExecutionMutation = useMutation({
+    mutationFn: abortExecution,
+  });
+
+  const promptText =
+    localPromptText || executionStatus?.execution?.promptText || "";
+
   const handleExecute = () => {
     if (!promptText.trim()) return;
     executePromptMutation.mutate({ promptText });
   };
 
   const handleCancel = () => {
-    executePromptMutation.reset();
+    abortExecutionMutation.mutate();
   };
 
-  const result = executePromptMutation.data?.result;
-  const error = executePromptMutation.error;
+  const isExecuting =
+    executePromptMutation.isPending || executionStatus?.isExecuting || false;
+
+  const result = executePromptMutation.data?.result || executionStatus?.result;
+  const error =
+    executePromptMutation.error ||
+    (executionStatus?.error
+      ? new Error(executionStatus.error.errorMessage)
+      : null);
 
   return (
     <div className="space-y-12 py-8">
@@ -56,14 +72,14 @@ export function ExecutePromptPage() {
           <CardContent className="space-y-4">
             <PromptInput
               value={promptText}
-              onChange={setPromptText}
-              disabled={executePromptMutation.isPending}
+              onChange={setLocalPromptText}
+              disabled={isExecuting}
               placeholder="Enter your system prompt here..."
             />
             <ExecuteControls
               onExecute={handleExecute}
               onCancel={handleCancel}
-              isExecuting={executePromptMutation.isPending}
+              isExecuting={isExecuting}
               isPromptEmpty={!promptText.trim()}
             />
           </CardContent>
@@ -132,13 +148,15 @@ export function ExecutePromptPage() {
               </span>
             </h2>
             <ErrorDisplay
-              error={{
-                id: crypto.randomUUID(),
-                promptExecutionId: "",
-                errorType: "unknown",
-                errorMessage: error.message,
-                timestamp: new Date().toISOString(),
-              }}
+              error={
+                executionStatus?.error || {
+                  id: crypto.randomUUID(),
+                  promptExecutionId: "",
+                  errorType: "unknown",
+                  errorMessage: error.message,
+                  timestamp: new Date().toISOString(),
+                }
+              }
             />
           </section>
         </div>
