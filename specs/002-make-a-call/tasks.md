@@ -1050,7 +1050,7 @@ Use mocked backend responses.
 **Dependencies**: T054-T057
 **Expected Outcome**: Page functional, can execute prompts
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
