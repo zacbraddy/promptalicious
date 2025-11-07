@@ -1034,7 +1034,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Errors display with clear type and actionable message
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
