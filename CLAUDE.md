@@ -31,13 +31,18 @@ See `memory/development-protocols.md` for complete stack details and rationales.
 pnpm typecheck      # Zero errors
 pnpm lint           # Zero errors/warnings (use pnpm lint:fix)
 pnpm format:check   # All files formatted (if fails, run pnpm format then recheck)
-pnpm test           # All passing (or justified failures)
+pnpm test:ci        # All passing (or justified failures) - non-interactive mode
 ```
 
 **Formatting protocol:**
 - ALWAYS run `pnpm format:check` first
 - If it fails, run `pnpm format` to fix, then run `pnpm format:check` again to verify
 - Never skip format checking - it must pass before task completion
+
+**Test execution protocol:**
+- Development: `pnpm test` (interactive watch mode)
+- Audits/CI: `pnpm test:ci` (non-interactive, use this for audits to avoid hanging)
+- Per-package: `pnpm --filter <package> test:ci`
 
 ### Before Any Code Work - MCP Activation Checklist
 

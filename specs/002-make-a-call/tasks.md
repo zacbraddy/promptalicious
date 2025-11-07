@@ -1081,7 +1081,7 @@ Use mocked backend responses.
 **Dependencies**: T059
 **Expected Outcome**: Hook handles page refresh recovery via polling
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

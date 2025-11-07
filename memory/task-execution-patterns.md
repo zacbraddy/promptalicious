@@ -147,8 +147,14 @@ T012: Verify all quickstart.md scenarios pass
 pnpm typecheck      # Zero errors (non-negotiable)
 pnpm lint           # Zero errors/warnings (use pnpm lint:fix)
 pnpm format:check   # Code formatted correctly (if fails, run pnpm format then recheck)
-pnpm test           # All passing (or justified failures)
+pnpm test:ci        # All passing (or justified failures) - use test:ci for non-interactive mode
 ```
+
+**Test Execution Protocol**:
+- **Interactive mode**: `pnpm test` (watch mode, for development)
+- **CI mode**: `pnpm test:ci` (non-interactive, for audits and validation)
+- **When auditing**: ALWAYS use `pnpm test:ci` to avoid hanging on interactive prompts
+- **Per-package**: Use `pnpm --filter <package> test:ci` for specific package tests
 
 **Formatting Protocol**:
 - ALWAYS run `pnpm format:check` first

@@ -188,51 +188,87 @@ export default createEslintConfig({
 - Optimistic updates and background refetching
 - Type-safe mutations and queries
 
+**CRITICAL RULES**:
+- **Use Axios in `apiClient.ts`** for all HTTP communication with the backend
+- **ALWAYS wrap `apiClient` calls with TanStack Query** (`useQuery`, `useMutation`) for state management
+- **NEVER** call `apiClient` functions directly without TanStack Query wrapper
+- **NEVER** manually implement polling, caching, or request state - use TanStack Query's built-in features (`refetchInterval`, `staleTime`, etc.)
+- **Create custom hooks** when you need to add logic (cache invalidation, computed values, multi-step operations)
+- **Use TanStack Query directly** in components if the hook would just pass through without adding value
+- **API Client (`apiClient.ts`)** = HTTP layer using Axios - pure functions that return promises
+
 **When to Use TanStack Query**:
-- **ALWAYS** for API calls (GET, POST, PUT, DELETE, etc.)
-- **ALWAYS** for any backend data fetching
-- **NEVER** bypass with direct `fetch` or `axios` calls in components
+- ✅ Fetching data from backend APIs
+- ✅ Polling/refetching data at intervals
+- ✅ Mutations (POST, PUT, DELETE operations)
+- ✅ Caching and background synchronisation
+- ✅ Optimistic updates
+- ❌ Local UI state (use `useState` instead)
+- ❌ Form state (use `react-hook-form` instead)
 
 **Architecture Pattern**:
 ```
 packages/frontend/src/
 ├── services/
-│   └── apiClient.ts          # Axios/fetch wrappers (low-level)
+│   └── apiClient.ts          # Axios HTTP client - communicates with backend API
 ├── hooks/
-│   └── useConfig.ts           # TanStack Query hooks (high-level)
+│   ├── useConfig.ts          # Wraps apiClient.getConfig() with useQuery
+│   └── useExecutionStatus.ts # Wraps apiClient.getExecutionStatus() with useQuery + polling
 └── components/
-    └── SettingsForm.tsx       # Uses hooks via props from parent
+    └── SettingsForm.tsx      # Uses hooks (useConfig), NEVER imports apiClient directly
 ```
 
 **Implementation Pattern**:
 
 1. **API Client Layer** (`services/apiClient.ts`):
+   - Uses Axios for HTTP communication with backend
    - Pure functions that return promises
    - No React dependencies
-   - Handle HTTP details (headers, error mapping)
+   - Handles HTTP details (headers, error mapping, request/response transformation)
    ```typescript
+   import axios from "axios";
+
+   // Axios instance with base configuration
+   export const apiClient = axios.create({
+     baseURL: import.meta.env.VITE_API_BASE_URL,
+   });
+
+   // Pure function that uses Axios to fetch data
    export async function getConfig(): Promise<ConfigurationResponse> {
      const response = await apiClient.get<ConfigurationResponse>("/config");
+     return response.data;
+   }
+
+   export async function updateConfig(data: UpdateConfigurationRequest): Promise<UpdateConfigurationSuccessResponse> {
+     const response = await apiClient.put<UpdateConfigurationSuccessResponse>("/config", data);
      return response.data;
    }
    ```
 
 2. **Hook Layer** (`hooks/useConfig.ts`):
-   - Wraps API client functions with TanStack Query
+   - Wraps API client functions with TanStack Query for state management
+   - Imports functions from `apiClient.ts` and wraps them with `useQuery` or `useMutation`
    - Defines query keys for caching
    - Handles invalidation and optimistic updates
    ```typescript
+   import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+   import { getConfig, updateConfig } from "@/services/apiClient";
+
+   // Wrap apiClient.getConfig() with TanStack Query
    export function useGetConfig() {
      return useQuery<ConfigurationResponse>({
        queryKey: ["config"],
-       queryFn: getConfig,
+       queryFn: getConfig, // Uses apiClient function
      });
    }
 
+   // Wrap apiClient.updateConfig() with TanStack Query
    export function useUpdateConfig() {
      const queryClient = useQueryClient();
+
+     // ... extra logic that would justify putting this in a hook ...
      return useMutation<SuccessResponse, Error, UpdateRequest>({
-       mutationFn: updateConfig,
+       mutationFn: updateConfig, // Uses apiClient function
        onSuccess: () => {
          void queryClient.invalidateQueries({ queryKey: ["config"] });
        },
@@ -241,13 +277,16 @@ packages/frontend/src/
    ```
 
 3. **Page/Container Component** (e.g., `pages/SettingsPage.tsx`):
-   - Uses TanStack Query hooks
+   - Uses custom hooks that wrap TanStack Query
    - Handles success/error at container level
    - Passes mutation functions down to child components
+   - NEVER imports `apiClient` directly
    ```typescript
+   import { useGetConfig, useUpdateConfig } from "@/hooks/useConfig";
+
    export function SettingsPage() {
-     const { data, isLoading } = useGetConfig();
-     const updateMutation = useUpdateConfig();
+     const { data, isLoading } = useGetConfig(); // Uses hook, not apiClient
+     const updateMutation = useUpdateConfig();   // Uses hook, not apiClient
 
      return <SettingsForm onSubmit={updateMutation.mutateAsync} />;
    }
@@ -267,9 +306,11 @@ packages/frontend/src/
 
 **Error Handling Pattern**:
 
-**CORRECT** ✅ - Handle errors in mutation callbacks:
+**CORRECT** ✅ - Use custom hook that wraps TanStack Query:
 ```typescript
 // In page component
+import { useUpdateConfig } from "@/hooks/useConfig"; // Custom hook
+
 const updateMutation = useUpdateConfig();
 
 const handleSubmit = async (data: FormData) => {
@@ -277,21 +318,81 @@ const handleSubmit = async (data: FormData) => {
     await updateMutation.mutateAsync(data);
     toast.success("Saved successfully");
   } catch (error) {
-    // Error already handled by TanStack Query
-    // Just show user feedback
     toast.error(error.message);
   }
 };
 ```
 
-**WRONG** ❌ - Don't import API client in components:
+**WRONG** ❌ - Don't import `apiClient` directly in components:
 ```typescript
-// In component
+// In component - DO NOT DO THIS!
 import { updateConfig } from "@/services/apiClient";
 
 const handleSubmit = async () => {
-  await updateConfig(data); // Bypasses TanStack Query!
+  await updateConfig(data); // ❌ Bypasses TanStack Query state management!
 };
+```
+
+**CORRECT** ✅ - The custom hook wraps `apiClient` with TanStack Query:
+```typescript
+// In hooks/useConfig.ts
+import { useMutation } from "@tanstack/react-query";
+import { updateConfig } from "@/services/apiClient"; // ✅ Hook imports apiClient
+
+export function useUpdateConfig() {
+  return useMutation({
+    mutationFn: updateConfig, // Wraps apiClient function
+  });
+}
+```
+
+**Polling Pattern** (using `refetchInterval`):
+```typescript
+// In hooks/useExecutionStatus.ts
+import { useQuery } from "@tanstack/react-query";
+import { getExecutionStatus } from "@/services/apiClient"; // Import apiClient function
+
+export function useExecutionStatus() {
+  const query = useQuery<ExecutionStatusResponse>({
+    queryKey: ["execution", "status"],
+    queryFn: getExecutionStatus, // Wrap apiClient function with useQuery
+    refetchInterval: (query) => {
+      // Smart polling: only poll when execution is in progress
+      const data = query.state.data;
+      return data?.isExecuting ? 2000 : false;
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  return {
+    status: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}
+```
+
+**WRONG** ❌ - Manual polling with `setInterval` and direct `apiClient` calls:
+```typescript
+// DO NOT DO THIS - use TanStack Query's refetchInterval instead!
+import { getExecutionStatus } from "@/services/apiClient";
+
+export function useExecutionStatus() {
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const data = await getExecutionStatus(); // ❌ Direct apiClient call without TanStack Query
+      setStatus(data);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return { status };
+}
 ```
 
 **Query Key Conventions**:
@@ -311,6 +412,7 @@ const handleSubmit = async () => {
 
 **Source**: Established pattern from spec 002-make-a-call implementation
 **Established**: 2025-01-06
+**Updated**: 2025-01-07 (added polling pattern and strengthened directives)
 
 ---
 

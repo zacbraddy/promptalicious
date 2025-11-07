@@ -163,7 +163,7 @@ Provide ONE of the following:
 Before marking task complete:
 - Run linting (`pnpm lint`, use `pnpm lint:fix` to auto-fix)
 - Run type checking (`pnpm typecheck`)
-- Run tests (`pnpm test`)
+- Run tests (`pnpm test:ci` for non-interactive mode, especially during audits)
 - Check for errors in files you touched AND didn't touch
 - Only mark complete when quality gates pass (or failures justified by project state)
 
@@ -219,7 +219,12 @@ All code MUST pass before commit:
 1. Type checking: `pnpm typecheck` (zero errors)
 2. Linting: `pnpm lint` (zero errors, zero warnings)
 3. Formatting: `pnpm format:check` (or auto-format applied)
-4. Tests: `pnpm test` (all passing, or failures justified)
+4. Tests: `pnpm test:ci` (all passing, or failures justified)
+
+**Test Execution**:
+- Development: `pnpm test` (interactive watch mode)
+- Audits/CI: `pnpm test:ci` (non-interactive, use this for audits to avoid hanging)
+- Per-package: `pnpm --filter <package> test:ci`
 
 Husky pre-commit hooks MUST enforce these gates.
 
