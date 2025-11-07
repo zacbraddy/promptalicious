@@ -774,3 +774,363 @@ pnpm outdated -r  # Shows outdated packages across workspace
 
 **Source**: CLAUDE.md § Package Installation Protocol
 **Established**: 2025-11-04
+
+---
+
+## Feature Completion History
+
+### Spec 002-make-a-call (2025-11-07)
+
+**Feature**: LLM Prompt Execution & Diagnostics Interface
+
+**Completed Capabilities**:
+- Full-stack LLM prompt execution with GPT-4o-mini via Vercel AI SDK
+- Settings page for API key configuration and connection testing
+- Prompt execution page with abort capability and status polling
+- Comprehensive diagnostics display (tokens, timing, cost in GBP)
+- Error classification and display for all failure modes
+- Pricing data system with staleness detection (>7 days)
+- Page refresh recovery (execution state preserved during reload)
+- Retrofuturistic dark theme (shadcn/ui + Tailwind)
+
+**Technical Achievements**:
+- Added TanStack Query for server state management (see Frontend State Management section)
+- Created abort/status polling pattern for long-running LLM calls
+- Implemented pricing cache system with Frankfurter API (USD→GBP conversion)
+- Built retrofuturistic dark theme using shadcn/ui + Tailwind CSS v4
+- Established frontend architecture: API client (Axios) → Hooks (TanStack Query) → Components
+- Added page refresh recovery via execution state cache
+
+**Metrics**:
+- Total tasks: 79 completed across 11 phases
+- Key learning: Mid-spec retrofit (T046-T053) added abort/cancel functionality after spec completion; demonstrated value of iterative enhancement vs upfront perfect planning
+
+**Source**: spec 002-make-a-call complete (2025-11-07)
+**Established**: 2025-11-07
+
+---
+
+## Implementation Decisions from Spec 002
+
+### Clarifications Resolved
+
+**LLM Response Time Handling**:
+- Decision: No thresholds needed, display raw timing without status indicators
+- Rationale: Analysis is not a concern for this iteration (Q from spec.md lines 45-48)
+
+**LLM Response Display Length**:
+- Decision: No limit, display full response with scrolling
+- Rationale: Display areas grow to meet content height; use smart UI patterns to make information digestible but never hide it (Q from spec.md lines 49)
+
+**Database Selection**:
+- Decision: PostgreSQL instance as per tech stack (not SQLite)
+- Rationale: Consistency with existing architecture decisions (Q from spec.md line 50)
+
+**Pricing Data Approach**:
+- Decision: Lookup live API pricing on backend startup (not per-call), store in database as cache, fallback to last successful pricing if live lookup fails
+- Rationale: Balances freshness with performance and reliability (Q from spec.md lines 51-52)
+
+**Source**: spec 002-make-a-call spec.md § Clarifications
+**Established**: 2025-11-07
+
+---
+
+## Architectural Patterns Established
+
+### Execution State Management
+
+**Pattern**: In-memory execution state cache with AbortController support
+
+**Implementation** (from spec 002-make-a-call):
+- Backend maintains in-memory cache of currently executing prompt
+- Cache stores: execution ID, prompt text, start timestamp, AbortController signal, status
+- Lifecycle: Execute clears cache → stores state → completion stores results → status retrieval clears cache
+- Single-execution pattern: Only one prompt can execute at a time (prevents concurrent execution issues)
+- Abort support: AbortController allows cancellation of in-flight LLM calls
+
+**Key Requirements**:
+- FR-003 series: Backend cache ensures only one execution at a time, even across page refreshes
+- FR-005a: System MUST support aborting an in-progress prompt execution
+- FR-005b: System MUST clean up execution state cache when execution completes (success, failure, or abort)
+
+**Rationale**:
+- Prevents resource exhaustion from multiple concurrent LLM calls
+- Enables page refresh recovery (frontend polls status endpoint)
+- Allows user to cancel long-running executions
+- In-memory cache is acceptable for single-user local tool (no persistence needed)
+
+**Source**: spec 002-make-a-call data-model.md lines 177-183, spec.md FR-003 series
+**Established**: 2025-11-07
+
+---
+
+## Pricing & Exchange Rate System
+
+### Pricing Data Strategy
+
+**Decision**: Scrape openai.com/api/pricing on backend startup, cache in database, fallback to hardcoded constants
+
+**Implementation**:
+- Primary approach: Scrape OpenAI pricing page on backend startup, parse HTML/JSON to extract GPT-4o-mini pricing
+- Cache in database with timestamp (table: `pricing_info`)
+- Retry with exponential backoff if scraping fails
+- Fallback: Hardcoded pricing constants if scraping fails or on first startup before successful scrape
+  - Input: $0.150 per 1M tokens
+  - Output: $0.600 per 1M tokens
+  - Comment in code: "// Fallback pricing - last verified YYYY-MM-DD from openai.com/api/pricing"
+- Staleness warning: Display if pricing >7 days old (encourages investigation)
+
+**Rationale**:
+- OpenAI does NOT expose a programmatic pricing API
+- Scraping may break if OpenAI changes page structure (acceptable risk for local dev tool)
+- Hardcoded fallback ensures tool never fails due to pricing unavailability
+- Startup lookup (not per-call) balances freshness with performance
+
+**Source**: spec 002-make-a-call research.md lines 215-260
+**Established**: 2025-11-07
+
+### Exchange Rate Strategy
+
+**Decision**: Use Frankfurter API (free, no key required) for USD→GBP conversion
+
+**Implementation**:
+- API: `GET https://api.frankfurter.dev/v1/latest?base=USD&symbols=GBP`
+- Returns: `{"amount":1.0,"base":"USD","date":"2025-11-04","rates":{"GBP":0.79}}`
+- Cache in database with timestamp (table: `exchange_rates`)
+- Fall back to cached rate if API unavailable
+- Fetch on backend startup, same pattern as pricing data
+
+**Alternatives Considered**:
+- ExchangeRate-API.com (free tier: 1,500 requests/month) - backup option
+
+**Rationale**:
+- Completely free, no API key required, no rate limits
+- Open-source, reliable, actively maintained
+- Simple REST API, easy integration
+
+**Source**: spec 002-make-a-call research.md lines 643-651
+**Established**: 2025-11-07
+
+### Staleness Detection
+
+**Rule**: Pricing data considered stale if `lastUpdated > 7 days ago`
+
+**UI Behaviour**: Display warning when pricing is stale (FR-028)
+
+**Backend Behaviour**: Log warning on startup if pricing lookup fails
+
+**Source**: spec 002-make-a-call spec.md FR-028, data-model.md lines 182-185
+**Established**: 2025-11-07
+
+---
+
+## Frontend Styling Patterns
+
+### Dark Theme Implementation
+
+**Decision**: Tailwind CSS v4 with custom retrofuturistic dark theme, defined in `:root` CSS variables
+
+**CRITICAL**: Dark mode is the ONLY theme (not a toggleable variant)
+
+**Implementation** (per research.md Decision 3 and spec.md FR-029):
+- Dark theme colours defined directly in `:root` CSS variables in `index.css`
+- **NO** `class="dark"` on HTML element (dark mode is the only mode, not a variant)
+- Map custom colours to shadcn's semantic colour variables (primary, secondary, accent, etc.)
+- Use OKLCH colour space for better perceptual uniformity
+- This is the core and only colour palette for the application
+
+**Colour Palette** (retrofuturistic, soft greys, muddy blacks, cyan/magenta accents):
+- Background: Muddy blacks (`oklch(0.04 0 0)` = #0a0a0a, `oklch(0.1 0 0)` = #1a1a1a)
+- Foreground: Soft greys (`oklch(0.69 0 0)` = #b0b0b0, `oklch(0.4 0 0)` = #666666)
+- Primary (Cyan accent): `oklch(0.66 0.14 196)` = subdued cyan (#00CED1)
+- Accent (Magenta): `oklch(0.68 0.16 320)` = subdued magenta (#B565D8)
+
+**Source**: spec 002-make-a-call research.md lines 102-138, spec.md lines 151-159
+**Established**: 2025-11-07
+
+### Application Branding
+
+**Logo & Favicon**: 😋 (face savouring food) emoji
+
+**Rationale**:
+- Simple, playful branding that complements the "promptalicious" name
+- Universally supported across operating systems
+- Appears in favicon and navbar alongside the application name
+
+**Source**: spec 002-make-a-call spec.md FR-032b
+**Established**: 2025-11-07
+
+---
+
+## LLM Integration Pattern
+
+### Vercel AI SDK Implementation
+
+**Decision**: Use Vercel AI SDK's `generateText` function with OpenAI provider
+
+**Rationale**:
+- Unified interface for multiple LLM providers
+- Built-in token counting and usage metrics
+- Native TypeScript support with type-safe responses
+- Automatic error handling and retries
+- Direct OpenAI provider support for GPT-4o-mini
+
+**Implementation Pattern**:
+```typescript
+import { generateText } from 'ai'
+import { openai } from '@ai-sdk/openai'
+
+const result = await generateText({
+  model: openai('gpt-4o-mini'),
+  prompt: userPrompt,
+})
+
+// Available diagnostic data:
+// - result.text (response)
+// - result.usage.promptTokens
+// - result.usage.completionTokens
+// - result.usage.totalTokens
+// - timing data (measure externally with Date.now())
+```
+
+**Integration Points**:
+- Backend API endpoint receives prompt, calls generateText, returns result + diagnostics
+- Error handling captures all failure modes (auth, network, API limits, etc.)
+- Environment variable for OpenAI API key
+
+**Alternatives Considered**:
+- Direct OpenAI SDK: More control but loses Vercel AI SDK's provider abstraction
+- LangChain: Too heavy for simple LLM calls, adds unnecessary complexity
+
+**Source**: spec 002-make-a-call research.md lines 12-53
+**Established**: 2025-11-07
+
+---
+
+## UI Component Strategy
+
+### shadcn/ui Setup
+
+**Decision**: Use shadcn/ui CLI to install individual components on-demand
+
+**Rationale**:
+- shadcn/ui is not an npm package - components are copied into your project
+- Full customisation and ownership of component code
+- Built on Radix UI primitives (accessibility out of the box)
+- Tailwind CSS-based styling (aligns with spec requirements)
+- No runtime dependency overhead
+
+**Installation Pattern**:
+```bash
+# Initialise shadcn/ui in frontend package
+npx shadcn@latest init
+
+# Install components as needed
+npx shadcn@latest add button card textarea badge table alert
+```
+
+**Components Used in Spec 002**:
+- Card: Container for prompt input and results
+- Button: Execute/Cancel buttons
+- Textarea: System prompt input
+- Badge: Status indicators
+- Table: Diagnostic data display
+- Alert: Error display
+
+**Component Location**: `packages/frontend/src/components/ui/`
+
+**Alternatives Considered**:
+- Raw Radix UI: More work to style, shadcn provides good defaults
+- Material UI / Ant Design: Too opinionated, harder to achieve retrofuturistic aesthetic
+- Custom components from scratch: Would violate "quick wins" constraint
+
+**Source**: spec 002-make-a-call research.md lines 56-99
+**Established**: 2025-11-07
+
+---
+
+## Frontend State Management
+
+### React Built-in Hooks for UI State
+
+**Decision**: Use React built-in hooks (`useState`, `useEffect`) for UI state, no external state library
+
+**Rationale**:
+- Simple UI state (prompt input, loading indicators, form state)
+- No complex state sharing between distant components (yet)
+- Spec emphasises quick wins over perfect architecture
+- External libraries (Zustand, Redux) add unnecessary complexity at this stage
+
+**When to Use**:
+- ✅ Local UI state (form inputs, modals, toggles)
+- ✅ Component-specific loading states
+- ✅ Transient UI state (hover, focus)
+- ❌ Server state (use TanStack Query instead)
+- ❌ Form state (use react-hook-form instead)
+
+**Future Considerations**:
+- When adding execution history (future spec), consider React Query for server state management
+- When adding real-time streaming responses, consider state machine library (XState)
+
+**Source**: spec 002-make-a-call research.md lines 262-317
+**Established**: 2025-11-07
+
+---
+
+## Security Considerations
+
+### API Key Storage
+
+**Decision**: Store API keys in plain text in local PostgreSQL database (not .env files)
+
+**Rationale**:
+- This is a local development tool (single-user, local database)
+- Storing API key in plain text is acceptable, just as .env files store credentials unencrypted
+- Database storage prevents accidental commit of .env files with credentials
+
+**CRITICAL Security Requirement**:
+- API keys stored in database (not .env) to avoid accidental commit of .env files with credentials
+- **This is ONLY safe if database files cannot be accidentally committed**
+
+**Required .gitignore Entries**:
+- `.env` and `.env.*` files (database connection strings)
+- PostgreSQL data directories (e.g., `postgres-data/`, Docker volume mounts)
+- Database dumps and backups (e.g., `*.sql`, `*.dump`)
+
+**Implementation Requirement**:
+- Task T002 in spec 002 verified .gitignore includes all database-related paths
+- Database credentials and connection string secured via environment variables (never committed to repository)
+
+**Source**: spec 002-make-a-call research.md lines 620-630, data-model.md lines 139-149
+**Established**: 2025-11-07
+
+---
+
+## Database Patterns
+
+### Numeric Precision Handling
+
+**Context**: PostgreSQL `NUMERIC` type returns strings in DrizzleORM to prevent JavaScript floating-point precision loss
+
+**Pattern** (from spec 002-make-a-call data-model.md):
+
+**Storage**:
+- Database: PostgreSQL `NUMERIC(12,10)` for pricing (token prices), `NUMERIC(10,6)` for exchange rates
+- DrizzleORM: Returns as string (by design) to prevent precision loss
+
+**Service Layer Conversion**:
+- Convert to number via `parseFloat()` for application use
+- Precision analysis: JavaScript `Number` is sufficient for our use case (token prices have <7 significant digits, simple multiplication, no accumulation)
+
+**Decision**:
+- Using native numbers (not big.js/decimal.js) is acceptable for a debugging tool with simple cost calculations
+- No need for arbitrary-precision arithmetic libraries
+
+**Rationale**:
+- Token prices are small decimals (e.g., 0.00000015 USD per token)
+- Simple multiplication operations (tokens × price × exchange rate)
+- No accumulation or rounding errors over many operations
+- Debugging tool context (not financial system requiring exact precision)
+
+**Source**: spec 002-make-a-call data-model.md lines 190-196, 228-229
+**Established**: 2025-11-07

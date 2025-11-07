@@ -216,27 +216,17 @@ Usage: Detailed guides (>50 lines) → docs/feature-name.md, summaries stay in C
 
 ## Recent Changes
 
-1. **2025-11-07**: Completed spec 002-make-a-call (LLM Prompt Execution & Diagnostics Interface)
-   - Implemented full-stack LLM execution workflow with GPT-4o-mini
-   - Added TanStack Query for server state management (see development-protocols.md)
-   - Created abort/status polling pattern for long-running LLM calls
-   - Implemented pricing cache system with Frankfurter API (USD→GBP conversion)
-   - Built retrofuturistic dark theme using shadcn/ui + Tailwind CSS v4
-   - Established frontend architecture: API client (Axios) → Hooks (TanStack Query) → Components
-   - Added page refresh recovery via execution state cache
-   - Total: 79 tasks completed across 11 phases
-   - **Key Learning**: Mid-spec retrofit (T046-T053) added abort/cancel functionality after spec completion; demonstrated value of iterative enhancement vs upfront perfect planning
+1. **2025-11-07**: Knowledge coalesced from spec 002-make-a-call
+   - Moved spec knowledge to memory/development-protocols.md (implementation decisions, architectural patterns, frontend/backend patterns, security considerations)
+   - Moved constitutional compliance analysis to memory/constitution.md
+   - Created docs/api/api-contracts.md (complete API reference)
+   - Reduced CLAUDE.md from 266 to ~220 lines
 
-2. **2025-11-04**: Knowledge coalesced from spec 001-project-scaffold-i
-   - Created memory files: development-protocols.md, program_overview.md, task-execution-patterns.md
-   - Created docs/architectural-decisions.md
-   - Reduced CLAUDE.md from 247 to ~150 lines
-   - Fixed Serena activation protocol (now mandatory in Quick Reference)
+2. **2025-11-07**: Completed spec 002-make-a-call (see memory/development-protocols.md § Feature Completion History)
 
-3. **2025-11-03**: Constitution v1.1.0 ratified
-   - Added Dolphin-Based Development principle
-   - Established pragmatic TDD workflow
-   - Defined tech stack and quality gates
+3. **2025-11-04**: Knowledge coalesced from spec 001-project-scaffold-i
+
+4. **2025-11-03**: Constitution v1.1.0 ratified
 
 ---
 
@@ -259,8 +249,9 @@ Usage: Detailed guides (>50 lines) → docs/feature-name.md, summaries stay in C
 ## For Complete Context
 
 See memory files for detailed information:
-- `memory/constitution.md` - v1.1.0 (core principles, governance)
-- `memory/development-protocols.md` - Tech stack, patterns, quality standards
+- `memory/constitution.md` - v1.1.0 (core principles, governance, spec 002 compliance)
+- `memory/development-protocols.md` - Tech stack, patterns, quality standards, spec 002 decisions
 - `memory/program_overview.md` - Business context, vision, target audience
 - `memory/task-execution-patterns.md` - Workflow, quality gates, debugging protocols
 - `docs/architectural-decisions.md` - Significant architectural decisions with rationales
+- `docs/api/api-contracts.md` - Complete backend API reference (spec 002)
