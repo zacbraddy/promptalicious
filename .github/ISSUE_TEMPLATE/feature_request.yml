@@ -1,0 +1,79 @@
+name: Feature Request
+description: Propose a new feature for promptalicious
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please note that feature requests without accompanying PRs may not be implemented.
+
+        **Read CONTRIBUTING.md before submitting**: The maintainer has limited time and won't implement features they don't personally need. If you want this feature, please be prepared to submit a PR.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? Why is it valuable?
+      placeholder: Currently, when I try to do X, I face problem Y...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you solve this problem? What would the feature look like?
+      placeholder: I propose we add...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches could solve this problem?
+      placeholder: I also considered...
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Your Use Case
+      description: How would YOU use this feature? (Helps assess whether others would benefit)
+      placeholder: I would use this to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willing-to-implement
+    attributes:
+      label: Implementation
+      description: Are you willing to implement this feature yourself?
+      options:
+        - "Yes, I'll submit a PR if the feature is approved"
+        - "No, I'm hoping someone else will implement it"
+        - "Maybe, depending on complexity"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, examples, or references
+      placeholder: Similar to how X does it...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I've searched for existing issues/PRs for similar features
+          required: true
+        - label: I've read CONTRIBUTING.md and understand the maintainer's time constraints
+          required: true
+        - label: This feature aligns with promptalicious's mission (local LLM prompt debugging)
+          required: true
+        - label: I understand that without a PR, this may never be implemented
+          required: true
