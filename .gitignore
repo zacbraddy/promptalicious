@@ -5,7 +5,6 @@ dist/
 build/
 .turbo/
 
-pnpm-lock.yaml
 .pnpm-debug.log
 
 .env
