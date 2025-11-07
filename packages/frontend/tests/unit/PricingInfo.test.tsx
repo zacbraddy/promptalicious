@@ -30,12 +30,10 @@ describe("PricingInfo", () => {
 
     render(<PricingInfo pricingData={mockPricingData} />);
 
-    expect(screen.getByText("Pricing Information")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Current token pricing for gpt-4o-mini \(openai\)/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/\$0.000150 USD/)).toBeInTheDocument();
-    expect(screen.getByText(/\$0.000600 USD/)).toBeInTheDocument();
+    expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument();
+    expect(screen.getByText("openai")).toBeInTheDocument();
+    expect(screen.getByText(/\$0.00015000 USD/)).toBeInTheDocument();
+    expect(screen.getByText(/\$0.00060000 USD/)).toBeInTheDocument();
     expect(screen.getByText(/1 USD = 0.7900 GBP/)).toBeInTheDocument();
   });
 
@@ -64,8 +62,8 @@ describe("PricingInfo", () => {
 
     render(<PricingInfo pricingData={mockPricingData} />);
 
-    expect(screen.getByText(/£0.000120 GBP/)).toBeInTheDocument();
-    expect(screen.getByText(/£0.000480 GBP/)).toBeInTheDocument();
+    expect(screen.getByText(/£0.00012000 GBP/)).toBeInTheDocument();
+    expect(screen.getByText(/£0.00048000 GBP/)).toBeInTheDocument();
   });
 
   it("displays last updated timestamp in formatted date", () => {

@@ -1201,7 +1201,7 @@ Use mocked backend responses.
 **Dependencies**: T053
 **Expected Outcome**: Staleness warning displays when pricing is old
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

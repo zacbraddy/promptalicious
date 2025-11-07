@@ -1,12 +1,6 @@
 import type { PricingInfoResponse } from "@promptalicious/shared-infra";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface PricingInfoProps {
   pricingData: PricingInfoResponse;
@@ -17,7 +11,7 @@ export function PricingInfo({ pricingData }: PricingInfoProps) {
 
   const formatPrice = (priceUSD: number): string => {
     const priceGBP = priceUSD * exchangeRate.rate;
-    return `$${priceUSD.toFixed(6)} USD (£${priceGBP.toFixed(6)} GBP)`;
+    return `$${priceUSD.toFixed(8)} USD (£${priceGBP.toFixed(8)} GBP)`;
   };
 
   const formatDate = (isoDateString: string): string => {
@@ -33,13 +27,7 @@ export function PricingInfo({ pricingData }: PricingInfoProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Pricing Information</CardTitle>
-        <CardDescription>
-          Current token pricing for {pricing.model} ({pricing.provider})
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="grid gap-4">
           <div className="grid grid-cols-[140px_1fr] gap-2">
             <div className="font-medium">Model:</div>

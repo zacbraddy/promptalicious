@@ -1,17 +1,23 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
 } from "@promptalicious/shared-infra";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PromptInput } from "@/components/PromptInput";
 import { ExecuteControls } from "@/components/ExecuteControls";
 import { ResponseDisplay } from "@/components/ResponseDisplay";
 import { DiagnosticsDisplay } from "@/components/DiagnosticsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
-import { executePrompt, abortExecution } from "@/services/apiClient";
+import { PricingInfo } from "@/components/PricingInfo";
+import {
+  executePrompt,
+  abortExecution,
+  getPricing,
+} from "@/services/apiClient";
 import { useExecutionStatus } from "@/hooks/useExecutionStatus";
 
 export function ExecutePromptPage() {
@@ -28,6 +34,12 @@ export function ExecutePromptPage() {
 
   const abortExecutionMutation = useMutation({
     mutationFn: abortExecution,
+  });
+
+  const pricingQuery = useQuery({
+    queryKey: ["pricing"],
+    queryFn: getPricing,
+    staleTime: 1000 * 60 * 60,
   });
 
   const promptText =
@@ -132,6 +144,24 @@ export function ExecutePromptPage() {
             </h2>
             <DiagnosticsDisplay result={result} />
           </section>
+
+          {/* Pricing Section */}
+          {pricingQuery.data && (
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Pricing Information{" "}
+                {pricingQuery.data.staleness.isStale && (
+                  <Badge variant="destructive" className="ml-2">
+                    {pricingQuery.data.staleness.daysSinceUpdate} days old
+                  </Badge>
+                )}
+                <span className="text-muted-foreground ml-3 text-sm font-normal">
+                  — Current token pricing and exchange rates
+                </span>
+              </h2>
+              <PricingInfo pricingData={pricingQuery.data} />
+            </section>
+          )}
         </div>
       )}
 
