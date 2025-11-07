@@ -1186,7 +1186,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Pricing info renders clearly
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1194,7 +1194,7 @@ Use mocked backend responses.
 **File**: `packages/frontend/src/components/PricingInfo.tsx` (update)
 **Description**: Add staleness warning:
 - Check `isStale` flag from API response
-- Display warning Alert if pricing is stale
+- Display warning Pill next to the pricing info heading if pricing is stale
 - Show days since update
 
 **Test**: Unit test with stale pricing data

@@ -10,6 +10,7 @@ import type {
   ExecutePromptErrorResponse,
   ExecutionStatusResponse,
   AbortExecutionResponse,
+  PricingInfoResponse,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -134,6 +135,15 @@ export async function abortExecution(): Promise<AbortExecutionResponse> {
   try {
     const response =
       await apiClient.post<AbortExecutionResponse>("/execute/abort");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function getPricing(): Promise<PricingInfoResponse> {
+  try {
+    const response = await apiClient.get<PricingInfoResponse>("/pricing");
     return response.data;
   } catch (error) {
     handleAxiosError(error);
