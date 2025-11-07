@@ -1065,7 +1065,7 @@ Use mocked backend responses.
 **Dependencies**: T044 (API client exists)
 **Expected Outcome**: API client supports status and abort endpoints
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

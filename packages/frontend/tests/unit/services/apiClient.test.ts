@@ -8,6 +8,8 @@ import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
+  ExecutionStatusResponse,
+  AbortExecutionResponse,
 } from "@promptalicious/shared-infra";
 
 import {
@@ -16,6 +18,8 @@ import {
   updateConfig,
   testConnection,
   executePrompt,
+  getExecutionStatus,
+  abortExecution,
   ApiError,
 } from "@/services/apiClient";
 
@@ -36,7 +40,7 @@ describe("API Client", () => {
         config: {
           id: 1,
           selectedModel: "gpt-4o-mini",
-          providerEndpoint: undefined,
+          baseURL: undefined,
           createdAt: "2025-11-04T09:00:00.000Z",
           updatedAt: "2025-11-04T09:00:00.000Z",
         },
@@ -365,6 +369,152 @@ describe("API Client", () => {
       mock.onPost("/execute", requestData).networkError();
 
       await expect(executePrompt(requestData)).rejects.toThrow();
+    });
+  });
+
+  describe("getExecutionStatus", () => {
+    it("should get status when execution is in progress", async () => {
+      const mockResponse: ExecutionStatusResponse = {
+        isExecuting: true,
+        execution: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          promptText:
+            "You are a helpful assistant. Explain quantum computing in simple terms.",
+          executionTimestamp: "2025-11-04T10:37:00.000Z",
+          status: "in_progress",
+          targetModel: "gpt-4o-mini",
+        },
+      };
+
+      mock.onGet("/execute/status").reply(200, mockResponse);
+
+      const result = await getExecutionStatus();
+      expect(result).toEqual(mockResponse);
+      expect(result.isExecuting).toBe(true);
+      expect(result.execution?.status).toBe("in_progress");
+    });
+
+    it("should get status when execution is completed", async () => {
+      const mockResponse: ExecutionStatusResponse = {
+        isExecuting: false,
+        execution: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          promptText:
+            "You are a helpful assistant. Explain quantum computing in simple terms.",
+          executionTimestamp: "2025-11-04T10:37:00.000Z",
+          status: "completed",
+          targetModel: "gpt-4o-mini",
+        },
+        result: {
+          id: "660e8400-e29b-41d4-a716-446655440001",
+          promptExecutionId: "550e8400-e29b-41d4-a716-446655440000",
+          responseText:
+            "Quantum computing is a type of computing that uses quantum mechanics...",
+          inputTokenCount: 15,
+          outputTokenCount: 120,
+          totalTokenCount: 135,
+          executionDurationMs: 1842,
+          estimatedCostGBP: 0.0012,
+        },
+      };
+
+      mock.onGet("/execute/status").reply(200, mockResponse);
+
+      const result = await getExecutionStatus();
+      expect(result).toEqual(mockResponse);
+      expect(result.isExecuting).toBe(false);
+      expect(result.execution?.status).toBe("completed");
+      expect(result.result).toBeDefined();
+      expect(result.result?.responseText).toBe(
+        "Quantum computing is a type of computing that uses quantum mechanics...",
+      );
+    });
+
+    it("should get status when execution was aborted", async () => {
+      const mockResponse: ExecutionStatusResponse = {
+        isExecuting: false,
+        execution: {
+          id: "770e8400-e29b-41d4-a716-446655440002",
+          promptText: "Test prompt",
+          executionTimestamp: "2025-11-04T10:38:00.000Z",
+          status: "failed",
+          targetModel: "gpt-4o-mini",
+        },
+        error: {
+          id: "880e8400-e29b-41d4-a716-446655440003",
+          promptExecutionId: "770e8400-e29b-41d4-a716-446655440002",
+          errorType: "aborted",
+          errorMessage: "Execution was cancelled by user",
+          timestamp: "2025-11-04T10:38:01.000Z",
+        },
+      };
+
+      mock.onGet("/execute/status").reply(200, mockResponse);
+
+      const result = await getExecutionStatus();
+      expect(result).toEqual(mockResponse);
+      expect(result.isExecuting).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.errorType).toBe("aborted");
+    });
+
+    it("should get status when no execution exists", async () => {
+      const mockResponse: ExecutionStatusResponse = {
+        isExecuting: false,
+        execution: null,
+      };
+
+      mock.onGet("/execute/status").reply(200, mockResponse);
+
+      const result = await getExecutionStatus();
+      expect(result).toEqual(mockResponse);
+      expect(result.isExecuting).toBe(false);
+      expect(result.execution).toBeNull();
+    });
+
+    it("should throw ApiError on failure", async () => {
+      mock.onGet("/execute/status").reply(500, {
+        error: { errorMessage: "Internal server error" },
+      });
+
+      await expect(getExecutionStatus()).rejects.toThrow(ApiError);
+    });
+  });
+
+  describe("abortExecution", () => {
+    it("should abort execution successfully", async () => {
+      const mockResponse: AbortExecutionResponse = {
+        success: true,
+        message: "Execution aborted successfully",
+      };
+
+      mock.onPost("/execute/abort").reply(200, mockResponse);
+
+      const result = await abortExecution();
+      expect(result).toEqual(mockResponse);
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Execution aborted successfully");
+    });
+
+    it("should handle no execution to abort", async () => {
+      const mockResponse: AbortExecutionResponse = {
+        success: false,
+        message: "No execution in progress to abort",
+        error: {
+          errorType: "validation",
+          errorMessage: "No execution is currently in progress",
+        },
+      };
+
+      mock.onPost("/execute/abort").reply(400, mockResponse);
+
+      await expect(abortExecution()).rejects.toThrow(ApiError);
+    });
+
+    it("should throw ApiError on network error", async () => {
+      mock.onPost("/execute/abort").networkError();
+
+      await expect(abortExecution()).rejects.toThrow();
     });
   });
 

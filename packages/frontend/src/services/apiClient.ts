@@ -8,6 +8,8 @@ import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
+  ExecutionStatusResponse,
+  AbortExecutionResponse,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -115,5 +117,25 @@ export async function executePrompt(
     }
 
     throw error;
+  }
+}
+
+export async function getExecutionStatus(): Promise<ExecutionStatusResponse> {
+  try {
+    const response =
+      await apiClient.get<ExecutionStatusResponse>("/execute/status");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function abortExecution(): Promise<AbortExecutionResponse> {
+  try {
+    const response =
+      await apiClient.post<AbortExecutionResponse>("/execute/abort");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
   }
 }
