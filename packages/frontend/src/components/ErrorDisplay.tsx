@@ -54,9 +54,12 @@ const getActionableGuidance = (errorType: ExecutionError["errorType"]) => {
   switch (errorType) {
     case "authentication":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           Please check your API credentials in{" "}
-          <Link to="/settings" className="underline hover:text-primary">
+          <Link
+            to="/settings"
+            className="underline underline-offset-2 hover:text-primary font-medium"
+          >
             Settings
           </Link>
           .
@@ -64,33 +67,33 @@ const getActionableGuidance = (errorType: ExecutionError["errorType"]) => {
       );
     case "rate_limit":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           You have exceeded the API rate limit. Please wait before trying again.
         </p>
       );
     case "network":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           Please check your internet connection and try again.
         </p>
       );
     case "timeout":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           The request took too long to complete. Try again with a shorter
           prompt.
         </p>
       );
     case "validation":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           Please check your input and ensure all required fields are filled
           correctly.
         </p>
       );
     case "aborted":
       return (
-        <p className="text-sm mt-2">
+        <p className="text-sm leading-relaxed text-destructive/90">
           The execution was cancelled. You can start a new execution.
         </p>
       );
@@ -107,22 +110,24 @@ export function ErrorDisplay({ error }: ErrorDisplayProps) {
   return (
     <Alert variant="destructive" className="mt-4">
       <IconComponent className="h-4 w-4" />
-      <AlertTitle>{title}</AlertTitle>
+      <AlertTitle className="text-base font-semibold">{title}</AlertTitle>
       <AlertDescription>
-        <div className="space-y-2">
-          <p>{error.errorMessage}</p>
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed">{error.errorMessage}</p>
 
           {error.errorCode && (
-            <p className="text-xs font-mono">Error Code: {error.errorCode}</p>
+            <p className="text-xs font-mono text-destructive/80 tracking-wide">
+              Error Code: {error.errorCode}
+            </p>
           )}
 
           {error.additionalContext &&
             Object.keys(error.additionalContext).length > 0 && (
-              <details className="text-xs">
-                <summary className="cursor-pointer hover:text-primary">
+              <details className="text-xs mt-2">
+                <summary className="cursor-pointer hover:text-primary font-medium">
                   Additional Details
                 </summary>
-                <pre className="mt-2 p-2 bg-background/50 rounded overflow-x-auto">
+                <pre className="mt-2 p-3 bg-background/50 rounded text-xs font-mono leading-relaxed overflow-x-auto">
                   {JSON.stringify(error.additionalContext, null, 2)}
                 </pre>
               </details>

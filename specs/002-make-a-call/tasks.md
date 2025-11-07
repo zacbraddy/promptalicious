@@ -1166,7 +1166,7 @@ Use mocked backend responses.
 **Dependencies**: T064
 **Surfacing**: After T065, Phase 8 complete - full prompt execution UI with abort/cancel/refresh functionality working
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

@@ -35,6 +35,7 @@ export function ExecutePromptPage() {
 
   const handleExecute = () => {
     if (!promptText.trim()) return;
+    executePromptMutation.reset();
     executePromptMutation.mutate({ promptText });
   };
 
@@ -46,11 +47,20 @@ export function ExecutePromptPage() {
     executePromptMutation.isPending || executionStatus?.isExecuting || false;
 
   const result = executePromptMutation.data?.result || executionStatus?.result;
+
   const error =
-    executePromptMutation.error ||
-    (executionStatus?.error
-      ? new Error(executionStatus.error.errorMessage)
-      : null);
+    !isExecuting &&
+    (executePromptMutation.error
+      ? {
+          id: crypto.randomUUID(),
+          promptExecutionId: "",
+          errorType: "unknown" as const,
+          errorMessage: executePromptMutation.error.message,
+          timestamp: new Date().toISOString(),
+        }
+      : !result && executionStatus?.error
+        ? executionStatus.error
+        : null);
 
   return (
     <div className="space-y-12 py-8">
@@ -147,17 +157,7 @@ export function ExecutePromptPage() {
                 — Error details and guidance
               </span>
             </h2>
-            <ErrorDisplay
-              error={
-                executionStatus?.error || {
-                  id: crypto.randomUUID(),
-                  promptExecutionId: "",
-                  errorType: "unknown",
-                  errorMessage: error.message,
-                  timestamp: new Date().toISOString(),
-                }
-              }
-            />
+            <ErrorDisplay error={error} />
           </section>
         </div>
       )}
