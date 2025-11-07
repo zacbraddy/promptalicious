@@ -985,7 +985,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Two separate buttons with correct enabled/disabled logic, no double-click cancel issue
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
