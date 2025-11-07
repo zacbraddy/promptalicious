@@ -1017,7 +1017,7 @@ Use mocked backend responses.
 **Dependencies**: T033
 **Expected Outcome**: Diagnostics displayed in clear table format
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
