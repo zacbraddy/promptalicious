@@ -1113,7 +1113,7 @@ Use mocked backend responses.
 **Dependencies**: T061
 **Expected Outcome**: Cancel flow validated
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
