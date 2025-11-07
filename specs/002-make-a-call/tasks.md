@@ -1131,7 +1131,7 @@ Use mocked backend responses.
 
 **Surfacing**: After T063, full abort/cancel/refresh functionality complete. Test end-to-end: execute, cancel, refresh during execution
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
