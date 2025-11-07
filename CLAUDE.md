@@ -2,7 +2,7 @@
 
 **Project**: Local development tool for debugging and iterating LLM prompts and tool configurations
 **First Target**: Debug multistep, tool-enabled calls to GPT-4o-mini using Vercel AI SDK
-**Last Updated**: 2025-11-04
+**Last Updated**: 2025-11-07
 
 ---
 
@@ -195,32 +195,48 @@ Usage: Detailed guides (>50 lines) → docs/feature-name.md, summaries stay in C
 
 ## Active Spec Progress
 
-**Current Spec**: None (spec 001-project-scaffold-i complete ✅)
-**Status**: Ready for next feature specification
+**Current Spec**: 002-make-a-call (LLM Prompt Execution & Diagnostics Interface) ✅
+**Status**: Feature complete, ready for version bump and next specification
+
+**Completed Features**:
+- Full-stack LLM prompt execution with GPT-4o-mini via Vercel AI SDK
+- Settings page for API key configuration and connection testing
+- Prompt execution page with abort capability and status polling
+- Comprehensive diagnostics display (tokens, timing, cost in GBP)
+- Error classification and display for all failure modes
+- Pricing data system with staleness detection (>7 days)
+- Page refresh recovery (execution state preserved during reload)
+- Retrofuturistic dark theme (shadcn/ui + Tailwind)
 
 **Next Steps**:
-1. Begin feature specification for first iteration (GPT-4o-mini debugging interface)
-2. Run `/specify` to create spec
+1. Complete version increment to 0.2.0 (T079)
+2. Run `/specify` to create next feature specification
 
 ---
 
 ## Recent Changes
 
-1. **2025-11-04**: Knowledge coalesced from spec 001-project-scaffold-i
+1. **2025-11-07**: Completed spec 002-make-a-call (LLM Prompt Execution & Diagnostics Interface)
+   - Implemented full-stack LLM execution workflow with GPT-4o-mini
+   - Added TanStack Query for server state management (see development-protocols.md)
+   - Created abort/status polling pattern for long-running LLM calls
+   - Implemented pricing cache system with Frankfurter API (USD→GBP conversion)
+   - Built retrofuturistic dark theme using shadcn/ui + Tailwind CSS v4
+   - Established frontend architecture: API client (Axios) → Hooks (TanStack Query) → Components
+   - Added page refresh recovery via execution state cache
+   - Total: 79 tasks completed across 11 phases
+   - **Key Learning**: Mid-spec retrofit (T046-T053) added abort/cancel functionality after spec completion; demonstrated value of iterative enhancement vs upfront perfect planning
+
+2. **2025-11-04**: Knowledge coalesced from spec 001-project-scaffold-i
    - Created memory files: development-protocols.md, program_overview.md, task-execution-patterns.md
    - Created docs/architectural-decisions.md
    - Reduced CLAUDE.md from 247 to ~150 lines
    - Fixed Serena activation protocol (now mandatory in Quick Reference)
 
-2. **2025-11-03**: Constitution v1.1.0 ratified
+3. **2025-11-03**: Constitution v1.1.0 ratified
    - Added Dolphin-Based Development principle
    - Established pragmatic TDD workflow
    - Defined tech stack and quality gates
-
-3. **2025-11-03**: promptalicious-implementation skill created
-   - Context7/Serena MCP integration protocols
-   - Task execution discipline rules
-   - Debugging and escalation protocols
 
 ---
 
@@ -235,7 +251,7 @@ Usage: Detailed guides (>50 lines) → docs/feature-name.md, summaries stay in C
 
 ---
 
-**Last Coalesced**: 2025-11-04 (spec 001-project-scaffold-i complete)
+**Last Updated**: 2025-11-07 (spec 002-make-a-call complete)
 **Next Coalesce**: After next spec completion (>90% tasks) or if CLAUDE.md exceeds 800 lines
 
 ---
