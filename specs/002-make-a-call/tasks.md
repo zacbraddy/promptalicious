@@ -1224,14 +1224,15 @@ Use mocked backend responses.
 **File**: `packages/frontend/tests/integration/pricing-staleness.test.tsx`
 **Description**: Write integration test:
 1. Mock API response with stale pricing (isStale: true, daysSinceUpdate: 10)
-2. Render PricingInfo component
+2. Render PricingInfo component (implementation note: test renders ExecutePromptPage which contains PricingInfo, as staleness warning is displayed in ExecutePromptPage)
 3. Assert staleness warning displayed
 4. Assert warning message mentions "10 days"
 
-**Dependencies**: T055
-**Surfacing**: After T056, view pricing info, manually set old timestamp in DB, verify warning displays
+**Dependencies**: T067
+**Implementation Note**: Staleness warning implemented in ExecutePromptPage.tsx (lines 153-157) rather than PricingInfo.tsx
+**Surfacing**: After T069, view pricing info, manually set old timestamp in DB, verify warning displays
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1247,9 +1248,10 @@ Use mocked backend responses.
 
 **Test**: Unit test for empty prompt handling
 **Dependencies**: T046
+**Implementation Note**: Validation logic implemented in ExecutePromptPage.tsx (lines 49, 105) and ExecuteControls.tsx (line 22) rather than PromptInput.tsx, following separation of concerns pattern
 **Expected Outcome**: Empty prompts rejected gracefully
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1263,7 +1265,7 @@ Use mocked backend responses.
 **Dependencies**: T030
 **Expected Outcome**: Special characters handled correctly
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1277,7 +1279,7 @@ Use mocked backend responses.
 **Dependencies**: T049
 **Expected Outcome**: All error types render with correct classification
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1292,7 +1294,7 @@ Use mocked backend responses.
 **Dependencies**: T057
 **Expected Outcome**: Empty prompts rejected gracefully
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1307,7 +1309,7 @@ Use mocked backend responses.
 **Dependencies**: T058
 **Expected Outcome**: Special characters handled correctly in frontend
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -1330,7 +1332,7 @@ Use real backend + frontend (or comprehensive mocks).
 **Dependencies**: T061
 **Surfacing**: After T062, manually run full quickstart guide to validate all scenarios
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
