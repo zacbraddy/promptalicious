@@ -172,3 +172,57 @@ export interface UpdateProjectConfigurationErrorResponse {
     additionalContext?: Record<string, unknown>;
   };
 }
+
+export type DiscoveryPhase =
+  | "idle"
+  | "scanning"
+  | "analyzing"
+  | "generating"
+  | "complete"
+  | "error";
+
+export type DiscoveryLogLevel = "info" | "warning" | "error";
+
+export interface DiscoveryProgress {
+  filesScanned: number;
+  filesAnalyzed: number;
+  toolsFound: number;
+  filesGenerated: number;
+}
+
+export interface DiscoveryLogEntry {
+  timestamp: string;
+  level: DiscoveryLogLevel;
+  phase: Exclude<DiscoveryPhase, "idle" | "error">;
+  message: string;
+  context?: {
+    filePath?: string;
+    toolName?: string;
+    reason?: string;
+    linesExtracted?: number;
+    detectedParams?: string[];
+  };
+}
+
+export interface DiscoverySummary {
+  filesScanned: number;
+  filesWithToolImports: number;
+  toolsDiscovered: number;
+  filesGenerated: number;
+  skippedFiles: Array<{
+    path: string;
+    reason: string;
+  }>;
+}
+
+export interface DiscoveryStatus {
+  isDiscovering: boolean;
+  phase: DiscoveryPhase;
+  progress?: DiscoveryProgress;
+  logs: DiscoveryLogEntry[];
+  result?: {
+    discoveredToolsCount: number;
+    summary: DiscoverySummary;
+    error?: string | null;
+  };
+}

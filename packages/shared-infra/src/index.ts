@@ -22,6 +22,12 @@ export type {
   UpdateProjectConfigurationRequest,
   UpdateProjectConfigurationSuccessResponse,
   UpdateProjectConfigurationErrorResponse,
+  DiscoveryStatus,
+  DiscoveryPhase,
+  DiscoveryLogLevel,
+  DiscoveryProgress,
+  DiscoveryLogEntry,
+  DiscoverySummary,
 } from "./types/api";
 
 export {

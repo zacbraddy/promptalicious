@@ -44,6 +44,19 @@ pnpm test:ci        # All passing (or justified failures) - non-interactive mode
 - Audits/CI: `pnpm test:ci` (non-interactive, use this for audits to avoid hanging)
 - Per-package: `pnpm --filter <package> test:ci`
 
+**TDD RED phase protocol:**
+- When writing failing tests (RED phase) that reference not-yet-implemented code, TypeScript/ESLint errors are expected
+- Add `eslint-disable` comments with TODO annotations for these expected errors:
+  ```typescript
+  // TODO: Remove eslint-disable once implementation is complete
+  /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  vi.mocked(service.newFunction).mockResolvedValue(mockData);
+  /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  ```
+- During GREEN phase (implementation), remove these comments as the implementation makes the errors go away
+- This allows tests to pass quality gates in RED phase whilst maintaining type safety once implemented
+- Never disable errors for production code - only for tests referencing mocked implementations
+
 ### Before Any Code Work - MCP Activation Checklist
 
 **MANDATORY FIRST STEPS**:
