@@ -1,0 +1,193 @@
+openapi: 3.1.0
+info:
+  title: Tools API
+  version: 0.3.0
+  description: Endpoints for managing discovered tools
+
+paths:
+  /:
+    get:
+      summary: List all discovered tools
+      operationId: listTools
+      tags:
+        - Tools
+      description: Mounted at /api/tools (GET /api/tools)
+      responses:
+        '200':
+          description: List of tools retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - tools
+                properties:
+                  tools:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tool'
+        '404':
+          description: No project configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{toolId}:
+    get:
+      summary: Get tool details
+      operationId: getTool
+      tags:
+        - Tools
+      description: Mounted at /api/tools (GET /api/tools/:toolId)
+      parameters:
+        - name: toolId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tool details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolDetail'
+        '404':
+          description: Tool not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      summary: Update tool configuration
+      operationId: updateTool
+      tags:
+        - Tools
+      description: Mounted at /api/tools (PATCH /api/tools/:toolId)
+      parameters:
+        - name: toolId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateToolRequest'
+      responses:
+        '200':
+          description: Tool updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tool'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tool not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Tool:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - enabled
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: "getUserProfile"
+        name:
+          type: string
+          example: "getUserProfile"
+        description:
+          type: string
+          example: "Fetches user profile data from the database"
+        sourceDescription:
+          type: string
+          nullable: true
+          example: "Get user profile by ID"
+          description: Original description from source (null after first edit)
+        enabled:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ToolDetail:
+      allOf:
+        - $ref: '#/components/schemas/Tool'
+        - type: object
+          required:
+            - parametersSchema
+            - sourceFilePath
+            - workspaceDir
+            - detectedHookParams
+          properties:
+            parametersSchema:
+              type: object
+              description: Zod schema as JSON
+              example:
+                type: "object"
+                properties:
+                  userId:
+                    type: "string"
+                required: ["userId"]
+            sourceFilePath:
+              type: string
+              example: "/Users/dev/my-project/src/tools/user.ts"
+              description: Absolute path to original tool file in user's project (read-only)
+            workspaceDir:
+              type: string
+              example: "workspace/my-project/getUserProfile"
+              description: Relative path to workspace directory inside promptalicious repo
+            detectedHookParams:
+              type: array
+              items:
+                type: string
+              example: ["db", "authService"]
+              description: Parameters detected via scope analysis
+
+    UpdateToolRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: "Updated description for the tool"
+        enabled:
+          type: boolean
+          example: false
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

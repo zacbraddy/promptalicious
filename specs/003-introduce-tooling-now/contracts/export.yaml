@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: Export API
+  version: 0.3.0
+  description: Endpoint for generating export instructions
+
+paths:
+  /:
+    post:
+      summary: Generate export instructions
+      operationId: generateExportInstructions
+      tags:
+        - Export
+      description: Mounted at /api/export (POST /api/export) - Generates code-based instructions for applying tool changes back to codebase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: Export instructions generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        '404':
+          description: No tools configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ExportRequest:
+      type: object
+      properties:
+        includeDisabledTools:
+          type: boolean
+          default: false
+          description: Whether to include disabled tools in export
+
+    ExportResponse:
+      type: object
+      required:
+        - markdown
+        - generatedAt
+        - toolsIncluded
+      properties:
+        markdown:
+          type: string
+          description: Markdown-formatted export instructions
+          example: |
+            # Export Instructions
+
+            Generated: 2025-11-10T15:30:00Z
+
+            ## Changes Summary
+            - 3 tools configured
+            - 2 tools enabled
+            - AI SDK options customized
+
+            ## Step 1: Update Tool Definitions
+            ...
+        generatedAt:
+          type: string
+          format: date-time
+        toolsIncluded:
+          type: integer
+          example: 3
+        advancedOptions:
+          type: object
+          description: AI SDK options to apply
+          additionalProperties: true
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

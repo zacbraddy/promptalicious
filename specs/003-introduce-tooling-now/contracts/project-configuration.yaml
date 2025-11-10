@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: Project Configuration API
+  version: 0.3.0
+  description: Endpoints for managing project configuration (target project connection)
+
+paths:
+  /:
+    get:
+      summary: Get current project configuration
+      operationId: getProjectConfiguration
+      tags:
+        - Project Configuration
+      description: Mounted at /api/project (GET /api/project)
+      responses:
+        '200':
+          description: Project configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectConfiguration'
+        '404':
+          description: No project configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Create or update project configuration
+      operationId: updateProjectConfiguration
+      tags:
+        - Project Configuration
+      description: Mounted at /api/project (PUT /api/project) - Triggers async tool discovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectConfigurationRequest'
+      responses:
+        '202':
+          description: Project configuration saved, tool discovery started (async)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProjectConfigurationAcceptedResponse'
+        '400':
+          description: Invalid request (path doesn't exist, not a directory, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /discovery/status:
+    get:
+      summary: Get current discovery status
+      operationId: getDiscoveryStatus
+      tags:
+        - Project Configuration
+      description: Mounted at /api/project (GET /api/project/discovery/status) - Poll for real-time progress
+      responses:
+        '200':
+          description: Discovery status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryStatus'
+
+  /discovery/cancel:
+    post:
+      summary: Cancel in-progress discovery
+      operationId: cancelDiscovery
+      tags:
+        - Project Configuration
+      description: Mounted at /api/project (POST /api/project/discovery/cancel) - Cleanup and abort
+      responses:
+        '200':
+          description: Discovery cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - cancelled
+                properties:
+                  cancelled:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Discovery cancelled, workspace cleaned up"
+        '404':
+          description: No discovery in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ProjectConfiguration:
+      type: object
+      required:
+        - id
+        - name
+        - targetProjectPath
+        - workspacePath
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: Always 1 (single row constraint)
+        name:
+          type: string
+          example: "my-project"
+          description: User-editable project name (defaults to folder name)
+        targetProjectPath:
+          type: string
+          example: "../my-project"
+          description: Relative path from promptalicious to target project
+        workspacePath:
+          type: string
+          example: "workspace/my-project"
+          description: Relative path to workspace directory inside promptalicious repo
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-10T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-10T14:45:00Z"
+
+    UpdateProjectConfigurationRequest:
+      type: object
+      required:
+        - targetProjectPath
+      properties:
+        name:
+          type: string
+          example: "My Awesome Project"
+          description: Optional project name (defaults to folder name if not provided)
+        targetProjectPath:
+          type: string
+          example: "../my-project"
+          description: Relative path from promptalicious to target project
+
+    UpdateProjectConfigurationAcceptedResponse:
+      type: object
+      required:
+        - configuration
+        - discoveryStarted
+      properties:
+        configuration:
+          $ref: '#/components/schemas/ProjectConfiguration'
+        discoveryStarted:
+          type: boolean
+          example: true
+          description: Tool discovery has started (async)
+        message:
+          type: string
+          example: "Project configuration saved. Tool discovery in progress..."
+
+    DiscoveryStatus:
+      type: object
+      required:
+        - isDiscovering
+        - phase
+      properties:
+        isDiscovering:
+          type: boolean
+          example: true
+          description: Whether discovery is currently in progress
+        phase:
+          type: string
+          enum: [idle, scanning, analyzing, generating, complete, error]
+          example: "analyzing"
+        progress:
+          type: object
+          description: Current progress in discovery
+          properties:
+            filesScanned:
+              type: integer
+            filesAnalyzed:
+              type: integer
+            toolsFound:
+              type: integer
+            filesGenerated:
+              type: integer
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscoveryLogEntry'
+          description: Log entries generated so far (incremental, only new entries since last poll)
+        result:
+          type: object
+          description: Final result (only present when phase is 'complete' or 'error')
+          properties:
+            discoveredToolsCount:
+              type: integer
+            summary:
+              $ref: '#/components/schemas/DiscoverySummary'
+            error:
+              type: string
+              nullable: true
+
+    DiscoveryLogEntry:
+      type: object
+      required:
+        - timestamp
+        - level
+        - phase
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [info, warning, error]
+        phase:
+          type: string
+          enum: [scanning, analyzing, generating, complete]
+        message:
+          type: string
+        context:
+          type: object
+          properties:
+            filePath:
+              type: string
+            toolName:
+              type: string
+            reason:
+              type: string
+            linesExtracted:
+              type: integer
+            detectedParams:
+              type: array
+              items:
+                type: string
+
+    DiscoverySummary:
+      type: object
+      required:
+        - filesScanned
+        - filesWithToolImports
+        - toolsDiscovered
+        - filesGenerated
+        - skippedFiles
+      properties:
+        filesScanned:
+          type: integer
+          example: 127
+        filesWithToolImports:
+          type: integer
+          example: 8
+        toolsDiscovered:
+          type: integer
+          example: 5
+        filesGenerated:
+          type: integer
+          example: 30
+        skippedFiles:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              reason:
+                type: string
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "INVALID_PATH"
+        message:
+          type: string
+          example: "Target project path does not exist"
+        details:
+          type: object
+          additionalProperties: true

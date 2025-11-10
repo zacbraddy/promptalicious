@@ -197,14 +197,49 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 
 - **FR-026**: AI SDK integration MUST be the only implemented SDK adapter for this feature, but architecture MUST support adding additional SDK adapters without refactoring core system
 
+#### Project Management
+- **FR-027**: System MUST allow user to assign a name to the project configuration
+  - Default: derived from target folder name (e.g., "my-project" from "../my-project")
+  - Editable in Settings page
+
+#### Discovery Observability
+- **FR-028**: System MUST provide real-time progress feedback during tool discovery
+  - Tool discovery runs asynchronously after project configuration
+  - Frontend polls `/api/project/discovery/status` for progress updates
+  - Display scanning progress (files scanned, filtered, analyzed)
+  - Show each discovered tool with parameters and detected dependencies
+  - Display workspace generation progress (files created, lines extracted)
+  - Provide expandable detailed log view in modal
+
+- **FR-029**: System MUST log all discovery decisions with reasoning
+  - Why files were skipped (no AI SDK import, parse errors, etc.)
+  - Which variables were detected as hook parameters (scope analysis results)
+  - How many lines extracted for each tool execute function
+  - All filesystem operations (directories created, files generated)
+
+- **FR-030**: Discovery status endpoint MUST return incremental updates
+  - Array of log entries with timestamp, level, phase, message, context
+  - Only new entries since last poll (incremental delivery)
+  - Current phase: idle, scanning, analyzing, generating, complete, error
+  - Progress counters (filesScanned, filesAnalyzed, toolsFound, filesGenerated)
+  - Summary statistics when complete (final counts, skipped files with reasons)
+
+- **FR-031**: System MUST support cancelling in-progress discovery
+  - POST `/api/project/discovery/cancel` aborts discovery
+  - Warning confirmation before canceling
+  - Cleanup removes partial workspace files
+  - Project configuration not saved if discovery cancelled
+  - Modal shows cancellation was successful
+
 ### Key Entities
 
 #### Project Configuration
 - **What it represents**: Connection between promptalicious and user's codebase
 - **Key attributes**:
+  - Project name (user-editable, defaults to folder name)
   - Target project path (relative to promptalicious)
+  - Workspace directory location (inside promptalicious repo)
   - Discovery settings (which directories to scan)
-  - Workspace directory location
   - Path alias configuration (`@rootalicious`)
 
 #### Tool Definition
@@ -262,6 +297,15 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Cost breakdown
   - Relationship to execution result
 
+#### Discovery Log Entry
+- **What it represents**: Single log entry from tool discovery process
+- **Key attributes**:
+  - Timestamp
+  - Log level (info, warning, error)
+  - Discovery phase (scanning, analyzing, generating, complete)
+  - Message
+  - Context (file path, tool name, reason, lines extracted, detected parameters)
+
 ---
 
 ## Review & Acceptance Checklist
@@ -288,7 +332,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 - [x] Ambiguities resolved through stakeholder discussion
 - [x] User scenarios defined (8 scenarios)
 - [x] Requirements generated (26 functional requirements)
-- [x] Entities identified (6 entities)
+- [x] Entities identified (7 entities - added DiscoveryLogEntry)
 - [x] Review checklist passed
 
 ---
@@ -309,13 +353,20 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ✅ Multi-SDK abstraction layer (architecture only, AI SDK implementation)
 
 ### Out of Scope (Future Features)
-❌ Multi-project support → Feature 004
-❌ Execution history and replay → Feature 004
-❌ Database-backed caching → Feature 004
-❌ Favourite/rename executions → Feature 004
-❌ Reset functionality (soft/hard) → Feature 005
-❌ AI-assisted export instructions → Feature 005
-❌ Additional SDK integrations → Feature 005+
+❌ Multi-project support (planned for future)
+❌ Execution history and replay (planned for future)
+❌ Database-backed caching (planned for future)
+❌ Favourite/rename executions (planned for future)
+❌ Reset functionality (soft/hard) (planned for future)
+❌ Tool rescan functionality (planned for future)
+❌ AI-assisted export instructions (planned for future)
+❌ Additional SDK integrations (planned for future)
+
+**Documentation Scope**:
+- ✅ Document ONLY features implemented in spec 003
+- ❌ Do NOT mention future specs (004, 005) or planned features
+- ❌ Do NOT speculate about multi-project, history, reset, or rescan
+- Focus: What users can do NOW with this release
 
 ---
 
@@ -343,6 +394,14 @@ See `private/reference-architecture.md` for detailed analysis of existing tool i
 - Must extend existing diagnostics display system
 - Must follow DDD/Onion architecture patterns where beneficial
 - Should surface working software frequently (max 5 tasks before surfacing)
+
+### Non-Functional Considerations
+- **Performance**: Not a first-class concern for this feature. Promptalicious is a local development tool running on the developer's machine. Performance optimisation is deferred unless it materially impacts developer experience (e.g., tool discovery taking minutes instead of seconds, or UI becoming unresponsive). Reasonable performance expectations:
+  - Tool discovery: seconds for typical projects (<1000 files)
+  - Execution diagnostics: near real-time display (<1s update latency)
+  - Page refresh recovery: maintained from existing system
+- **Scalability**: Single-user, local tool - horizontal/vertical scaling not applicable
+- **Reliability**: Local operation reduces external failure modes; error handling focuses on clear user feedback rather than uptime targets
 
 ### Future Feature Dependencies
 - Feature 004 (Project Management & History) builds on this feature's workspace and configuration system

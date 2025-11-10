@@ -1,0 +1,385 @@
+openapi: 3.1.0
+info:
+  title: Execution API (Extended with Tools)
+  version: 0.3.0
+  description: Extensions to execution endpoints for tool support
+
+paths:
+  /:
+    post:
+      summary: Execute prompt with tools (extended from spec 002)
+      operationId: executePrompt
+      tags:
+        - Execution
+      description: Mounted at /api/execute (POST /api/execute)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequest'
+      responses:
+        '200':
+          description: Execution completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteResponse'
+        '400':
+          description: Invalid request or tool configuration error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Execution already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /status:
+    get:
+      summary: Get execution status (extended with tool diagnostics)
+      operationId: getExecutionStatus
+      tags:
+        - Execution
+      description: Mounted at /api/execute (GET /api/execute/status)
+      responses:
+        '200':
+          description: Execution status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStatus'
+
+  /{executionId}:
+    get:
+      summary: Get execution result (extended with tool invocations)
+      operationId: getExecutionResult
+      tags:
+        - Execution
+      description: Mounted at /api/execute (GET /api/execute/:executionId)
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Execution result retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResult'
+        '404':
+          description: Execution not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{executionId}/tools:
+    get:
+      summary: Get tool invocations for an execution
+      operationId: getToolInvocations
+      tags:
+        - Execution
+      description: Mounted at /api/execute (GET /api/execute/:executionId/tools)
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tool invocations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - invocations
+                properties:
+                  invocations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ToolInvocation'
+        '404':
+          description: Execution not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ExecuteRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          example: "Get the profile for user ID 12345"
+        systemMessage:
+          type: string
+          nullable: true
+          example: "You are a helpful assistant"
+        advancedOptions:
+          $ref: '#/components/schemas/AdvancedOptions'
+          description: Optional AI SDK configuration
+
+    AdvancedOptions:
+      type: object
+      description: AI SDK call-level options (from spec FR-015)
+      properties:
+        maxTokens:
+          type: integer
+          example: 4096
+          nullable: true
+        temperature:
+          type: number
+          format: float
+          example: 1.0
+          nullable: true
+        topP:
+          type: number
+          format: float
+          example: 1.0
+          nullable: true
+        maxRetries:
+          type: integer
+          example: 3
+          nullable: true
+        toolChoice:
+          oneOf:
+            - type: string
+              enum: ["auto", "required", "none"]
+            - type: object
+              required: ["type", "toolName"]
+              properties:
+                type:
+                  type: string
+                  enum: ["tool"]
+                toolName:
+                  type: string
+          example: "auto"
+          nullable: true
+        maxToolRoundtrips:
+          type: integer
+          example: 10
+          nullable: true
+          description: Enable parallel tool calling
+
+    ExecuteResponse:
+      type: object
+      required:
+        - executionId
+        - status
+      properties:
+        executionId:
+          type: string
+          example: "exec_abc123"
+        status:
+          type: string
+          enum: ["executing", "completed", "failed"]
+        result:
+          type: string
+          nullable: true
+          description: LLM response text (if completed)
+
+    ExecutionStatus:
+      type: object
+      required:
+        - isExecuting
+      properties:
+        isExecuting:
+          type: boolean
+          example: true
+        executionId:
+          type: string
+          nullable: true
+          example: "exec_abc123"
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+
+    ExecutionResult:
+      type: object
+      required:
+        - id
+        - prompt
+        - result
+        - status
+        - startTime
+        - endTime
+        - durationMs
+        - inputTokens
+        - outputTokens
+        - totalTokens
+        - costGbp
+        - toolInvocationCount
+        - toolTokensUsed
+        - toolExecutionTimeMs
+        - toolErrorCount
+      properties:
+        id:
+          type: string
+          example: "exec_abc123"
+        prompt:
+          type: string
+        result:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: ["completed", "failed", "aborted"]
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationMs:
+          type: integer
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        totalTokens:
+          type: integer
+        costGbp:
+          type: number
+          format: double
+        errorType:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        toolInvocationCount:
+          type: integer
+          example: 3
+          description: Total tool calls in this execution
+        toolTokensUsed:
+          type: integer
+          example: 250
+          description: Aggregate tokens used by tools
+        toolExecutionTimeMs:
+          type: integer
+          example: 1500
+          description: Aggregate time spent in tool execution
+        toolErrorCount:
+          type: integer
+          example: 0
+          description: Number of failed tool invocations
+
+    ToolInvocation:
+      type: object
+      required:
+        - id
+        - executionId
+        - toolId
+        - toolName
+        - timestamp
+        - inputParams
+        - executionDurationMs
+        - success
+      properties:
+        id:
+          type: string
+          example: "inv_xyz789"
+        executionId:
+          type: string
+          example: "exec_abc123"
+        toolId:
+          type: string
+          example: "getUserProfile"
+        toolName:
+          type: string
+          example: "getUserProfile"
+        timestamp:
+          type: string
+          format: date-time
+        inputParams:
+          type: object
+          description: Parameters passed by LLM
+          example:
+            userId: "12345"
+        output:
+          type: object
+          nullable: true
+          description: Tool return value
+          example:
+            id: "12345"
+            name: "John Doe"
+            email: "john@example.com"
+        executionDurationMs:
+          type: integer
+          example: 450
+        inputTokens:
+          type: integer
+          nullable: true
+          example: 50
+        outputTokens:
+          type: integer
+          nullable: true
+          example: 100
+        success:
+          type: boolean
+          example: true
+        errorType:
+          type: string
+          nullable: true
+          example: "DatabaseError"
+        errorMessage:
+          type: string
+          nullable: true
+          example: "Connection timeout"
+        errorStack:
+          type: string
+          nullable: true
+        llmReasoning:
+          type: string
+          nullable: true
+          example: "User requested profile data, need to fetch from database"
+        debugOutput:
+          type: array
+          items:
+            $ref: '#/components/schemas/DebugMessage'
+
+    DebugMessage:
+      type: object
+      required:
+        - timestamp
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          example: "Starting user profile lookup"
+        variables:
+          type: object
+          additionalProperties: true
+          example:
+            userId: "12345"
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
