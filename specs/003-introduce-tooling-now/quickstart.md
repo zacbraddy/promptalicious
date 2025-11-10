@@ -498,15 +498,47 @@ curl -X POST http://localhost:3000/api/execute \
 curl http://localhost:3000/api/execute/status
 ```
 
-**Get Result**:
+**Get Result** (includes tool invocations in-memory):
 ```bash
 curl http://localhost:3000/api/execute/{executionId}
 ```
 
-**Get Tool Invocations**:
-```bash
-curl http://localhost:3000/api/execute/{executionId}/tools
+**Expected Response** (with toolInvocations array):
+```json
+{
+  "id": "exec_123",
+  "promptExecutionId": "prompt_456",
+  "responseText": "The user profile for abc123 is: John Doe...",
+  "inputTokenCount": 150,
+  "outputTokenCount": 75,
+  "totalTokenCount": 225,
+  "executionDurationMs": 3200,
+  "estimatedCostGBP": 0.000034,
+  "toolInvocations": [
+    {
+      "toolId": "getUserProfile",
+      "toolName": "getUserProfile",
+      "timestamp": "2025-11-10T15:30:00Z",
+      "inputParams": { "userId": "abc123" },
+      "output": { "id": "abc123", "name": "John Doe", "email": "john@example.com" },
+      "executionDurationMs": 450,
+      "inputTokens": 50,
+      "outputTokens": 100,
+      "success": true,
+      "errorType": null,
+      "errorMessage": null,
+      "errorStack": null,
+      "llmReasoning": null,
+      "debugOutput": [
+        { "timestamp": "2025-11-10T15:30:00.100Z", "message": "Starting user profile lookup", "variables": { "userId": "abc123" } },
+        { "timestamp": "2025-11-10T15:30:00.450Z", "message": "User found", "variables": { "userName": "John Doe" } }
+      ]
+    }
+  ]
+}
 ```
+
+**NOTE**: Tool invocations are returned in-memory within ExecutionResult. No separate endpoint needed.
 
 ---
 

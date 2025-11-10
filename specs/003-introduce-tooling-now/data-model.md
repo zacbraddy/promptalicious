@@ -109,93 +109,79 @@ export const tools = pgTable('tools', {
 
 ---
 
-### 3. Tool Invocation Result
+### 3. Tool Invocation Result (In-Memory Only)
 
-**Purpose**: Captures diagnostics from a single tool invocation during execution
+**SCOPE NOTE**: Tool invocations are NOT persisted to database in spec 003. They are collected in-memory during execution and returned in `ExecutionResult.toolInvocations` array. Full execution history with persistence is deferred to Feature 004.
 
-**Attributes**:
-- `id`: string (primary key, unique identifier)
-- `executionId`: string (foreign key to execution result)
-- `toolId`: string (foreign key to tool)
-- `timestamp`: timestamp (when tool was invoked)
-- `inputParams`: JSON (parameters passed to tool by LLM)
-- `output`: JSON (tool return value)
-- `executionDurationMs`: integer (milliseconds)
-- `inputTokens`: integer | null (tokens used in tool call)
-- `outputTokens`: integer | null (tokens used in tool response)
+**Purpose**: Captures diagnostics from a single tool invocation during execution (in-memory)
+
+**Attributes** (TypeScript interface, not database table):
+- `toolId`: string
+- `toolName`: string
+- `timestamp`: Date (when tool was invoked)
+- `inputParams`: unknown (parameters passed to tool by LLM)
+- `output`: unknown (tool return value)
+- `executionDurationMs`: number (milliseconds)
+- `inputTokens`: number | null (tokens used in tool call)
+- `outputTokens`: number | null (tokens used in tool response)
 - `success`: boolean (whether tool execution succeeded)
 - `errorType`: string | null (error class name if failed)
 - `errorMessage`: string | null (error message if failed)
 - `errorStack`: string | null (stack trace if failed)
 - `llmReasoning`: string | null (LLM's reasoning for tool call, if provided)
-- `debugOutput`: JSON (captured capturelicious() calls)
+- `debugOutput`: DebugMessage[] (captured capturelicious() calls)
 
-**Validation Rules**:
-- `executionId` MUST reference valid execution result
-- `toolId` MUST reference valid tool
-- `timestamp` MUST NOT be in the future
-- `executionDurationMs` MUST be >= 0
-- `inputTokens` and `outputTokens` MUST be >= 0 if not null
-- If `success` is false, `errorMessage` MUST NOT be null
-- `debugOutput` MUST be JSON array of { timestamp, message, variables } objects
-
-**Database Schema** (DrizzleORM):
+**TypeScript Interface** (shared-infra):
 ```typescript
-export const toolInvocations = pgTable('tool_invocations', {
-  id: text('id').primaryKey(),
-  executionId: text('execution_id').notNull(),  // FK to execution_results
-  toolId: text('tool_id').notNull().references(() => tools.id),
-  timestamp: timestamp('timestamp').notNull().defaultNow(),
-  inputParams: jsonb('input_params').notNull(),
-  output: jsonb('output'),
-  executionDurationMs: integer('execution_duration_ms').notNull(),
-  inputTokens: integer('input_tokens'),
-  outputTokens: integer('output_tokens'),
-  success: boolean('success').notNull(),
-  errorType: text('error_type'),
-  errorMessage: text('error_message'),
-  errorStack: text('error_stack'),
-  llmReasoning: text('llm_reasoning'),
-  debugOutput: jsonb('debug_output')  // Array of DebugMessage
-})
+export interface ToolInvocationResult {
+  toolId: string;
+  toolName: string;
+  timestamp: Date;
+  inputParams: unknown;
+  output: unknown;
+  executionDurationMs: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  success: boolean;
+  errorType: string | null;
+  errorMessage: string | null;
+  errorStack: string | null;
+  llmReasoning: string | null;
+  debugOutput: DebugMessage[];
+}
 ```
 
-**State Transitions**:
-- Created when tool is invoked during execution
-- Immutable after creation (diagnostics are read-only)
-
-**Relationships**:
-- Many-to-One with Execution Result (many invocations per execution)
-- Many-to-One with Tool (many invocations per tool)
+**State**: In-memory only, returned in ExecutionResult, not persisted
 
 ---
 
-### 4. Execution Result (Extended)
+### 4. Execution Result (Extended with In-Memory Tool Invocations)
 
-**Purpose**: Extended from spec 002 to include tool invocation summary
+**Purpose**: Extended from spec 002 to include in-memory tool invocation diagnostics
 
-**New Attributes** (added to existing entity):
-- `toolInvocationCount`: integer (total tool calls in this execution)
-- `toolTokensUsed`: integer (aggregate tokens used by tools)
-- `toolExecutionTimeMs`: integer (aggregate time spent in tools)
-- `toolErrorCount`: integer (number of failed tool invocations)
+**New Attribute** (added to existing entity):
+- `toolInvocations`: ToolInvocationResult[] | undefined (in-memory diagnostics array)
 
-**Note**: Existing `execution_results` table from spec 002 is extended, not replaced
+**Note**: ExecutionResult from spec 002 is extended with in-memory array only. No database changes needed.
 
-**Schema Extension**:
+**TypeScript Extension**:
 ```typescript
-// Add columns to existing execution_results table via migration
-export const executionResults = pgTable('execution_results', {
-  // ... existing columns from spec 002 ...
-  toolInvocationCount: integer('tool_invocation_count').default(0),
-  toolTokensUsed: integer('tool_tokens_used').default(0),
-  toolExecutionTimeMs: integer('tool_execution_time_ms').default(0),
-  toolErrorCount: integer('tool_error_count').default(0)
-})
+// Extend existing ExecutionResult interface from spec 002
+export interface ExecutionResult {
+  id: string;
+  promptExecutionId: string;
+  responseText: string;
+  inputTokenCount: number;
+  outputTokenCount: number;
+  totalTokenCount: number;
+  executionDurationMs: number;
+  estimatedCostGBP: number;
+  // NEW: In-memory tool invocation diagnostics
+  toolInvocations?: ToolInvocationResult[];
+}
 ```
 
-**Relationships**:
-- One-to-Many with Tool Invocations (one execution can have many tool invocations)
+**No Database Changes**: Tool invocations are not persisted in spec 003
 
 ---
 
@@ -413,23 +399,26 @@ workspace/
 
 ## Migration Strategy
 
+**SCOPE NOTE**: Tool invocation persistence deferred to Feature 004. Only tool definitions table added in spec 003.
+
 **New Tables**:
 1. `project_configuration` (single row constraint)
 2. `tools` (tool definitions)
-3. `tool_invocations` (diagnostic history)
 
-**Extended Tables**:
-1. `execution_results` (add tool summary columns)
+**NO Extended Tables**: ExecutionResult extended in-memory only, no database changes
 
 **Migration Files** (generated via DrizzleORM):
 ```bash
 pnpm exec drizzle-kit generate --name=add_project_configuration_table
 pnpm exec drizzle-kit generate --name=add_tools_table
-pnpm exec drizzle-kit generate --name=add_tool_invocations_table
-pnpm exec drizzle-kit generate --name=extend_execution_results_with_tool_summary
 ```
 
 **CRITICAL**: NEVER manually edit migration files. ONLY use drizzle-kit commands.
+
+**Deferred to Feature 004**:
+- `execution_history` table (complete execution snapshots with tool invocations)
+- Tool invocation persistence
+- Implementation snapshot storage
 
 ---
 

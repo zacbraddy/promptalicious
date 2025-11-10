@@ -231,8 +231,20 @@ As a developer iterating on multiple LLM configurations, I want to manage multip
 - **Feature 003**: Core Tool Integration System must be complete
   - Requires workspace directory structure
   - Requires tool configuration data model
-  - Requires execution diagnostics data model
+  - Requires execution diagnostics data model (in-memory only in 003)
   - Requires hook and tool file management
+
+## Scope Note: Deferred Work from Feature 003
+
+**Tool Invocation Persistence**: Feature 003 deliberately deferred database persistence of tool invocations to avoid premature schema design. Tool invocations in 003 are returned in-memory only via `ExecutionResult.toolInvocations` array.
+
+**Feature 004 will add**:
+1. Complete execution history database schema with tool invocation persistence
+2. Tool implementation snapshot storage (solving the "what code actually ran?" problem)
+3. Historical execution browsing and replay capabilities
+4. Project-scoped execution organization
+
+This deferral ensures the execution history system can be properly designed holistically rather than split across features
 
 ---
 

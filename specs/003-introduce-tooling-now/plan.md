@@ -35,7 +35,7 @@ Introduce LLM tool integration capabilities to promptalicious, enabling develope
 ## Technical Context
 **Language/Version**: TypeScript (latest, strict mode) + Node.js (latest LTS)
 **Primary Dependencies**: Vercel AI SDK (`ai` package), React, Vite, PostgreSQL, DrizzleORM, TanStack Query
-**Storage**: PostgreSQL (tool configurations, project settings, execution results with tool diagnostics)
+**Storage**: PostgreSQL (tool configurations, project settings), in-memory execution diagnostics (tool invocations returned in ExecutionResult, database persistence deferred to feature 004)
 **Testing**: Vitest (contract → integration → E2E → unit)
 **Target Platform**: Local developer machine (macOS/Linux/Windows) - web application
 **Project Type**: Web (frontend + backend monorepo)
@@ -265,14 +265,12 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
   - Package scaffolding + capturelicious() implementation + tests
   - **Surface**: Import and use in test file, verify captures work
 
-- **Group 5: Tool Execution** (extends existing execution flow)
+- **Group 5: Tool Execution** (extends existing execution flow, in-memory diagnostics)
   - Contract test: Extended POST /api/execute (with advancedOptions)
   - Implement: SDK Adapter Interface + Vercel AI SDK adapter
   - Implement: Hook Execution Service
-  - Implement: Extended Execution Service (integrate tools)
-  - Contract test: GET /api/execute/:id/tools
-  - Implement: Tool Invocations API
-  - **Surface**: `curl -X POST /api/execute` with tools → LLM calls tools, hook diagnostics captured
+  - Implement: Extended Execution Service (integrate tools, collect diagnostics in-memory, return in ExecutionResult)
+  - **Surface**: `curl -X POST /api/execute` with tools → LLM calls tools, diagnostics returned in response (no database persistence)
 
 - **Group 6: Export**
   - Contract test: POST /api/export
@@ -307,8 +305,8 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
   - Create docs/features/tool-integration.md: Overview of tool discovery, configuration, execution
   - Create docs/features/workspace-setup.md: VS Code setup (tsconfig, settings.json), editing hooks
   - Create docs/features/hooks.md: Hook system (beforeAll, beforeEach, afterEach, afterAll) with examples
-  - Update docs/api/api-contracts.md: Add project config, tools, tool invocations, export endpoints
-  - Update docs/backend/database.md: Add new tables (project_configuration, tools, tool_invocations)
+  - Update docs/api/api-contracts.md: Add project config, tools, export endpoints, ExecutionResult.toolInvocations
+  - Update docs/backend/database.md: Add new tables (project_configuration, tools) - NOTE: tool_invocations deferred to feature 004
   - Create docs/troubleshooting/tools.md: Common issues (discovery failures, hook errors, import problems)
   - **Surface**: All docs complete, users can understand and use spec 003 features (NO mention of future specs)
 
@@ -319,11 +317,11 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 - Tests use real dependencies (PostgreSQL, filesystem, ts-morph)
 
 **Dolphin Surfacing** (every 5-10 tasks):
-- Group 1 (3 tasks): Database ready
+- Group 1 (2 tasks): Database ready (reduced from 3 - tool_invocations table removed)
 - Group 2 (8 tasks): Async discovery with polling + cancel working via curl
 - Group 3 (5 tasks): Tools API working via curl
 - Group 4 (2 tasks): Debug package working in isolation
-- Group 5 (7 tasks): Tool execution working end-to-end via curl
+- Group 5 (6 tasks): Tool execution working end-to-end via curl (reduced from 7 - GET /api/execute/:id/tools removed)
 - Group 6 (3 tasks): Export working via curl
 - Group 7 (8 tasks): Settings + discovery modal + Tools pages working in browser
 - Group 8 (3 tasks): Execution diagnostics working in browser
@@ -334,18 +332,18 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 **Maximum time between surfaces**: 8 tasks (Groups 2, 7, and 11, well within 10-task constitutional limit)
 
 **Estimated Task Breakdown** (by group):
-- Group 1 (Foundation): 3 tasks (migrations with project name field)
+- Group 1 (Foundation): 2 tasks (migrations with project name field - tool_invocations table deferred)
 - Group 2 (Project Config + Discovery): 8 tasks (async discovery, status polling, cancel with cleanup)
 - Group 3 (Tools API): 5 tasks
 - Group 4 (@promptalicious/debug): 2 tasks
-- Group 5 (Tool Execution): 7 tasks
+- Group 5 (Tool Execution): 6 tasks (in-memory diagnostics, GET /api/execute/:id/tools deferred)
 - Group 6 (Export): 3 tasks
 - Group 7 (Frontend - Project & Tools): 8 tasks (project name, discovery modal with polling/cancel/OK button)
 - Group 8 (Frontend - Execution): 3 tasks
 - Group 9 (Frontend - Export): 2 tasks
 - Group 10 (Integration Tests): 4 tasks
 - Group 11 (Documentation): 7 tasks (README, VS Code setup, feature docs)
-- **Total**: ~52 tasks
+- **Total**: ~49 tasks (reduced from ~52 after deferring tool invocation persistence to Feature 004)
 
 (Includes new features: project naming, async discovery with polling, cancel with cleanup, real-time progress modal, comprehensive user documentation)
 
