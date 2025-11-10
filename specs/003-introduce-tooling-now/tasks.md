@@ -56,9 +56,19 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ## Group 2: Project Configuration & Discovery (Async with Observability)
 
+**IMPORTANT TDD Pattern**: Service implementation tasks MUST include both unit tests AND implementation:
+1. Write unit tests first (RED phase - tests fail)
+2. Implement service with real operations (GREEN phase - tests pass)
+3. Verify contract tests still pass
+4. Route tasks only implement routes (service already tested)
+
+This ensures complete service implementation, not just stubs with mocked tests.
+
+---
+
 ### T003: Contract test PUT /api/project (202 Accepted with async discovery)
 
-**File**: `packages/backend/tests/contract/project-configuration.test.ts`
+**File**: `packages/backend/tests/contract/project-configuration/put-project.test.ts`
 **Description**: Write failing contract test for PUT /api/project endpoint. Expects 202 Accepted response with configuration object and discoveryStarted: true. Validates that project configuration is saved and discovery process is initiated asynchronously. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T002
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -69,7 +79,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ### T004: Contract test GET /api/project/discovery/status (polling endpoint)
 
-**File**: `packages/backend/tests/contract/project-configuration.test.ts`
+**File**: `packages/backend/tests/contract/project-configuration/get-discovery-status.test.ts`
 **Description**: Write failing contract test for GET /api/project/discovery/status endpoint. Expects response with isDiscovering boolean, phase enum, progress object (filesScanned, filesAnalyzed, toolsFound, filesGenerated), logs array, and optional result object when complete. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T002
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -80,7 +90,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ### T005: Contract test POST /api/project/discovery/cancel (cleanup endpoint)
 
-**File**: `packages/backend/tests/contract/project-configuration.test.ts`
+**File**: `packages/backend/tests/contract/project-configuration/post-discovery-cancel.test.ts`
 **Description**: Write failing contract test for POST /api/project/discovery/cancel endpoint. Expects 200 response with cancelled: true and cleanup confirmation message. Also test 404 when no discovery in progress. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T002
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -91,7 +101,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ### T006: Contract test GET /api/project (retrieve configuration)
 
-**File**: `packages/backend/tests/contract/project-configuration.test.ts`
+**File**: `packages/backend/tests/contract/project-configuration/get-project.test.ts`
 **Description**: Write failing contract test for GET /api/project endpoint. Expects 200 with ProjectConfiguration object or 404 when no project configured. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T002
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -100,23 +110,55 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ---
 
-### T007: Implement Project Configuration API routes
+### T007: Implement Project Configuration API routes and service
 
-**File**: `packages/backend/src/routes/project-configuration.ts`
-**Description**: Implement GET /api/project and PUT /api/project endpoints. PUT endpoint saves configuration to database, derives workspace path from project name, starts async tool discovery (fire-and-forget), and returns 202 Accepted. GET endpoint retrieves current configuration or returns 404. MUST make T003 and T006 pass - GREEN phase.
+**Files**:
+- `packages/backend/src/routes/project-configuration.ts`
+- `packages/backend/src/services/projectConfigurationService.ts`
+- `packages/backend/tests/unit/projectConfigurationService.test.ts`
+
+**Description**:
+1. Write unit tests for projectConfigurationService (RED phase - 11 tests covering get/update/startDiscovery)
+2. Implement service with real database operations using DrizzleORM:
+   - `getProjectConfiguration()` - Query database, return config or null
+   - `updateProjectConfiguration()` - Upsert with onConflictDoUpdate, derive workspace path as `workspace/${name}`
+   - `startDiscovery()` - Stub returning Promise.resolve() (full implementation in T013-T015)
+3. Verify unit tests pass (GREEN phase)
+4. Implement routes that call service methods
+5. Verify contract tests T003 and T006 still pass
+
 **Dependencies**: T003, T006
-**Expected Outcome**: T003 and T006 pass - GREEN phase ✅
+**Expected Outcome**: T003 and T006 pass, 11 unit tests pass, service has real database operations - GREEN phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
 ### T008: Implement Discovery Status Service (track progress, incremental logs)
 
-**File**: `packages/backend/src/services/discovery-status-service.ts`
-**Description**: Create service to track discovery state (isDiscovering, phase, progress counters, logs array). Provide methods to: start discovery, update phase, increment counters, append log entries, get current status, mark complete/error. Use in-memory state (stateless per-request, state lives in service singleton). Logs are incremental - only new entries since last poll.
+**Files**:
+- `packages/backend/src/services/discovery-status-service.ts`
+- `packages/backend/tests/unit/discovery-status-service.test.ts`
+
+**Description**:
+1. Write unit tests for discovery-status-service (RED phase):
+   - Test state initialization (idle phase, empty logs, zero counters)
+   - Test starting discovery (sets isDiscovering true, phase to scanning)
+   - Test updating phase (scanning → analyzing → generating → complete)
+   - Test incrementing progress counters (filesScanned, filesAnalyzed, toolsFound, filesGenerated)
+   - Test appending log entries with timestamp, level, phase, message, context
+   - Test getting current status returns correct state snapshot
+   - Test incremental logs (only new entries since last poll, using offset tracking)
+   - Test marking complete with summary
+   - Test marking error state
+2. Implement service with in-memory state singleton:
+   - Use class with private static instance
+   - Methods: startDiscovery(), updatePhase(), incrementCounters(), appendLog(), getCurrentStatus(), markComplete(), markError()
+   - Track log offset for incremental delivery
+3. Verify unit tests pass (GREEN phase)
+
 **Dependencies**: T007
-**Expected Outcome**: Service provides discovery state management
+**Expected Outcome**: Unit tests pass, service manages discovery state in-memory
 
 - [ ] **Complete**
 
@@ -125,7 +167,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 ### T009: Implement Discovery Status API route (GET /api/project/discovery/status)
 
 **File**: `packages/backend/src/routes/project-configuration.ts`
-**Description**: Implement GET /api/project/discovery/status endpoint that returns current discovery status from Discovery Status Service. Returns isDiscovering, phase, progress, logs (incremental), and result (when complete). MUST make T004 pass - GREEN phase.
+**Description**: Implement GET /api/project/discovery/status endpoint that calls Discovery Status Service.getCurrentStatus(). Returns isDiscovering, phase, progress, logs (incremental), and result (when complete). No additional unit tests needed (service already tested in T008, contract test exists in T004). MUST make T004 pass - GREEN phase.
 **Dependencies**: T004, T008
 **Expected Outcome**: T004 passes - GREEN phase ✅
 
@@ -135,10 +177,27 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 
 ### T010: Implement Discovery Cancel Service (abort + cleanup)
 
-**File**: `packages/backend/src/services/discovery-cancel-service.ts`
-**Description**: Create service to abort in-progress discovery and cleanup partial workspace files. Sets cancellation flag, waits for discovery to acknowledge abort, removes partial workspace directory, clears database entries for incomplete discovery. Returns error if no discovery in progress.
+**Files**:
+- `packages/backend/src/services/discovery-cancel-service.ts`
+- `packages/backend/tests/unit/discovery-cancel-service.test.ts`
+
+**Description**:
+1. Write unit tests for discovery-cancel-service (RED phase):
+   - Test cancelling in-progress discovery (sets cancellation flag, stops discovery)
+   - Test cleanup removes partial workspace directory (mock filesystem operations)
+   - Test clears database entries for incomplete discovery (mock database calls)
+   - Test returns error when no discovery in progress
+   - Test waits for discovery to acknowledge abort (async coordination)
+2. Implement service:
+   - Method: cancelDiscovery() returns {cancelled: boolean, message: string}
+   - Sets cancellation flag in Discovery Status Service
+   - Waits for discovery to acknowledge (poll status until not isDiscovering)
+   - Removes workspace directory using fs.rm
+   - Clears incomplete tools from database
+3. Verify unit tests pass (GREEN phase)
+
 **Dependencies**: T008
-**Expected Outcome**: Service provides discovery cancellation with cleanup
+**Expected Outcome**: Unit tests pass, service cancels discovery and cleans up
 
 - [ ] **Complete**
 
@@ -147,7 +206,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 ### T011: Implement Discovery Cancel API route (POST /api/project/discovery/cancel)
 
 **File**: `packages/backend/src/routes/project-configuration.ts`
-**Description**: Implement POST /api/project/discovery/cancel endpoint that triggers Discovery Cancel Service. Returns 200 with cancelled: true and cleanup message, or 404 if no discovery in progress. MUST make T005 pass - GREEN phase.
+**Description**: Implement POST /api/project/discovery/cancel endpoint that calls Discovery Cancel Service.cancelDiscovery(). Returns 200 with cancelled: true and cleanup message, or 404 if no discovery in progress. No additional unit tests needed (service already tested in T010, contract test exists in T005). MUST make T005 pass - GREEN phase.
 **Dependencies**: T005, T010
 **Expected Outcome**: T005 passes - GREEN phase ✅
 
@@ -167,6 +226,10 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ## Group 3: Tool Discovery Service (ts-morph integration)
 
+**IMPORTANT TDD Pattern**: Service implementation tasks (T013, T014) MUST include unit tests AND implementation following RED-GREEN-REFACTOR cycle. See Group 2 guidance above.
+
+---
+
 ### T012: Install ts-morph dependency
 
 **File**: `packages/backend/package.json`
@@ -180,10 +243,34 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T013: Implement Tool Discovery Service (ts-morph integration, progress events)
 
-**File**: `packages/backend/src/services/tool-discovery-service.ts`
-**Description**: Create service using ts-morph to: 1) Scan target project for files importing 'tool' from 'ai', 2) Parse tool() calls to extract name, description, parameters (Zod schema as JSON), 3) Perform scope analysis on execute function to detect undefined variables (hook parameters), 4) Emit progress events (filesScanned, toolsFound, logs) to Discovery Status Service, 5) Save discovered tools to database, 6) Return DiscoverySummary. Respect cancellation flag from Discovery Cancel Service. Reference research.md Decision 1 for implementation pattern.
+**Files**:
+- `packages/backend/src/services/tool-discovery-service.ts`
+- `packages/backend/tests/unit/tool-discovery-service.test.ts`
+
+**Description**:
+1. Write unit tests for tool-discovery-service (RED phase):
+   - Test scanning project for files with 'tool' import from 'ai' (mock fs.readdir, ts-morph Project)
+   - Test parsing tool() calls extracts name, description, parameters schema
+   - Test scope analysis detects undefined variables in execute function (hook params)
+   - Test progress events emitted to Discovery Status Service (filesScanned, toolsFound, logs)
+   - Test saving discovered tools to database with correct schema
+   - Test returns DiscoverySummary with counts and skipped files
+   - Test respects cancellation flag (stops early when cancelled)
+   - Test handles parse errors gracefully (logs, continues with next file)
+2. Implement service using ts-morph:
+   - Method: discoverTools(projectPath: string) returns Promise<DiscoverySummary>
+   - Scan directory recursively for .ts/.tsx files
+   - Filter files importing 'tool' from 'ai' package
+   - Parse tool() function calls with AST traversal
+   - Extract parameters (Zod schema) as JSON
+   - Perform scope analysis on execute function for undefined vars
+   - Emit progress to Discovery Status Service
+   - Save to database using DrizzleORM
+   - Reference research.md Decision 1 for patterns
+3. Verify unit tests pass (GREEN phase)
+
 **Dependencies**: T012
-**Expected Outcome**: Service discovers tools from user's project using ts-morph
+**Expected Outcome**: Unit tests pass, service discovers tools using ts-morph
 
 - [ ] **Complete**
 
@@ -191,10 +278,32 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T014: Implement Workspace Generator Service (directory structure, hook stubs, tsconfig.json)
 
-**File**: `packages/backend/src/services/workspace-generator-service.ts`
-**Description**: Create service to: 1) Create workspace/{project-name}/ directory (inside promptalicious repo, gitignored), 2) Generate tsconfig.json with @rootalicious path alias pointing to user's project, 3) For each discovered tool, create {tool-id}/ subdirectory, 4) Generate tool.ts (extracted execute function), 5) Generate hook stub files (beforeAll.ts, beforeEach.ts, afterEach.ts, afterAll.ts) with detected parameters as TODO comments, 6) Emit filesystem events to Discovery Status Service. Reference data-model.md § Workspace Structure for exact file structure.
+**Files**:
+- `packages/backend/src/services/workspace-generator-service.ts`
+- `packages/backend/tests/unit/workspace-generator-service.test.ts`
+
+**Description**:
+1. Write unit tests for workspace-generator-service (RED phase):
+   - Test creates workspace/{project-name}/ directory (mock fs.mkdir)
+   - Test generates tsconfig.json with @rootalicious alias (mock fs.writeFile, validate JSON)
+   - Test creates {tool-id}/ subdirectory for each tool
+   - Test generates tool.ts with extracted execute function
+   - Test generates hook stub files (beforeAll/beforeEach/afterEach/afterAll.ts)
+   - Test hook stubs include detected parameters as TODO comments
+   - Test emits filesystem events to Discovery Status Service (filesGenerated counter, logs)
+   - Test handles filesystem errors gracefully
+2. Implement service:
+   - Method: generateWorkspace(projectName: string, projectPath: string, tools: ToolDefinition[]) returns Promise<void>
+   - Use fs.promises for async file operations
+   - Generate tsconfig.json extending root config with @rootalicious alias
+   - For each tool: create directory, write tool.ts, write 4 hook stubs
+   - Hook stubs include comments showing detected parameters
+   - Emit progress to Discovery Status Service
+   - Reference data-model.md § Workspace Structure for exact structure
+3. Verify unit tests pass (GREEN phase)
+
 **Dependencies**: T013
-**Expected Outcome**: Service generates workspace with hook stubs and TypeScript configuration
+**Expected Outcome**: Unit tests pass, service generates workspace structure
 
 - [ ] **Complete**
 

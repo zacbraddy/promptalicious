@@ -1,3 +1,9 @@
+import { eq } from "drizzle-orm";
+
+import { db } from "@/db/connection";
+import { projectConfiguration } from "@/db/schema";
+import { logger } from "@/lib/logger";
+
 export interface ProjectConfigurationData {
   name: string;
   targetProjectPath: string;
@@ -12,18 +18,79 @@ export interface ProjectConfiguration {
   updatedAt: Date;
 }
 
-export function getProjectConfiguration(): Promise<ProjectConfiguration | null> {
-  throw new Error("Not implemented");
+export async function getProjectConfiguration(): Promise<ProjectConfiguration | null> {
+  try {
+    const result = await db
+      .select()
+      .from(projectConfiguration)
+      .where(eq(projectConfiguration.id, 1))
+      .limit(1);
+
+    if (result.length === 0 || !result[0]) {
+      return null;
+    }
+
+    return result[0];
+  } catch (error) {
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Failed to retrieve project configuration",
+    );
+    throw error;
+  }
 }
 
-export function updateProjectConfiguration(
-  _data: ProjectConfigurationData,
+export async function updateProjectConfiguration(
+  data: ProjectConfigurationData,
 ): Promise<ProjectConfiguration> {
-  throw new Error("Not implemented");
+  try {
+    const workspacePath = `workspace/${data.name}`;
+
+    const result = await db
+      .insert(projectConfiguration)
+      .values({
+        id: 1,
+        name: data.name,
+        targetProjectPath: data.targetProjectPath,
+        workspacePath,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: projectConfiguration.id,
+        set: {
+          name: data.name,
+          targetProjectPath: data.targetProjectPath,
+          workspacePath,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    if (result.length === 0 || !result[0]) {
+      throw new Error("Failed to insert or update project configuration");
+    }
+
+    logger.info(
+      {
+        projectName: data.name,
+        workspacePath,
+      },
+      "Project configuration updated",
+    );
+
+    return result[0];
+  } catch (error) {
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Failed to update project configuration",
+    );
+    throw error;
+  }
 }
 
 export function startDiscovery(): Promise<void> {
-  throw new Error("Not implemented");
+  logger.info("Discovery start requested (stub implementation)");
+  return Promise.resolve();
 }
 
 export function getDiscoveryStatus(): Promise<{

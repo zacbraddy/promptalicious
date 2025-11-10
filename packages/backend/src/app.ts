@@ -7,6 +7,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import configRouter from "./routes/config";
 import pricingRouter from "./routes/pricing";
 import executeRouter from "./routes/execute";
+import projectConfigurationRouter from "./routes/project-configuration";
 
 const app = new Hono();
 
@@ -32,5 +33,6 @@ app.get("/health", (c: Context) => {
 app.route("/api/config", configRouter);
 app.route("/api/pricing", pricingRouter);
 app.route("/api/execute", executeRouter);
+app.route("/api/project", projectConfigurationRouter);
 
 export default app;
