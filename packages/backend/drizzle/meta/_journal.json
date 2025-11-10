@@ -15,6 +15,13 @@
       "when": 1762435934420,
       "tag": "0001_rename-provider-endpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762784590433,
+      "tag": "0002_add_project_configuration_table",
+      "breakpoints": true
     }
   ]
 }
