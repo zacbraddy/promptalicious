@@ -18,6 +18,10 @@ export type {
   UpdateConfigurationErrorResponse,
   TestConnectionResponse,
   PricingInfoResponse,
+  ProjectConfiguration,
+  UpdateProjectConfigurationRequest,
+  UpdateProjectConfigurationSuccessResponse,
+  UpdateProjectConfigurationErrorResponse,
 } from "./types/api";
 
 export {

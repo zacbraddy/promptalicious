@@ -145,3 +145,30 @@ export interface AbortExecutionResponse {
     errorMessage: string;
   };
 }
+
+export interface ProjectConfiguration {
+  id: number;
+  name: string;
+  targetProjectPath: string;
+  workspacePath: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateProjectConfigurationRequest {
+  name: string;
+  targetProjectPath: string;
+}
+
+export interface UpdateProjectConfigurationSuccessResponse {
+  config: ProjectConfiguration;
+  discoveryStarted: boolean;
+}
+
+export interface UpdateProjectConfigurationErrorResponse {
+  error: {
+    errorType: "validation" | "filesystem" | "unknown";
+    errorMessage: string;
+    additionalContext?: Record<string, unknown>;
+  };
+}
