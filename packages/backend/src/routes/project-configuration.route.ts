@@ -13,6 +13,7 @@ import {
   updateProjectConfiguration,
   startDiscovery,
   getDiscoveryStatus,
+  cancelDiscovery,
 } from "@/services/project-configuration.service";
 
 const projectConfigurationRouter = new Hono();
@@ -148,6 +149,48 @@ projectConfigurationRouter.get("/discovery/status", async (c: Context) => {
             error instanceof Error
               ? error.message
               : "Failed to retrieve discovery status",
+        },
+      },
+      500,
+    );
+  }
+});
+
+projectConfigurationRouter.post("/discovery/cancel", async (c: Context) => {
+  try {
+    const config = await getProjectConfiguration();
+    const workspacePath = config?.workspacePath || "";
+
+    const result = await cancelDiscovery(workspacePath);
+
+    if (!result.cancelled) {
+      return c.json(
+        {
+          error: {
+            errorType: "not_found",
+            errorMessage: result.message,
+          },
+        },
+        404,
+      );
+    }
+
+    return c.json(
+      {
+        cancelled: result.cancelled,
+        message: result.message,
+      },
+      200,
+    );
+  } catch (error) {
+    return c.json(
+      {
+        error: {
+          errorType: "unknown",
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : "Failed to cancel discovery",
         },
       },
       500,

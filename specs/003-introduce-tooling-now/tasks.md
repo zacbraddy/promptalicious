@@ -220,7 +220,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 # Returns cancelled: true
 ```
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

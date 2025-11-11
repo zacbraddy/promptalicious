@@ -61,9 +61,10 @@ describe("POST /api/project/discovery/cancel endpoint contract", () => {
 
   describe("Error responses (404)", () => {
     it("should return 404 when no discovery is in progress", async () => {
-      vi.mocked(projectConfigService.cancelDiscovery).mockRejectedValue(
-        new Error("No discovery in progress"),
-      );
+      vi.mocked(projectConfigService.cancelDiscovery).mockResolvedValue({
+        cancelled: false,
+        message: "No discovery in progress",
+      });
 
       const res = await app.request("/api/project/discovery/cancel", {
         method: "POST",
@@ -78,13 +79,15 @@ describe("POST /api/project/discovery/cancel endpoint contract", () => {
 
       expect(res.status).toBe(404);
       expect(json.error).toBeDefined();
+      expect(json.error.errorType).toBe("not_found");
       expect(json.error.errorMessage).toContain("No discovery in progress");
     });
 
     it("should not clean up workspace when no discovery is in progress", async () => {
-      vi.mocked(projectConfigService.cancelDiscovery).mockRejectedValue(
-        new Error("No discovery in progress"),
-      );
+      vi.mocked(projectConfigService.cancelDiscovery).mockResolvedValue({
+        cancelled: false,
+        message: "No discovery in progress",
+      });
 
       const res = await app.request("/api/project/discovery/cancel", {
         method: "POST",
@@ -119,9 +122,10 @@ describe("POST /api/project/discovery/cancel endpoint contract", () => {
     });
 
     it("should ensure error response follows standard error schema", async () => {
-      vi.mocked(projectConfigService.cancelDiscovery).mockRejectedValue(
-        new Error("No discovery in progress"),
-      );
+      vi.mocked(projectConfigService.cancelDiscovery).mockResolvedValue({
+        cancelled: false,
+        message: "No discovery in progress",
+      });
 
       const res = await app.request("/api/project/discovery/cancel", {
         method: "POST",
@@ -140,11 +144,36 @@ describe("POST /api/project/discovery/cancel endpoint contract", () => {
     });
   });
 
+  describe("Error responses (500)", () => {
+    it("should return 500 for unexpected exceptions", async () => {
+      vi.mocked(projectConfigService.cancelDiscovery).mockRejectedValue(
+        new Error("Database connection failed"),
+      );
+
+      const res = await app.request("/api/project/discovery/cancel", {
+        method: "POST",
+      });
+
+      const json = (await res.json()) as {
+        error: {
+          errorType: string;
+          errorMessage: string;
+        };
+      };
+
+      expect(res.status).toBe(500);
+      expect(json.error).toBeDefined();
+      expect(json.error.errorType).toBe("unknown");
+      expect(json.error.errorMessage).toContain("Database connection failed");
+    });
+  });
+
   describe("Idempotency", () => {
     it("should handle multiple cancellation requests gracefully", async () => {
-      vi.mocked(projectConfigService.cancelDiscovery).mockRejectedValue(
-        new Error("No discovery in progress"),
-      );
+      vi.mocked(projectConfigService.cancelDiscovery).mockResolvedValue({
+        cancelled: false,
+        message: "No discovery in progress",
+      });
 
       const res1 = await app.request("/api/project/discovery/cancel", {
         method: "POST",
