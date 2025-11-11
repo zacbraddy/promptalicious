@@ -27,3 +27,6 @@ postgresql/
 
 *.log
 .DS_Store
+
+# Test fixtures (generated during integration tests)
+packages/backend/tests/fixtures/tool-discovery/
