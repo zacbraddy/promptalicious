@@ -241,14 +241,38 @@ describe("projectConfigurationService", () => {
   });
 
   describe("startDiscovery", () => {
-    it("should be a no-op stub that returns successfully", async () => {
+    it("should return early if no project configuration exists", async () => {
+      const mockSelectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([]),
+      };
+
+      vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
+
       await expect(
         projectConfigService.startDiscovery(),
       ).resolves.toBeUndefined();
     });
 
-    it("should not throw errors when called", async () => {
-      await projectConfigService.startDiscovery();
+    it("should start async discovery when project configuration exists", async () => {
+      const mockConfig = {
+        id: 1,
+        name: "test-project",
+        targetProjectPath: "test/path",
+        workspacePath: "workspace/test-project",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockSelectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockConfig]),
+      };
+
+      vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
+
       await projectConfigService.startDiscovery();
     });
   });

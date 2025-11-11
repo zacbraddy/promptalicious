@@ -15,6 +15,7 @@ This document defines the domain entities and their relationships for LLM tool i
 **Purpose**: Stores the connection between promptalicious and the user's target project
 
 **Attributes**:
+
 - `id`: integer (primary key, always 1 - single row constraint)
 - `name`: string (user-editable project name, defaults to folder name from target path)
 - `targetProjectPath`: string (relative path from promptalicious to target project)
@@ -23,30 +24,34 @@ This document defines the domain entities and their relationships for LLM tool i
 - `updatedAt`: timestamp
 
 **Validation Rules**:
+
 - `name` MUST NOT be empty
 - `targetProjectPath` MUST be a valid relative path pointing to an existing directory
 - `workspacePath` MUST be relative path within promptalicious repo (format: `workspace/{project-name}`)
 - Only one configuration allowed (enforced by `id=1` constraint)
 
 **Database Schema** (DrizzleORM):
+
 ```typescript
-export const projectConfiguration = pgTable('project_configuration', {
-  id: integer('id').primaryKey().default(1),
-  name: text('name').notNull(),
-  targetProjectPath: text('target_project_path').notNull(),
-  workspacePath: text('workspace_path').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
-})
+export const projectConfiguration = pgTable("project_configuration", {
+  id: integer("id").primaryKey().default(1),
+  name: text("name").notNull(),
+  targetProjectPath: text("target_project_path").notNull(),
+  workspacePath: text("workspace_path").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 ```
 
 **State Transitions**:
+
 - Created when user first configures project via folder picker
 - Updated when user changes target project path or project name
 - Triggers tool discovery on creation/update
 - Manual tool discovery can be triggered without changing configuration
 
 **Critical Design Decision**:
+
 - Workspace is stored INSIDE promptalicious repo at `workspace/{project-name}/`
 - User's project remains completely untouched (read-only)
 - No files are ever written to user's codebase
@@ -59,6 +64,7 @@ export const projectConfiguration = pgTable('project_configuration', {
 **Purpose**: Represents a discovered tool from the user's project
 
 **Attributes**:
+
 - `id`: string (primary key, unique identifier - tool name or content hash)
 - `name`: string (tool name from source)
 - `description`: string (current description - may be edited)
@@ -72,6 +78,7 @@ export const projectConfiguration = pgTable('project_configuration', {
 - `updatedAt`: timestamp
 
 **Validation Rules**:
+
 - `id` MUST be unique across all tools
 - `name` MUST NOT be empty
 - `description` MUST NOT be empty
@@ -82,29 +89,32 @@ export const projectConfiguration = pgTable('project_configuration', {
 - After `sourceDescription` becomes null (first edit), description is controlled by frontend
 
 **Database Schema** (DrizzleORM):
+
 ```typescript
-export const tools = pgTable('tools', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description').notNull(),
-  sourceDescription: text('source_description'),  // Nullable after first edit
-  parametersSchema: jsonb('parameters_schema').notNull(),
-  sourceFilePath: text('source_file_path').notNull(),
-  workspaceDir: text('workspace_dir').notNull(),
-  enabled: boolean('enabled').notNull().default(true),
-  detectedHookParams: jsonb('detected_hook_params'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
-})
+export const tools = pgTable("tools", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  sourceDescription: text("source_description"), // Nullable after first edit
+  parametersSchema: jsonb("parameters_schema").notNull(),
+  sourceFilePath: text("source_file_path").notNull(),
+  workspaceDir: text("workspace_dir").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  detectedHookParams: jsonb("detected_hook_params"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 ```
 
 **State Transitions**:
+
 - Created during tool discovery (sourced from user's project)
 - Updated when user edits description (`sourceDescription` → null, `description` updated)
 - Updated when user toggles enabled state
 - Deleted when tool removed from source project (on re-discovery)
 
 **Relationships**:
+
 - One-to-Many with Tool Invocations (one tool can have many invocations)
 
 ---
@@ -116,6 +126,7 @@ export const tools = pgTable('tools', {
 **Purpose**: Captures diagnostics from a single tool invocation during execution (in-memory)
 
 **Attributes** (TypeScript interface, not database table):
+
 - `toolId`: string
 - `toolName`: string
 - `timestamp`: Date (when tool was invoked)
@@ -132,6 +143,7 @@ export const tools = pgTable('tools', {
 - `debugOutput`: DebugMessage[] (captured capturelicious() calls)
 
 **TypeScript Interface** (shared-infra):
+
 ```typescript
 export interface ToolInvocationResult {
   toolId: string;
@@ -160,11 +172,13 @@ export interface ToolInvocationResult {
 **Purpose**: Extended from spec 002 to include in-memory tool invocation diagnostics
 
 **New Attribute** (added to existing entity):
+
 - `toolInvocations`: ToolInvocationResult[] | undefined (in-memory diagnostics array)
 
 **Note**: ExecutionResult from spec 002 is extended with in-memory array only. No database changes needed.
 
 **TypeScript Extension**:
+
 ```typescript
 // Extend existing ExecutionResult interface from spec 002
 export interface ExecutionResult {
@@ -190,6 +204,7 @@ export interface ExecutionResult {
 **Purpose**: Lifecycle hooks providing execution context to tools
 
 **Attributes** (not stored in database, generated as files):
+
 - `hookType`: enum ('beforeAll' | 'beforeEach' | 'afterEach' | 'afterAll')
 - `toolId`: string (associated tool identifier)
 - `filePath`: string (absolute path to hook file in workspace)
@@ -197,42 +212,132 @@ export interface ExecutionResult {
 - `stubGenerated`: boolean (whether stub file has been generated)
 
 **File Structure**:
+
 - Location: `{workspaceDir}/{toolId}/beforeAll.ts` (and similarly for other hooks)
 - Content: TypeScript file exporting default async function
 
 **Hook Function Signatures**:
+
 ```typescript
-// beforeAll.ts
-export default async function beforeAll(): Promise<Record<string, unknown>> {
+// workspace/{project-name}/environment.d.ts - Workspace-level environment (union of all tools)
+import { IExecutionContext } from "../rootalicious/...";
+import { IOpenCVClient } from "../rootalicious/...";
+import { Database } from "../rootalicious/...";
+
+// Union type of all environment variables across all tools
+export type WorkspaceEnvironment = {
+  context?: IExecutionContext;  // From tool A
+  opencv?: IOpenCVClient;       // From tool A
+  db?: Database;                // From tool B
+};
+
+// workspace/{project-name}/beforeAll.ts - Workspace-level hook (runs once before all tools)
+import type { WorkspaceEnvironment } from "./environment";
+
+export default async function beforeAll(): Promise<Partial<WorkspaceEnvironment>> {
+  // Shared context available to ALL tools in the workspace
+  // This runs ONCE at the start of LLM execution
   return {
-    // Global context available to all tool invocations
+    // TODO: Initialize shared resources (e.g., database connection, services)
+  };
+}
+
+// workspace/{project-name}/afterAll.ts - Workspace-level hook (runs once after all tools)
+import type { WorkspaceEnvironment } from "./environment";
+
+export default async function afterAll(): Promise<void> {
+  // Cleanup shared resources after ALL tools have completed
+  // This runs ONCE at the end of LLM execution
+}
+
+// Tool-specific files (workspace/{project-name}/{tool-id}/)
+
+// {tool-id}/environment.d.ts - Tool-specific type imports and ambient declarations
+import { IExecutionContext } from "../rootalicious/...";
+import { IOpenCVClient } from "../rootalicious/...";
+
+export type ToolEnvironment = {
+  context: IExecutionContext;
+  opencv: IOpenCVClient;
+};
+
+declare global {
+  const context: IExecutionContext;
+}
+declare global {
+  const opencv: IOpenCVClient;
+}
+
+// {tool-id}/tool.ts - Imports environment for type-safe variable access
+import "./environment";
+
+export default async (params: ToolParams): Promise<ToolResponse> => {
+  // context and opencv are now available with full type information
+  const frame = context.frames.find(...);
+};
+
+// {tool-id}/beforeAll.ts - Tool-level hook (runs once before this tool's invocations)
+import type { ToolEnvironment } from "./environment";
+
+export default async function beforeAll(): Promise<Partial<ToolEnvironment>> {
+  // Tool-specific context, merged with workspace beforeAll context
+  // Properties here OVERRIDE workspace beforeAll for this tool
+  return {
+    context: undefined, // TODO: Provide context
+    opencv: undefined,  // TODO: Provide opencv
   }
 }
 
-// beforeEach.ts
-export default async function beforeEach(): Promise<Record<string, unknown>> {
-  return {
-    // Per-invocation context
-  }
+// {tool-id}/beforeEach.ts - Tool-level hook (runs before each invocation of this tool)
+import type { ToolEnvironment } from "./environment";
+
+export default async function beforeEach(): Promise<Partial<ToolEnvironment>> {
+  // Per-invocation context, merged with workspace + tool beforeAll context
+  // Properties here OVERRIDE workspace beforeAll + tool beforeAll for this invocation only
+  return {}
 }
 
-// afterEach.ts
+// {tool-id}/afterEach.ts - Tool-level hook (runs after each invocation)
 export default async function afterEach(result: unknown): Promise<void> {
   // Cleanup or logging after each invocation
 }
 
-// afterAll.ts
+// {tool-id}/afterAll.ts - Tool-level hook (runs once after all invocations of this tool)
 export default async function afterAll(): Promise<void> {
-  // Cleanup after all invocations complete
+  // Cleanup after all invocations of this tool complete
 }
 ```
 
+**Hook Execution Lifecycle**:
+
+```
+1. workspace beforeAll() → shared context for all tools
+2. For each enabled tool:
+   a. tool beforeAll() → tool-specific context (merged with workspace context)
+   b. For each LLM invocation of this tool:
+      i.  tool beforeEach() → invocation-specific context (merged with workspace + tool context)
+      ii. tool.execute() → runs with merged context
+      iii. tool afterEach() → cleanup for this invocation
+   c. tool afterAll() → cleanup for this tool
+3. workspace afterAll() → cleanup shared resources
+```
+
+**Merge Precedence** (later overrides earlier):
+
+1. workspace beforeAll (base context for all tools)
+2. tool beforeAll (tool-specific overrides)
+3. tool beforeEach (invocation-specific overrides)
+
+**Implementation Note**: Uses modern TypeScript import patterns with `declare global` blocks instead of triple-slash references to avoid ESLint warnings (`@typescript-eslint/triple-slash-reference`). Type imports use regular `import` (not `import type`) to support both interfaces and classes. Workspace-level hooks provide shared context across all tools, reducing duplication when multiple tools need the same resources (e.g., database connection, execution context).
+
 **State Transitions**:
+
 - Generated as stubs during tool discovery
 - User edits files in their code editor
 - Loaded and executed during tool invocation
 
 **Relationships**:
+
 - One-to-One with Tool Definition (each tool has one set of hooks)
 
 ---
@@ -242,24 +347,30 @@ export default async function afterAll(): Promise<void> {
 **Purpose**: Organises tool files and hooks in gitignored directory within promptalicious repo
 
 **Attributes**:
+
 - `rootPath`: string (relative path to workspace root: `workspace/`)
 - `projectWorkspacePath`: string (relative path to project workspace: `workspace/{project-name}/`)
 - `tsConfigPath`: string (relative path to `tsconfig.json`)
 - `toolDirectories`: Map<toolId, string> (tool ID to relative directory path)
 
 **File System Structure**:
+
 ```
 promptalicious/                         # Promptalicious repo
 ├── workspace/                          # Gitignored directory
 │   ├── .gitkeep                       # Track empty directory in git
 │   └── {project-name}/                # Per-project workspace
 │       ├── tsconfig.json              # Generated with @rootalicious alias
+│       ├── environment.d.ts           # Workspace-level environment (union of all tools)
+│       ├── beforeAll.ts               # Workspace-level hook (runs once before all tools)
+│       ├── afterAll.ts                # Workspace-level hook (runs once after all tools)
 │       └── {tool-id}/                 # Per-tool directory
-│           ├── tool.ts                # Extracted execute function
-│           ├── beforeAll.ts           # Hook stub
-│           ├── beforeEach.ts          # Hook stub
-│           ├── afterEach.ts           # Hook stub
-│           └── afterAll.ts            # Hook stub
+│           ├── tool.ts                # Extracted execute function with import "./environment"
+│           ├── environment.d.ts       # Tool-specific type imports and ambient declarations
+│           ├── beforeAll.ts           # Tool-level hook stub (typed return value)
+│           ├── beforeEach.ts          # Tool-level hook stub (typed return value)
+│           ├── afterEach.ts           # Tool-level hook stub
+│           └── afterAll.ts            # Tool-level hook stub
 
 {user-project}/                         # User's project (UNTOUCHED, READ-ONLY)
 └── src/tools/                          # Original tool definitions
@@ -269,6 +380,7 @@ promptalicious/                         # Promptalicious repo
 **Generated Files**:
 
 **`tsconfig.json`** (inside `workspace/{project-name}/`):
+
 ```json
 {
   "extends": "../../tsconfig.json",
@@ -282,30 +394,21 @@ promptalicious/                         # Promptalicious repo
 }
 ```
 
-**VS Code Workspace Configuration** (`.vscode/settings.json` in promptalicious repo):
-```json
-{
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "files.exclude": {
-    "workspace": false
-  }
-}
-```
-
 **Note**:
+
 - Workspace tsconfig extends promptalicious root for consistent TypeScript/code style settings
 - `baseUrl` set to workspace directory for path resolution
-- VS Code settings ensure workspace directory is included in TypeScript language server scope
 - IDE will automatically detect workspace tsconfig when editing hook/tool files
 - `@rootalicious` alias provides type-safe imports from user's project
 
 **Promptalicious Root `tsconfig.json`** (must exist at repository root):
+
 - Provides base TypeScript configuration for both promptalicious and workspace files
 - Ensures consistent compiler options, strict mode, module resolution
 - Workspace configs extend this and add project-specific path aliases
 
 **IDE Language Server Behavior**:
+
 - When editing `workspace/my-project/getUserProfile/beforeAll.ts`:
   1. Language server finds `workspace/my-project/tsconfig.json`
   2. Reads `extends: "../../tsconfig.json"` and loads base config
@@ -313,6 +416,7 @@ promptalicious/                         # Promptalicious repo
   4. Provides IntelliSense for imports like `import { db } from '@rootalicious/src/lib/database'`
 
 **`workspace/.gitkeep`**:
+
 ```
 # This directory contains per-project workspaces
 # Each project gets a subdirectory with tool implementations and hooks
@@ -321,6 +425,7 @@ promptalicious/                         # Promptalicious repo
 ```
 
 **promptalicious/.gitignore** (updated):
+
 ```
 # Workspace directory (user-specific tool implementations)
 workspace/
@@ -328,12 +433,14 @@ workspace/
 ```
 
 **State Transitions**:
+
 - `workspace/` directory created on first project configuration (if not exists)
 - Project workspace created at `workspace/{project-name}/` when project configured
 - Tool directories added during tool discovery
 - Files persist across sessions (gitignored but not deleted)
 
 **Critical Design Decision**:
+
 - Workspace lives in promptalicious repo, NOT in user's project
 - User's codebase remains completely untouched
 - Path alias `@rootalicious` provides import access to user's project
@@ -379,18 +486,21 @@ workspace/
 ## Data Persistence Strategy
 
 ### Database (PostgreSQL)
+
 - Project Configuration (single row)
 - Tool Definitions (persistent across sessions)
 - Tool Invocations (diagnostic history)
 - Execution Results (extended with tool summary)
 
 ### File System (Gitignored Workspace)
+
 - Tool execute functions (`tool.ts`)
 - Hook implementations (`beforeAll.ts`, `beforeEach.ts`, etc.)
 - TypeScript configuration (`tsconfig.json`)
 - Workspace structure (per-tool directories)
 
 ### In-Memory (Not Persisted)
+
 - Discovered tool AST nodes (from ts-morph, regenerated on discovery)
 - Hook execution results (captured during execution, stored in database as part of diagnostics)
 - Active execution state (from spec 002, AbortController signals)
@@ -402,12 +512,14 @@ workspace/
 **SCOPE NOTE**: Tool invocation persistence deferred to Feature 004. Only tool definitions table added in spec 003.
 
 **New Tables**:
+
 1. `project_configuration` (single row constraint)
 2. `tools` (tool definitions)
 
 **NO Extended Tables**: ExecutionResult extended in-memory only, no database changes
 
 **Migration Files** (generated via DrizzleORM):
+
 ```bash
 pnpm exec drizzle-kit generate --name=add_project_configuration_table
 pnpm exec drizzle-kit generate --name=add_tools_table
@@ -416,6 +528,7 @@ pnpm exec drizzle-kit generate --name=add_tools_table
 **CRITICAL**: NEVER manually edit migration files. ONLY use drizzle-kit commands.
 
 **Deferred to Feature 004**:
+
 - `execution_history` table (complete execution snapshots with tool invocations)
 - Tool invocation persistence
 - Implementation snapshot storage
@@ -430,90 +543,90 @@ pnpm exec drizzle-kit generate --name=add_tools_table
 // packages/shared-infra/src/types/tools.ts
 
 export interface ProjectConfiguration {
-  id: number
-  name: string
-  targetProjectPath: string
-  workspacePath: string
-  createdAt: Date
-  updatedAt: Date
+  id: number;
+  name: string;
+  targetProjectPath: string;
+  workspacePath: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ToolDefinition {
-  id: string
-  name: string
-  description: string
-  sourceDescription: string | null
-  parametersSchema: unknown  // Zod schema as JSON
-  sourceFilePath: string
-  workspaceDir: string
-  enabled: boolean
-  detectedHookParams: string[]
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string;
+  description: string;
+  sourceDescription: string | null;
+  parametersSchema: unknown; // Zod schema as JSON
+  sourceFilePath: string;
+  workspaceDir: string;
+  enabled: boolean;
+  detectedHookParams: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ToolInvocationResult {
-  id: string
-  executionId: string
-  toolId: string
-  timestamp: Date
-  inputParams: unknown
-  output: unknown
-  executionDurationMs: number
-  inputTokens: number | null
-  outputTokens: number | null
-  success: boolean
-  errorType: string | null
-  errorMessage: string | null
-  errorStack: string | null
-  llmReasoning: string | null
-  debugOutput: DebugMessage[]
+  id: string;
+  executionId: string;
+  toolId: string;
+  timestamp: Date;
+  inputParams: unknown;
+  output: unknown;
+  executionDurationMs: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  success: boolean;
+  errorType: string | null;
+  errorMessage: string | null;
+  errorStack: string | null;
+  llmReasoning: string | null;
+  debugOutput: DebugMessage[];
 }
 
 export interface DebugMessage {
-  timestamp: Date
-  message: string
-  variables?: Record<string, unknown>
+  timestamp: Date;
+  message: string;
+  variables?: Record<string, unknown>;
 }
 
 export interface HookDefinition {
-  hookType: 'beforeAll' | 'beforeEach' | 'afterEach' | 'afterAll'
-  toolId: string
-  filePath: string
-  detectedParams: string[]
-  stubGenerated: boolean
+  hookType: "beforeAll" | "beforeEach" | "afterEach" | "afterAll";
+  toolId: string;
+  filePath: string;
+  detectedParams: string[];
+  stubGenerated: boolean;
 }
 
 export interface WorkspaceStructure {
-  rootPath: string
-  projectWorkspacePath: string
-  tsConfigPath: string
-  toolDirectories: Map<string, string>
+  rootPath: string;
+  projectWorkspacePath: string;
+  tsConfigPath: string;
+  toolDirectories: Map<string, string>;
 }
 
 export interface DiscoveryLogEntry {
-  timestamp: Date
-  level: 'info' | 'warning' | 'error'
-  phase: 'scanning' | 'analyzing' | 'generating' | 'complete'
-  message: string
+  timestamp: Date;
+  level: "info" | "warning" | "error";
+  phase: "scanning" | "analyzing" | "generating" | "complete";
+  message: string;
   context?: {
-    filePath?: string
-    toolName?: string
-    reason?: string
-    linesExtracted?: number
-    detectedParams?: string[]
-  }
+    filePath?: string;
+    toolName?: string;
+    reason?: string;
+    linesExtracted?: number;
+    detectedParams?: string[];
+  };
 }
 
 export interface DiscoverySummary {
-  filesScanned: number
-  filesWithToolImports: number
-  toolsDiscovered: number
-  filesGenerated: number
+  filesScanned: number;
+  filesWithToolImports: number;
+  toolsDiscovered: number;
+  filesGenerated: number;
   skippedFiles: Array<{
-    path: string
-    reason: string
-  }>
+    path: string;
+    reason: string;
+  }>;
 }
 ```
 
@@ -522,28 +635,33 @@ export interface DiscoverySummary {
 ## Validation Rules Summary
 
 ### Project Configuration
+
 - Only one row allowed (id=1 constraint)
 - Target project path must exist and be valid relative path
 - Workspace path must be absolute and within accessible filesystem
 
 ### Tool Definition
+
 - Tool ID must be unique
 - Source file must exist at specified path
 - Parameters schema must be valid JSON (Zod schema)
 - After first description edit, source description becomes null
 
 ### Tool Invocation
+
 - Must reference valid execution and tool
 - Execution duration must be non-negative
 - Token counts must be non-negative if present
 - Failed invocations must have error message
 
 ### Hook Definition
+
 - Hook files must be valid TypeScript
 - Export default async function with correct signature
 - Located in tool's workspace directory
 
 ### Workspace Structure
+
 - Must be gitignored
 - TypeScript configuration must be valid
 - Path alias @rootalicious must point to parent directory

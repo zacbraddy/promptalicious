@@ -17,6 +17,7 @@ This document captures research findings and technical decisions for implementin
 **Decision 1: Use ts-morph for TypeScript AST Analysis**
 
 **Rationale**:
+
 - ts-morph is the standard TypeScript Compiler API wrapper for static analysis
 - Provides high-level API for navigating and querying TypeScript ASTs
 - Handles module resolution, type information, and source file navigation
@@ -24,44 +25,55 @@ This document captures research findings and technical decisions for implementin
 - Avoids manual TypeScript AST navigation (complex and error-prone)
 
 **Alternatives Considered**:
+
 - Raw TypeScript Compiler API: Too low-level, requires deep TS compiler knowledge
 - Regex/string parsing: Brittle, cannot handle complex nested structures or imports
 - Babel with TypeScript plugin: Adds unnecessary dependency, ts-morph is purpose-built
 
 **Implementation Pattern**:
+
 ```typescript
-import { Project } from 'ts-morph'
+import { Project } from "ts-morph";
 
 const project = new Project({
-  tsConfigFilePath: path.join(targetProjectPath, 'tsconfig.json')
-})
+  tsConfigFilePath: path.join(targetProjectPath, "tsconfig.json"),
+});
 
 // Find all source files importing 'tool' from 'ai' SDK
-const sourceFiles = project.getSourceFiles()
-const toolFiles = sourceFiles.filter(sf =>
-  sf.getImportDeclarations()
-    .some(imp =>
-      imp.getModuleSpecifierValue() === 'ai' &&
-      imp.getNamedImports().some(ni => ni.getName() === 'tool')
-    )
-)
+const sourceFiles = project.getSourceFiles();
+const toolFiles = sourceFiles.filter((sf) =>
+  sf
+    .getImportDeclarations()
+    .some(
+      (imp) =>
+        imp.getModuleSpecifierValue() === "ai" &&
+        imp.getNamedImports().some((ni) => ni.getName() === "tool"),
+    ),
+);
 
 // Extract tool definitions from each file
 for (const file of toolFiles) {
-  const toolCalls = file.getDescendantsOfKind(SyntaxKind.CallExpression)
-    .filter(call => call.getExpression().getText() === 'tool')
+  const toolCalls = file
+    .getDescendantsOfKind(SyntaxKind.CallExpression)
+    .filter((call) => call.getExpression().getText() === "tool");
 
   for (const toolCall of toolCalls) {
     // Parse object literal argument to extract description, parameters, execute function
-    const arg = toolCall.getArguments()[0]
+    const arg = toolCall.getArguments()[0];
     if (Node.isObjectLiteralExpression(arg)) {
-      const description = arg.getProperty('description')?.getInitializer()?.getText()
-      const parameters = arg.getProperty('parameters')?.getInitializer()?.getText()
-      const execute = arg.getProperty('execute')?.getInitializer()
+      const description = arg
+        .getProperty("description")
+        ?.getInitializer()
+        ?.getText();
+      const parameters = arg
+        .getProperty("parameters")
+        ?.getInitializer()
+        ?.getText();
+      const execute = arg.getProperty("execute")?.getInitializer();
 
       // Extract execute function body and detect undefined variables
       if (Node.isFunctionLikeDeclaration(execute)) {
-        const body = execute.getBody()?.getText()
+        const body = execute.getBody()?.getText();
         // Analyse for undefined variables to determine hook parameters
       }
     }
@@ -77,11 +89,13 @@ for (const file of toolFiles) {
 **Decision 2: Detect Hook Parameters via Scope Analysis**
 
 **Rationale**:
+
 - Tool execute functions may reference variables not in their parameter list (e.g., services, database connections)
 - ts-morph provides symbol and scope analysis to identify undefined references
 - This enables auto-generating hook stub files showing detected parameters
 
 **Implementation Pattern**:
+
 ```typescript
 // Given an execute function node
 const executeFunc = // ... extracted from tool() call
@@ -106,6 +120,7 @@ generateHookStub({ params: hookParams })
 ```
 
 **Alternatives Considered**:
+
 - Manual parameter annotation: Requires user to explicitly declare dependencies (poor DX)
 - Runtime detection: Cannot detect at discovery time, requires execution
 
@@ -120,6 +135,7 @@ generateHookStub({ params: hookParams })
 **Decision 3: Create Workspace Inside Promptalicious Repo with TypeScript Path Aliases**
 
 **Rationale**:
+
 - Workspace must be gitignored (contains user-specific configuration)
 - Workspace lives in promptalicious repo to avoid polluting user's codebase
 - Tool files need to import from user's project via path alias (e.g., `@rootalicious/`)
@@ -128,6 +144,7 @@ generateHookStub({ params: hookParams })
 - User's project remains completely untouched (read-only)
 
 **Structure**:
+
 ```
 promptalicious/                         # Promptalicious repo
 ├── workspace/                          # Gitignored directory
@@ -147,6 +164,7 @@ promptalicious/                         # Promptalicious repo
 ```
 
 **Generated tsconfig.json** (inside `workspace/{project-name}/`):
+
 ```json
 {
   "extends": "../../tsconfig.json",
@@ -161,13 +179,14 @@ promptalicious/                         # Promptalicious repo
 ```
 
 **IDE Support Requirements**:
+
 - Workspace tsconfig extends promptalicious root tsconfig for consistent TypeScript settings
 - `baseUrl: "."` ensures path aliases resolve from workspace directory
-- `.vscode/settings.json` ensures workspace directory included in TypeScript language server
-- When user edits hook files, language server automatically finds workspace tsconfig
+- When user edits hook files, IDE language server automatically detects workspace tsconfig
 - `@rootalicious` alias provides full IntelliSense for imports from user's project
 
 **Hook Stub Example** (`beforeAll.ts`):
+
 ```typescript
 // Auto-generated hook stub for tool: getUserProfile
 // Detected parameters: db, authService
@@ -175,19 +194,21 @@ promptalicious/                         # Promptalicious repo
 
 export default async function beforeAll() {
   return {
-    db: undefined,           // TODO: Provide database connection
-    authService: undefined   // TODO: Provide auth service instance
-  }
+    db: undefined, // TODO: Provide database connection
+    authService: undefined, // TODO: Provide auth service instance
+  };
 }
 ```
 
 **Alternatives Considered**:
+
 - Workspace in user's project: Pollutes user's codebase, requires modifying their .gitignore
 - Inline editing in frontend: Poor DX, no TypeScript support, no imports
 - Copying tool files into promptalicious without path alias: Breaks import paths from user's project
 - Modify user's files directly: Violates spec requirement for non-invasive integration
 
 **Critical Design Decision**:
+
 - Workspace is in promptalicious repo (gitignored via `workspace/` in .gitignore)
 - User's project is read-only (we never write to their codebase)
 - Export instructions provide manual bridge for applying changes
@@ -204,12 +225,14 @@ export default async function beforeAll() {
 **Decision 4: Implement 4-Phase Hook Lifecycle**
 
 **Rationale**:
+
 - Tools may need setup before any execution (database connections, service initialization)
 - Tools may need per-invocation context (request ID, transaction scope)
 - Tools may need cleanup after each invocation or after all invocations
 - Matches common testing framework patterns (Jest, Vitest) for familiarity
 
 **Lifecycle**:
+
 ```
 beforeAll()    → Run once before any tool invocations
   ↓
@@ -223,25 +246,29 @@ afterAll()     → Run once after all tool invocations complete
 ```
 
 **Hook Function Signature**:
+
 ```typescript
 // All hooks are async and return objects (or void for after hooks)
-type BeforeAllHook = () => Promise<Record<string, unknown>>
-type BeforeEachHook = () => Promise<Record<string, unknown>>
-type AfterEachHook = (result: unknown) => Promise<void>
-type AfterAllHook = () => Promise<void>
+type BeforeAllHook = () => Promise<Record<string, unknown>>;
+type BeforeEachHook = () => Promise<Record<string, unknown>>;
+type AfterEachHook = (result: unknown) => Promise<void>;
+type AfterAllHook = () => Promise<void>;
 ```
 
 **Context Merging**:
+
 - `beforeAll` returns global context (available to all tool invocations)
 - `beforeEach` returns per-invocation context (available to current invocation only)
 - Tool execute function receives merged object: `{ ...toolParams, ...beforeAllCtx, ...beforeEachCtx }`
 
 **Error Handling**:
+
 - Hook failures MUST abort execution with clear error message
 - Error message MUST indicate which hook failed and why
 - Frontend displays hook failure as execution error with stack trace
 
 **Alternatives Considered**:
+
 - Single setup hook: Insufficient for global vs per-invocation context
 - React-style lifecycle (mount/unmount): Confusing mental model for backend execution
 - No hooks, require tools to handle setup: Violates spec requirement for external dependencies
@@ -257,12 +284,14 @@ type AfterAllHook = () => Promise<void>
 **Decision 5: Extend Existing generateText Flow with Tools Array**
 
 **Rationale**:
+
 - Vercel AI SDK's `generateText` already supports tools parameter
 - Tool format matches AI SDK's expected structure (name, description, parameters, execute)
 - Minimal changes to existing execution infrastructure
 - Leverage AI SDK's built-in tool calling support
 
 **Implementation Pattern**:
+
 ```typescript
 import { generateText, tool as aiTool } from 'ai'
 import { openai } from '@ai-sdk/openai'
@@ -306,6 +335,7 @@ const result = await generateText({
 ```
 
 **AI SDK Options Exposed in Frontend** (FR-015):
+
 - `maxTokens` / `maxTokenBudget`
 - `temperature`
 - `topP`
@@ -314,6 +344,7 @@ const result = await generateText({
 - `maxToolRoundtrips` (parallel tool calling support)
 
 **Alternatives Considered**:
+
 - Custom tool execution outside AI SDK: Duplicates SDK's tool handling logic
 - Streaming responses with tools: Deferred to future spec (complexity increase)
 
@@ -329,12 +360,14 @@ const result = await generateText({
 **Decision 6: Create `@promptalicious/debug` Package with Scoped Capture**
 
 **Rationale**:
+
 - Tools need to output debug messages during execution
 - Debug output must be associated with specific tool invocation
 - Must work in both local development (console) and promptalicious execution (captured)
 - Scoped design prevents cross-contamination between tool invocations
 
 **Package Structure**:
+
 ```
 packages/debug/
 ├── package.json                 # @promptalicious/debug
@@ -343,88 +376,100 @@ packages/debug/
 ```
 
 **Implementation**:
+
 ```typescript
 // packages/debug/src/index.ts
 type DebugMessage = {
-  timestamp: Date
-  message: string
-  variables?: Record<string, unknown>
-}
+  timestamp: Date;
+  message: string;
+  variables?: Record<string, unknown>;
+};
 
-let captureEnabled = false
-let currentCaptures: DebugMessage[] = []
+let captureEnabled = false;
+let currentCaptures: DebugMessage[] = [];
 
-export function capturelicious(message: string, variables?: Record<string, unknown>) {
+export function capturelicious(
+  message: string,
+  variables?: Record<string, unknown>,
+) {
   const entry = {
     timestamp: new Date(),
     message,
-    variables
-  }
+    variables,
+  };
 
   if (captureEnabled) {
-    currentCaptures.push(entry)
+    currentCaptures.push(entry);
   } else {
     // Fallback: console.log when not in promptalicious execution
-    console.log(`[capturelicious] ${message}`, variables)
+    console.log(`[capturelicious] ${message}`, variables);
   }
 }
 
 // Internal API for promptalicious backend
 export function enableCapture() {
-  captureEnabled = true
-  currentCaptures = []
+  captureEnabled = true;
+  currentCaptures = [];
 }
 
 export function disableCapture() {
-  captureEnabled = false
+  captureEnabled = false;
 }
 
 export function getCaptures(): DebugMessage[] {
-  return [...currentCaptures]
+  return [...currentCaptures];
 }
 
 export function clearCaptures() {
-  currentCaptures = []
+  currentCaptures = [];
 }
 ```
 
 **Usage in User's Tool**:
+
 ```typescript
-import { capturelicious } from '@promptalicious/debug'
+import { capturelicious } from "@promptalicious/debug";
 
 export default async function getUserProfile({ userId, db }) {
-  capturelicious('Starting user profile lookup', { userId })
+  capturelicious("Starting user profile lookup", { userId });
 
-  const user = await db.users.findUnique({ where: { id: userId } })
-  capturelicious('User found', { userName: user.name, userEmail: user.email })
+  const user = await db.users.findUnique({ where: { id: userId } });
+  capturelicious("User found", { userName: user.name, userEmail: user.email });
 
-  return user
+  return user;
 }
 ```
 
 **Backend Integration**:
+
 ```typescript
-import { enableCapture, disableCapture, getCaptures, clearCaptures } from '@promptalicious/debug'
+import {
+  enableCapture,
+  disableCapture,
+  getCaptures,
+  clearCaptures,
+} from "@promptalicious/debug";
 
 async function executeToolWithDiagnostics(toolId: string, params: unknown) {
-  enableCapture()
-  clearCaptures()
+  enableCapture();
+  clearCaptures();
 
   try {
-    const result = await runTool(toolId, params)
-    const debugOutput = getCaptures()
+    const result = await runTool(toolId, params);
+    const debugOutput = getCaptures();
 
     // Store debug output in diagnostics
-    await storeDiagnostics({ toolId, params, result, debugOutput })
+    await storeDiagnostics({ toolId, params, result, debugOutput });
 
-    return result
+    return result;
   } finally {
-    disableCapture()
+    disableCapture();
   }
 }
 ```
 
 **Alternatives Considered**:
+
 - Console.log interception: Brittle, captures unrelated logs
 - Custom logger with context: Over-engineered for simple debug output
 - No debug support: Violates spec FR-018-019
@@ -440,13 +485,15 @@ async function executeToolWithDiagnostics(toolId: string, params: unknown) {
 **Decision 7: Code-Generated Export (No LLM)**
 
 **Rationale**:
+
 - Export must work without LLM calls (per spec FR-024)
 - Output is deterministic: tool execute function, AI SDK options, instructions
 - Template-based generation is sufficient for this iteration
 - Future AI-assisted export (feature 005) can enhance with semantic analysis
 
 **Export Template Structure**:
-```markdown
+
+````markdown
 # Export Instructions
 
 Generated: {timestamp}
@@ -468,11 +515,14 @@ For each tool, apply these changes:
 **Function**: {tool-function-name}
 
 **Updated execute function**:
+
 ```typescript
 {tool-execute-function-from-workspace}
 ```
+````
 
 **Updated description**:
+
 ```
 {description-from-frontend}
 ```
@@ -506,7 +556,8 @@ const result = await generateText({
 - [ ] Update AI SDK call with new options
 - [ ] Test execution with updated configuration
 - [ ] Remove promptalicious-workspace/ if no longer needed
-```
+
+````
 
 **Alternatives Considered**:
 - LLM-generated instructions: Violates spec FR-024, adds unnecessary complexity
@@ -574,14 +625,16 @@ export const toolInvocations = pgTable('tool_invocations', {
   llmReasoning: text('llm_reasoning'),  // If provided by LLM
   debugOutput: jsonb('debug_output')  // Captured capturelicious() calls
 })
-```
+````
 
 **Migration Strategy**:
+
 - Use DrizzleORM migrations (never manually edit migration files)
 - Generate migration: `pnpm exec drizzle-kit generate --name=add_tool_integration_tables`
 - Apply migration: `pnpm exec drizzle-kit push`
 
 **Alternatives Considered**:
+
 - Store tools in JSON field: Loses query capability, poor performance
 - No persistence: Loses tool configuration on restart
 - In-memory only: Violates spec requirement for configuration persistence
@@ -597,12 +650,14 @@ export const toolInvocations = pgTable('tool_invocations', {
 **Decision 9: Extend Existing shadcn/ui + Tailwind Setup**
 
 **Rationale**:
+
 - Consistency with existing retrofuturistic dark theme (spec 002)
 - shadcn/ui provides accessible components out of the box
 - Established pattern for settings pages and execution displays
 - No new dependencies required
 
 **Additional shadcn/ui Components Needed**:
+
 - `switch`: Enable/disable toggles for tools
 - `accordion`: Collapsible tool configuration sections
 - `tabs`: Tool list vs. tool configuration views
@@ -611,12 +666,14 @@ export const toolInvocations = pgTable('tool_invocations', {
 - `tooltip`: Contextual help for advanced options
 
 **Page Structure**:
+
 - Settings page extension: Add "Project Configuration" section with folder picker
 - Tools page (new): List of discovered tools with enable/disable toggles
 - Tool detail modal (new): View/edit tool description, view workspace files, see detected hooks
 - Execution page extension: Display tool invocation diagnostics below prompt results
 
 **Alternatives Considered**:
+
 - New UI library: Breaks consistency, adds complexity
 - Custom components: Duplicates shadcn/ui functionality
 
@@ -631,34 +688,36 @@ export const toolInvocations = pgTable('tool_invocations', {
 **Decision 10: Create SDK Adapter Interface**
 
 **Rationale**:
+
 - Future-proofs architecture for Anthropic SDK, LangChain, etc.
 - Minimal implementation for this spec (AI SDK only)
 - Avoids premature abstraction while establishing extension point
 
 **Interface Design**:
+
 ```typescript
 // Backend: packages/backend/src/adapters/sdk-adapter.interface.ts
 export interface SDKAdapter {
-  name: string  // 'vercel-ai-sdk', 'anthropic-sdk', etc.
+  name: string; // 'vercel-ai-sdk', 'anthropic-sdk', etc.
 
   // Tool discovery
-  discoverTools(projectPath: string): Promise<ToolDefinition[]>
+  discoverTools(projectPath: string): Promise<ToolDefinition[]>;
 
   // Execution
   executeWithTools(params: {
-    prompt: string
-    tools: ToolDefinition[]
-    options: SDKOptions
-  }): Promise<ExecutionResult>
+    prompt: string;
+    tools: ToolDefinition[];
+    options: SDKOptions;
+  }): Promise<ExecutionResult>;
 
   // Option validation
-  validateOptions(options: unknown): SDKOptions
-  getDefaultOptions(): SDKOptions
+  validateOptions(options: unknown): SDKOptions;
+  getDefaultOptions(): SDKOptions;
 }
 
 // AI SDK implementation (only one for this spec)
 export class VercelAISDKAdapter implements SDKAdapter {
-  name = 'vercel-ai-sdk'
+  name = "vercel-ai-sdk";
 
   async discoverTools(projectPath: string) {
     // Use ts-morph to find tool() calls
@@ -676,28 +735,31 @@ export class VercelAISDKAdapter implements SDKAdapter {
     return {
       temperature: 1.0,
       maxTokens: 4096,
-      toolChoice: 'auto',
-      maxToolRoundtrips: 10
-    }
+      toolChoice: "auto",
+      maxToolRoundtrips: 10,
+    };
   }
 }
 ```
 
 **Usage Pattern**:
+
 ```typescript
 // Backend service layer
-const adapter = new VercelAISDKAdapter()  // Hardcoded for this spec
-const tools = await adapter.discoverTools(projectPath)
-const result = await adapter.executeWithTools({ prompt, tools, options })
+const adapter = new VercelAISDKAdapter(); // Hardcoded for this spec
+const tools = await adapter.discoverTools(projectPath);
+const result = await adapter.executeWithTools({ prompt, tools, options });
 ```
 
 **Future Extension** (feature 005+):
+
 ```typescript
 // Adapter factory with SDK selection
-const adapter = SDKAdapterFactory.create(config.selectedSDK)
+const adapter = SDKAdapterFactory.create(config.selectedSDK);
 ```
 
 **Alternatives Considered**:
+
 - No abstraction: Couples code to AI SDK, expensive to add SDKs later
 - Full multi-SDK implementation now: Violates YAGNI, massive scope increase
 
@@ -707,28 +769,30 @@ const adapter = SDKAdapterFactory.create(config.selectedSDK)
 
 ## Summary of Decisions
 
-| # | Decision | Technology/Pattern | Rationale |
-|---|----------|-------------------|-----------|
-| 1 | Tool Discovery | ts-morph | Standard TS AST analysis tool, handles complex parsing |
-| 2 | Hook Parameter Detection | Scope analysis via ts-morph | Detects undefined variables to generate hook stubs |
-| 3 | Workspace Management | `promptalicious-workspace/` with TypeScript paths | Isolated, gitignored, full editor support |
-| 4 | Hook System | 4-phase lifecycle (beforeAll/Each, afterEach/All) | Matches testing framework patterns, separates global vs per-invocation context |
-| 5 | Tool Execution | Extend generateText with tools array | Leverages AI SDK's native tool support, minimal changes |
-| 6 | Debug Instrumentation | `@promptalicious/debug` package | Scoped capture, works in local dev and promptalicious execution |
-| 7 | Export | Template-based code generation | No LLM required, deterministic output, future AI enhancement possible |
-| 8 | Database Schema | Extend existing PostgreSQL schema | Consistent with spec 002 patterns, DrizzleORM migrations |
-| 9 | Frontend UI | shadcn/ui + existing theme | Consistency, no new dependencies, accessible components |
-| 10 | Multi-SDK | Interface abstraction, AI SDK only | Future-proof without premature implementation |
+| #   | Decision                 | Technology/Pattern                                | Rationale                                                                      |
+| --- | ------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Tool Discovery           | ts-morph                                          | Standard TS AST analysis tool, handles complex parsing                         |
+| 2   | Hook Parameter Detection | Scope analysis via ts-morph                       | Detects undefined variables to generate hook stubs                             |
+| 3   | Workspace Management     | `promptalicious-workspace/` with TypeScript paths | Isolated, gitignored, full editor support                                      |
+| 4   | Hook System              | 4-phase lifecycle (beforeAll/Each, afterEach/All) | Matches testing framework patterns, separates global vs per-invocation context |
+| 5   | Tool Execution           | Extend generateText with tools array              | Leverages AI SDK's native tool support, minimal changes                        |
+| 6   | Debug Instrumentation    | `@promptalicious/debug` package                   | Scoped capture, works in local dev and promptalicious execution                |
+| 7   | Export                   | Template-based code generation                    | No LLM required, deterministic output, future AI enhancement possible          |
+| 8   | Database Schema          | Extend existing PostgreSQL schema                 | Consistent with spec 002 patterns, DrizzleORM migrations                       |
+| 9   | Frontend UI              | shadcn/ui + existing theme                        | Consistency, no new dependencies, accessible components                        |
+| 10  | Multi-SDK                | Interface abstraction, AI SDK only                | Future-proof without premature implementation                                  |
 
 ---
 
 ## Dependencies Added
 
 **npm Packages** (installed via `pnpm add <package>@latest`):
+
 - `ts-morph@latest` (backend) - TypeScript AST analysis
 - No additional frontend dependencies (using existing shadcn/ui components)
 
 **New Workspace Package**:
+
 - `@promptalicious/debug` (new) - Debug instrumentation package
 
 ---

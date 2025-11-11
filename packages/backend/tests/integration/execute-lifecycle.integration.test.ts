@@ -167,7 +167,7 @@ The integration tests make real LLM API calls and require valid configuration.
 
   it(
     "should prevent concurrent executions with 409 status",
-    { timeout: 20000 },
+    { timeout: 30000 },
     async () => {
       const longPrompt = `
 You are a helpful assistant. Please write a detailed explanation of quantum computing.

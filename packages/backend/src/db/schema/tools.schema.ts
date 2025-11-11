@@ -10,6 +10,8 @@ export const tools = pgTable("tools", {
   workspaceDir: text("workspace_dir").notNull(),
   enabled: boolean("enabled").notNull().default(true),
   detectedHookParams: jsonb("detected_hook_params"),
+  typeImports: jsonb("type_imports"),
+  environmentTypes: jsonb("environment_types"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

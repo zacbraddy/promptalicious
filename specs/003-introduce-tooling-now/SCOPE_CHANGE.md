@@ -10,18 +10,21 @@ After analysis of requirements for spec 003 vs spec 004/005, we identified that 
 ### What Changed
 
 **REMOVED from Spec 003**:
+
 1. `tool_invocations` database table (was T003)
 2. `GET /api/execute/:id/tools` API endpoint (was T026 contract test, T030 implementation)
 3. Database persistence of tool invocation results
 4. Separate API for fetching tool diagnostics
 
 **NEW APPROACH for Spec 003**:
+
 - Tool invocations collected in-memory during execution
 - Returned directly in `ExecutionResult` response (extend shared-infra type with `toolInvocations?: ToolInvocationResult[]`)
 - Frontend displays diagnostics from execution result object
 - Matches spec 002's pattern: in-memory state, no database persistence yet
 
 **DEFERRED to Feature 004**:
+
 - Complete execution history with database persistence
 - Tool invocation snapshots for replay
 - Implementation snapshot storage (the original concern that triggered this review)
@@ -60,6 +63,7 @@ All tasks T004-T065 renumbered to T003-T064 (total: 62 tasks, down from 65)
 ### Type Changes
 
 **`packages/shared-infra/src/types/api.ts`** - Extend ExecutionResult:
+
 ```typescript
 export interface ExecutionResult {
   id: string;
@@ -95,10 +99,12 @@ export interface ToolInvocationResult {
 ### Database Schema
 
 **Tables in Spec 003**:
+
 1. `project_configuration` (T001) ✅
 2. `tools` (T002) ✅
 
 **Tables DEFERRED to Spec 004**:
+
 1. `tool_invocations` ❌ (was T003)
 2. `execution_results` extensions ❌ (toolInvocationCount, etc. - not needed if no history)
 
@@ -107,6 +113,7 @@ export interface ToolInvocationResult {
 Feature 004 (Project Management & Execution History) spec already covers execution history requirements. This deferral simply clarifies that ALL execution history (including tool invocations) belongs in Feature 004, not split across 003 and 004.
 
 **Feature 004 will add**:
+
 - Complete `execution_history` table with full snapshots
 - Tool invocation history with implementation snapshots
 - Execution replay with historical parameter restoration
@@ -126,11 +133,13 @@ Files requiring updates to reflect this scope change:
 ## Testing Strategy
 
 **Spec 003 Tests**:
+
 - Contract tests verify ExecutionResult includes toolInvocations array
 - Integration tests verify in-memory collection and return
 - Frontend tests verify display from execution result object
 
 **Spec 004 Tests**:
+
 - Will add database persistence tests
 - Will add historical execution retrieval tests
 - Will add implementation snapshot tests

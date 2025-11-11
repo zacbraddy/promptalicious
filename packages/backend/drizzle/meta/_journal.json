@@ -29,6 +29,20 @@
       "when": 1762789177062,
       "tag": "0003_add_tools_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762872519298,
+      "tag": "0004_add_type_imports_to_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762876320137,
+      "tag": "0005_add_environment_types_to_tools",
+      "breakpoints": true
     }
   ]
 }

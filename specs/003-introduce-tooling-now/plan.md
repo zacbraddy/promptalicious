@@ -4,6 +4,7 @@
 **Input**: Feature specification from `/home/zacbraddy/Projects/Personal/promptalicious/specs/003-introduce-tooling-now/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -25,6 +26,7 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
@@ -33,6 +35,7 @@
 Introduce LLM tool integration capabilities to promptalicious, enabling developers to connect their existing codebases containing tool implementations, configure tools, and execute prompts with tool support while observing detailed diagnostics. This feature establishes the foundation for tool discovery (with comprehensive observability), workspace management (inside promptalicious repo), hook system, execution, and basic export functionality. Includes project naming, manual rescan, and real-time discovery feedback for full visibility into the integration process.
 
 ## Technical Context
+
 **Language/Version**: TypeScript (latest, strict mode) + Node.js (latest LTS)
 **Primary Dependencies**: Vercel AI SDK (`ai` package), React, Vite, PostgreSQL, DrizzleORM, TanStack Query
 **Storage**: PostgreSQL (tool configurations, project settings), in-memory execution diagnostics (tool invocations returned in ExecutionResult, database persistence deferred to feature 004)
@@ -45,21 +48,25 @@ Introduce LLM tool integration capabilities to promptalicious, enabling develope
 **Key Features**: Project naming, manual tool rescan, real-time discovery progress with structured logging, workspace in promptalicious repo
 
 ## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 **Simplicity**:
+
 - Projects: 3 (shared-infra, frontend, backend) ✅
 - Using framework directly? Yes (React, Express/Fastify, Vercel AI SDK) ✅
 - Single data model? Yes (no DTOs initially, API contracts = domain models) ✅
 - Avoiding patterns? Yes (no Repository/UoW/Service Layer unless specific need identified) ✅
 
 **Architecture**:
+
 - EVERY feature as library? No (approved deferral per constitution.md § Approved Complexity Deferrals - extract after 2-3 specs) ✅
 - Libraries listed: N/A (deferral approved)
 - CLI per library: N/A (deferral approved)
 - Library docs: N/A (deferral approved)
 
 **Testing (NON-NEGOTIABLE)**:
+
 - RED-GREEN-Refactor cycle enforced? ✅ Yes (per-task, not per-spec)
 - Git commits show tests before implementation? ✅ Yes (Husky enforces)
 - Order: Contract→Integration→E2E→Unit strictly followed? ✅ Yes
@@ -68,11 +75,13 @@ Introduce LLM tool integration capabilities to promptalicious, enabling develope
 - FORBIDDEN: Implementation before test, skipping RED phase ✅ Acknowledged
 
 **Observability**:
+
 - Structured logging included? Yes (backend logs tool discovery, execution, errors)
 - Frontend logs → backend? No (browser console only, approved deferral per constitution.md § Approved Complexity Deferrals)
 - Error context sufficient? Yes (detailed diagnostics for all failure modes per spec FR-020)
 
 **Versioning**:
+
 - Version number assigned? Yes (0.3.0 - MINOR bump for new feature)
 - BUILD increments on every change? Yes (will increment to 0.3.0 after spec completion)
 - Breaking changes handled? N/A (additive feature, no breaking changes to existing API)
@@ -80,6 +89,7 @@ Introduce LLM tool integration capabilities to promptalicious, enabling develope
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
@@ -91,6 +101,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 ```
 # Option 1: Single project (DEFAULT)
 src/
@@ -130,12 +141,14 @@ ios/ or android/
 **Structure Decision**: Option 2 (Web application) - frontend + backend monorepo structure already established
 
 ## Phase 0: Outline & Research
+
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
    - For each dependency → best practices task
    - For each integration → patterns task
 
 2. **Generate and dispatch research agents**:
+
    ```
    For each unknown in Technical Context:
      Task: "Research {unknown} for {feature context}"
@@ -151,7 +164,8 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
-*Prerequisites: research.md complete*
+
+_Prerequisites: research.md complete_
 
 1. **Extract entities from feature spec** → `data-model.md`:
    - Entity name, fields, relationships
@@ -180,10 +194,11 @@ ios/ or android/
    - Keep under 150 lines for token efficiency
    - Output to repository root
 
-**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
+**Output**: data-model.md, /contracts/\*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
-*This section describes what the /tasks command will do - DO NOT execute during /plan*
+
+_This section describes what the /tasks command will do - DO NOT execute during /plan_
 
 **Task Generation Strategy**:
 
@@ -303,7 +318,7 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 - **Group 11: Documentation** (user-facing docs for new features in spec 003 ONLY)
   - Update README.md: Add tool integration to "Current capabilities" section
   - Create docs/features/tool-integration.md: Overview of tool discovery, configuration, execution
-  - Create docs/features/workspace-setup.md: VS Code setup (tsconfig, settings.json), editing hooks
+  - Create docs/features/workspace-setup.md: IDE setup (workspace tsconfig auto-detection), editing hooks with IntelliSense
   - Create docs/features/hooks.md: Hook system (beforeAll, beforeEach, afterEach, afterAll) with examples
   - Update docs/api/api-contracts.md: Add project config, tools, export endpoints, ExecutionResult.toolInvocations
   - Update docs/backend/database.md: Add new tables (project_configuration, tools) - NOTE: tool_invocations deferred to feature 004
@@ -311,12 +326,14 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
   - **Surface**: All docs complete, users can understand and use spec 003 features (NO mention of future specs)
 
 **TDD Discipline**:
+
 - Write contract test immediately before implementation (tight RED-GREEN loop)
 - Never batch tests - each test lives with its implementation task
 - Surface working software after each group (max 5-10 tasks)
 - Tests use real dependencies (PostgreSQL, filesystem, ts-morph)
 
 **Dolphin Surfacing** (every 5-10 tasks):
+
 - Group 1 (2 tasks): Database ready (reduced from 3 - tool_invocations table removed)
 - Group 2 (8 tasks): Async discovery with polling + cancel working via curl
 - Group 3 (5 tasks): Tools API working via curl
@@ -332,6 +349,7 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 **Maximum time between surfaces**: 8 tasks (Groups 2, 7, and 11, well within 10-task constitutional limit)
 
 **Estimated Task Breakdown** (by group):
+
 - Group 1 (Foundation): 2 tasks (migrations with project name field - tool_invocations table deferred)
 - Group 2 (Project Config + Discovery): 8 tasks (async discovery, status polling, cancel with cleanup)
 - Group 3 (Tools API): 5 tasks
@@ -342,12 +360,13 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 - Group 8 (Frontend - Execution): 3 tasks
 - Group 9 (Frontend - Export): 2 tasks
 - Group 10 (Integration Tests): 4 tasks
-- Group 11 (Documentation): 7 tasks (README, VS Code setup, feature docs)
+- Group 11 (Documentation): 7 tasks (README, IDE setup, feature docs)
 - **Total**: ~49 tasks (reduced from ~52 after deferring tool invocation persistence to Feature 004)
 
 (Includes new features: project naming, async discovery with polling, cancel with cleanup, real-time progress modal, comprehensive user documentation)
 
 **New Features Added Since Initial Planning**:
+
 - FR-027: Project naming (defaults to folder name, editable)
 - FR-028-031: Discovery observability (async with polling, real-time progress, cancel with cleanup, structured logging, detailed feedback)
 - Workspace location corrected: inside promptalicious repo (not user's project)
@@ -355,6 +374,7 @@ Each feature follows: Contract Test → Implementation → Surface/Test → Next
 
 **Complexity Note**:
 This is a substantial feature (26 functional requirements) touching both backend and frontend. Task count reflects:
+
 - Tool discovery requires AST parsing (ts-morph integration)
 - Workspace generation with filesystem operations
 - Hook system with lifecycle management
@@ -367,25 +387,28 @@ Despite size, tasks are atomic and parallelisable where possible, enabling Dolph
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
-*These phases are beyond the scope of the /plan command*
+
+_These phases are beyond the scope of the /plan command_
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)  
 **Phase 4**: Implementation (execute tasks.md following constitutional principles)  
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
-*Fill ONLY if Constitution Check has violations that must be justified*
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+_Fill ONLY if Constitution Check has violations that must be justified_
 
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
 
 ## Progress Tracking
-*This checklist is updated during execution flow*
+
+_This checklist is updated during execution flow_
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command) ✅
 - [x] Phase 1: Design complete (/plan command) ✅
 - [x] Phase 2: Task planning complete (/plan command - describe approach only) ✅
@@ -394,10 +417,12 @@ Despite size, tasks are atomic and parallelisable where possible, enabling Dolph
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS ✅
 - [x] Post-Design Constitution Check: PASS ✅ (No new violations introduced by Phase 1 design)
 - [x] All NEEDS CLARIFICATION resolved ✅
 - [x] Complexity deviations documented (N/A - no deviations) ✅
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+
+_Based on Constitution v2.1.1 - See `/memory/constitution.md`_

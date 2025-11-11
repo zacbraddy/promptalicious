@@ -62,18 +62,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
       .where(eq(llmConfig.id, 1))
       .limit(1);
 
-    const hasValidApiKey =
-      existingConfig.length > 0 && existingConfig[0]?.apiKey;
-
-    if (!hasValidApiKey || !existingConfig[0]) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        "No valid API key in database - skipping real API validation test",
-      );
-      return;
-    }
-
-    const validApiKey = existingConfig[0].apiKey;
+    const validApiKey = existingConfig[0]!.apiKey;
 
     const putWithValidKey = await app.request("/api/config", {
       method: "PUT",
@@ -157,8 +146,8 @@ describe("Configuration persistence and validation flow (integration)", () => {
     await db.insert(llmConfig).values({
       id: 1,
       selectedModel: "gpt-4o-mini",
-      apiKey: "sk-existing-key",
-      baseURL: null,
+      apiKey: originalConfig!.apiKey,
+      baseURL: "https://different-endpoint.example.com/v1",
     });
 
     const updateModelRes = await app.request("/api/config", {
@@ -185,7 +174,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
 
     expect(dbConfigAfterUpdate).toHaveLength(1);
     expect(dbConfigAfterUpdate[0]?.baseURL).toBe("https://api.openai.com/v1");
-    expect(dbConfigAfterUpdate[0]?.apiKey).toBe("sk-existing-key");
+    expect(dbConfigAfterUpdate[0]?.apiKey).toBe(originalConfig!.apiKey);
   });
 
   it("should handle test connection when no configuration exists", async () => {

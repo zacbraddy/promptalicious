@@ -87,12 +87,14 @@ describe("toolDiscoveryService", () => {
       const result =
         await toolDiscoveryService.discoverTools("/test/project/path");
 
-      expect(result).toHaveProperty("filesScanned");
-      expect(result).toHaveProperty("filesWithToolImports");
-      expect(result).toHaveProperty("toolsDiscovered");
-      expect(result).toHaveProperty("filesGenerated");
-      expect(result).toHaveProperty("skippedFiles");
-      expect(Array.isArray(result.skippedFiles)).toBe(true);
+      expect(result).toHaveProperty("summary");
+      expect(result).toHaveProperty("tools");
+      expect(result.summary).toHaveProperty("filesScanned");
+      expect(result.summary).toHaveProperty("filesWithToolImports");
+      expect(result.summary).toHaveProperty("toolsDiscovered");
+      expect(result.summary).toHaveProperty("filesGenerated");
+      expect(result.summary).toHaveProperty("skippedFiles");
+      expect(Array.isArray(result.summary.skippedFiles)).toBe(true);
     });
 
     it("should return zero counts when no files are found", async () => {
@@ -102,9 +104,9 @@ describe("toolDiscoveryService", () => {
       const result =
         await toolDiscoveryService.discoverTools("/test/project/path");
 
-      expect(result.filesScanned).toBe(0);
-      expect(result.filesWithToolImports).toBe(0);
-      expect(result.toolsDiscovered).toBe(0);
+      expect(result.summary.filesScanned).toBe(0);
+      expect(result.summary.filesWithToolImports).toBe(0);
+      expect(result.summary.toolsDiscovered).toBe(0);
     });
 
     it("should respect cancellation flag during discovery", async () => {

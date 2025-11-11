@@ -1,6 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
+import { execa } from "execa";
+
 import * as discoveryStatusService from "@/services/discovery-status.service";
 
 export interface DiscoveredTool {
@@ -12,6 +14,18 @@ export interface DiscoveredTool {
   executeFunction: string;
   sourceFilePath: string;
   detectedHookParams: string[];
+  typeImports: Array<{
+    typeName: string;
+    importPath: string;
+  }>;
+  environmentTypes: Array<{
+    name: string;
+    type: string;
+    typeImports: Array<{
+      typeName: string;
+      importPath: string;
+    }>;
+  }>;
 }
 
 export class WorkspaceGeneratorService {
@@ -31,9 +45,10 @@ export class WorkspaceGeneratorService {
 
       await fs.mkdir(workspacePath, { recursive: true });
 
-      await this.generateTsConfig(workspacePath, projectPath);
+      await this.createProjectSymlink(workspacePath, projectPath);
+      await this.generateWorkspaceConfig(workspacePath);
 
-      let filesGenerated = 1;
+      let filesGenerated = 0;
 
       for (const tool of tools) {
         const toolDir = path.join(workspacePath, tool.id);
@@ -55,6 +70,8 @@ export class WorkspaceGeneratorService {
           },
         });
       }
+
+      await this.formatWorkspaceFiles(workspacePath);
 
       discoveryStatusService.incrementCounters({ filesGenerated });
 
@@ -79,48 +96,190 @@ export class WorkspaceGeneratorService {
     }
   }
 
-  private async generateTsConfig(
+  private async createProjectSymlink(
     workspacePath: string,
     projectPath: string,
   ): Promise<void> {
-    const relativePath = path.relative(
-      workspacePath,
-      path.resolve(projectPath),
-    );
+    const absoluteProjectPath = path.resolve(projectPath);
+    const symlinkPath = path.join(workspacePath, "rootalicious");
 
-    const tsconfig = {
-      extends: "../../tsconfig.json",
-      compilerOptions: {
-        baseUrl: ".",
-        paths: {
-          "@rootalicious/*": [`${relativePath}/*`],
-        },
-      },
-      include: ["**/*"],
-    };
+    try {
+      await fs.unlink(symlinkPath);
+    } catch {
+      // Symlink doesn't exist, that's fine
+    }
 
-    const tsconfigPath = path.join(workspacePath, "tsconfig.json");
-    await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+    await fs.symlink(absoluteProjectPath, symlinkPath, "dir");
 
     discoveryStatusService.appendLog({
       level: "info",
       phase: "generating",
-      message: "Generated tsconfig.json with @rootalicious alias",
+      message: `Created symlink: rootalicious -> ${absoluteProjectPath}`,
     });
+  }
+
+  private async generateWorkspaceConfig(workspacePath: string): Promise<void> {
+    const eslintConfig = `import createEslintConfig from "@promptalicious/shared-infra/eslint";
+
+export default createEslintConfig({
+  tsconfigRootDir: import.meta.dirname,
+});
+`;
+
+    const tsConfig = `{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "preserveSymlinks": false,
+    "allowArbitraryExtensions": true
+  },
+  "include": ["**/*", "rootalicious/**/*"]
+}
+`;
+
+    const packageJson = `{
+  "name": "promptalicious-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module"
+}
+`;
+
+    await Promise.all([
+      fs.writeFile(path.join(workspacePath, "eslint.config.ts"), eslintConfig),
+      fs.writeFile(path.join(workspacePath, "tsconfig.json"), tsConfig),
+      fs.writeFile(path.join(workspacePath, "package.json"), packageJson),
+    ]);
+
+    discoveryStatusService.appendLog({
+      level: "info",
+      phase: "generating",
+      message: "Generated workspace configuration files",
+    });
+  }
+
+  private async formatWorkspaceFiles(workspacePath: string): Promise<void> {
+    try {
+      discoveryStatusService.appendLog({
+        level: "info",
+        phase: "generating",
+        message: "Formatting workspace files with Prettier",
+      });
+
+      await execa("prettier", ["--write", workspacePath], {
+        cwd: process.cwd(),
+      });
+
+      discoveryStatusService.appendLog({
+        level: "info",
+        phase: "generating",
+        message: "Workspace files formatted successfully",
+      });
+    } catch (error) {
+      discoveryStatusService.appendLog({
+        level: "warning",
+        phase: "generating",
+        message: `Failed to format workspace files: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 
   private async generateToolFile(
     toolDir: string,
     tool: DiscoveredTool,
   ): Promise<void> {
+    const imports = tool.typeImports
+      .map(({ typeName, importPath }) => {
+        return `import type { ${typeName} } from "${importPath}";`;
+      })
+      .join("\n");
+
+    const normalizedFunction = this.normalizeIndentation(tool.executeFunction);
+
     const toolContent = `// Auto-generated from ${tool.sourceFilePath}
 // Tool: ${tool.name}
 
-export default ${tool.executeFunction}
+import "./environment";
+
+${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}
 `;
 
     const toolPath = path.join(toolDir, "tool.ts");
     await fs.writeFile(toolPath, toolContent);
+
+    await this.generateEnvironmentTypes(toolDir, tool);
+  }
+
+  private async generateEnvironmentTypes(
+    toolDir: string,
+    tool: DiscoveredTool,
+  ): Promise<void> {
+    if (tool.environmentTypes.length === 0) {
+      return;
+    }
+
+    // Collect all unique type imports across all environment variables
+    const allTypeImports = new Map<string, string>();
+    for (const envType of tool.environmentTypes) {
+      for (const typeImport of envType.typeImports) {
+        allTypeImports.set(typeImport.typeName, typeImport.importPath);
+      }
+    }
+
+    const imports = Array.from(allTypeImports.entries())
+      .map(
+        ([typeName, importPath]) =>
+          `import { ${typeName} } from "${importPath}";`,
+      )
+      .join("\n");
+
+    // Generate environment type
+    const envTypeProperties =
+      tool.environmentTypes.length > 0
+        ? tool.environmentTypes
+            .map(({ name, type }) => `  ${name}: ${type};`)
+            .join("\n")
+        : "  // No environment variables detected";
+
+    const environmentContent = `// Auto-generated environment declarations for tool: ${tool.name}
+// These are the closure variables detected in the original tool implementation
+// They will be provided by the beforeAll/beforeEach hooks at runtime
+
+${imports ? imports + "\n\n" : ""}export type ToolEnvironment = {
+${envTypeProperties}
+};
+
+// Global ambient declarations for use in tool.ts
+${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${name}: ${type};\n}`).join("\n")}
+`;
+
+    const envPath = path.join(toolDir, "environment.d.ts");
+    await fs.writeFile(envPath, environmentContent);
+  }
+
+  private normalizeIndentation(code: string): string {
+    const lines = code.split("\n");
+    if (lines.length === 0) return code;
+
+    const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+    if (nonEmptyLines.length === 0) return code;
+
+    const indents = nonEmptyLines.map((line) => {
+      const match = line.match(/^(\s*)/);
+      return match?.[1]?.length ?? 0;
+    });
+
+    const minIndent = Math.min(...indents);
+
+    const normalized = lines
+      .map((line) => {
+        if (line.trim().length === 0) return "";
+        return line.slice(minIndent);
+      })
+      .join("\n");
+
+    return normalized.trim();
   }
 
   private async generateHookStubs(
@@ -139,20 +298,29 @@ export default ${tool.executeFunction}
     const beforeAllContent = `// Auto-generated hook stub for tool: ${tool.name}
 ${detectedParamsComment}// Edit this file to provide these parameters to tool execution
 
-export default async function beforeAll() {
+import type { ToolEnvironment } from "./environment";
+
+export default async function beforeAll(): Promise<Partial<ToolEnvironment>> {
   return {
 ${paramObjects || "    // No parameters detected"}
-  }
+  };
 }
 `;
 
     const beforeEachContent = `// Auto-generated hook stub for tool: ${tool.name}
 // Edit this file to provide per-invocation context
+//
+// IMPORTANT: Properties returned from beforeEach are MERGED with beforeAll
+// Properties with the same name will override those from beforeAll
+// Use beforeEach for per-invocation state that should be fresh each time
+// Use beforeAll for shared setup that persists across invocations
 
-export default async function beforeEach() {
-  return {
-    // Return per-invocation context here
-  }
+import type { ToolEnvironment } from "./environment";
+
+export default async function beforeEach(): Promise<Partial<ToolEnvironment>> {
+  // Return properties to add/override in the tool environment
+  // Empty object = no changes to beforeAll environment
+  return {};
 }
 `;
 

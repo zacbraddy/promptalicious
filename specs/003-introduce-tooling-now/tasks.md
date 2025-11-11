@@ -10,6 +10,7 @@
 This feature implements LLM tool integration capabilities with ~52 tasks organised into 11 groups following tight RED-GREEN-REFACTOR cycles. Maximum time between surfaces: 8 tasks (Groups 2, 7, and 11).
 
 **Dolphin Surfacing Schedule**:
+
 - Group 1 (3 tasks): Database ready
 - Group 2 (8 tasks): Async discovery with polling + cancel working via curl
 - Group 3 (5 tasks): Tools API working via curl
@@ -57,6 +58,7 @@ This feature implements LLM tool integration capabilities with ~52 tasks organis
 ## Group 2: Project Configuration & Discovery (Async with Observability)
 
 **IMPORTANT TDD Pattern**: Service implementation tasks MUST include both unit tests AND implementation:
+
 1. Write unit tests first (RED phase - tests fail)
 2. Implement service with real operations (GREEN phase - tests pass)
 3. Verify contract tests still pass
@@ -113,11 +115,13 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T007: Implement Project Configuration API routes and service
 
 **Files**:
+
 - `packages/backend/src/routes/project-configuration.route.ts`
 - `packages/backend/src/services/project-configuration.service.ts`
 - `packages/backend/tests/unit/project-configuration.service.test.ts`
 
 **Description**:
+
 1. Write unit tests for projectConfigurationService (RED phase - 11 tests covering get/update/startDiscovery)
 2. Implement service with real database operations using DrizzleORM:
    - `getProjectConfiguration()` - Query database, return config or null
@@ -137,10 +141,12 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T008: Implement Discovery Status Service (track progress, incremental logs)
 
 **Files**:
+
 - `packages/backend/src/services/discovery-status.service.ts`
 - `packages/backend/tests/unit/discovery-status.service.test.ts`
 
 **Description**:
+
 1. Write unit tests for discovery-status-service (RED phase):
    - Test state initialization (idle phase, empty logs, zero counters)
    - Test starting discovery (sets isDiscovering true, phase to scanning)
@@ -178,10 +184,12 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T010: Implement Discovery Cancel Service (abort + cleanup)
 
 **Files**:
+
 - `packages/backend/src/services/discovery-cancel.service.ts`
 - `packages/backend/tests/unit/discovery-cancel.service.test.ts`
 
 **Description**:
+
 1. Write unit tests for discovery-cancel-service (RED phase):
    - Test cancelling in-progress discovery (sets cancellation flag, stops discovery)
    - Test cleanup removes partial workspace directory (mock filesystem operations)
@@ -211,6 +219,7 @@ This ensures complete service implementation, not just stubs with mocked tests.
 **Expected Outcome**: T005 passes - GREEN phase ✅
 
 **Surface Point**: After T011, test async discovery via curl:
+
 ```bash
 curl -X PUT http://localhost:3000/api/project -d '{"name":"test","targetProjectPath":"../test-project"}' -H "Content-Type: application/json"
 # Returns 202 Accepted
@@ -244,10 +253,12 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 ### T013: Implement Tool Discovery Service (ts-morph integration, progress events)
 
 **Files**:
+
 - `packages/backend/src/services/tool-discovery.service.ts`
 - `packages/backend/tests/unit/tool-discovery.service.test.ts`
 
 **Description**:
+
 1. Write unit tests for tool-discovery-service (RED phase):
    - Test scanning project for files with 'tool' import from 'ai' (mock fs.readdir, ts-morph Project)
    - Test parsing tool() calls extracts name, description, parameters schema
@@ -279,31 +290,43 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 ### T014: Implement Workspace Generator Service (directory structure, hook stubs, tsconfig.json)
 
 **Files**:
+
 - `packages/backend/src/services/workspace-generator.service.ts`
 - `packages/backend/tests/unit/workspace-generator.service.test.ts`
 
 **Description**:
+
 1. Write unit tests for workspace-generator-service (RED phase):
    - Test creates workspace/{project-name}/ directory (mock fs.mkdir)
    - Test generates tsconfig.json with @rootalicious alias (mock fs.writeFile, validate JSON)
    - Test creates {tool-id}/ subdirectory for each tool
-   - Test generates tool.ts with extracted execute function
-   - Test generates hook stub files (beforeAll/beforeEach/afterEach/afterAll.ts)
+   - Test generates tool.ts with extracted execute function and `import "./environment"` statement
+   - Test generates environment.d.ts with ambient type declarations using `declare global` blocks
+   - Test generates hook stub files (beforeAll/beforeEach/afterEach/afterAll.ts) with typed return values
    - Test hook stubs include detected parameters as TODO comments
+   - Test generates workspace-level beforeAll.ts and afterAll.ts hooks at workspace root
+   - Test workspace-level environment.d.ts combines all environment types from all tools
    - Test emits filesystem events to Discovery Status Service (filesGenerated counter, logs)
    - Test handles filesystem errors gracefully
 2. Implement service:
    - Method: generateWorkspace(projectName: string, projectPath: string, tools: ToolDefinition[]) returns Promise<void>
    - Use fs.promises for async file operations
    - Generate tsconfig.json extending root config with @rootalicious alias
-   - For each tool: create directory, write tool.ts, write 4 hook stubs
-   - Hook stubs include comments showing detected parameters
+   - For each tool: create directory, write tool.ts with `import "./environment"`, write environment.d.ts with type imports and ambient declarations, write 4 hook stubs with `ToolEnvironment` type
+   - Hook stubs include comments showing detected parameters and return `Promise<Partial<ToolEnvironment>>`
+   - Generate workspace-level beforeAll.ts and afterAll.ts at `workspace/{project-name}/` root
+   - Generate workspace-level environment.d.ts that exports `WorkspaceEnvironment` type (union of all tool environments)
+   - Workspace-level hooks return `Promise<Partial<WorkspaceEnvironment>>`
+   - Environment file uses modern import pattern (not triple-slash references) with `declare global` blocks
+   - Type imports use regular `import` (not `import type`) to support both interfaces and classes
    - Emit progress to Discovery Status Service
    - Reference data-model.md § Workspace Structure for exact structure
 3. Verify unit tests pass (GREEN phase)
 
+**Implementation Note**: Uses modern TypeScript import patterns with `declare global` blocks to provide type-safe environment variables to tool files. Avoids triple-slash references which trigger ESLint warnings. Workspace-level hooks provide shared context across all tools in the workspace.
+
 **Dependencies**: T013
-**Expected Outcome**: Unit tests pass, service generates workspace structure
+**Expected Outcome**: Unit tests pass, service generates workspace structure with type-safe environment pattern and workspace-level hooks
 
 - [x] **Complete**
 
@@ -316,7 +339,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Dependencies**: T014
 **Expected Outcome**: PUT /api/project triggers async tool discovery, returns 202
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -387,6 +410,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Expected Outcome**: Shared types available for frontend and backend
 
 **Surface Point**: After T021, test Tools API via curl:
+
 ```bash
 curl http://localhost:3000/api/tools
 # Returns discovered tools array
@@ -421,10 +445,15 @@ curl -X PATCH http://localhost:3000/api/tools/getUserProfile -d '{"description":
 **Expected Outcome**: capturelicious() works in both capture mode (promptalicious) and console mode (local dev)
 
 **Surface Point**: After T023, test debug package in isolation:
+
 ```typescript
-import { capturelicious, enableCapture, getCaptures } from '@promptalicious/debug';
+import {
+  capturelicious,
+  enableCapture,
+  getCaptures,
+} from "@promptalicious/debug";
 enableCapture();
-capturelicious('Test message', { foo: 'bar' });
+capturelicious("Test message", { foo: "bar" });
 console.log(getCaptures()); // Should show captured message
 ```
 
@@ -471,12 +500,23 @@ console.log(getCaptures()); // Should show captured message
 
 ---
 
-### T027: Implement Hook Execution Service
+### T027: Implement Hook Execution Service (tool-level hooks)
 
 **File**: `packages/backend/src/services/hook-execution.service.ts`
-**Description**: Create service to dynamically load and execute hook files from workspace. Implement lifecycle: beforeAll() → beforeEach() → tool.execute() → afterEach() → afterAll(). Merge context from beforeAll and beforeEach into tool parameters. Handle hook failures with clear error messages (abort execution). Reference research.md Decision 4 for lifecycle pattern.
+**Description**: Create service to dynamically load and execute hook files from workspace. Implement lifecycle for tool-level hooks: tool beforeAll() → tool beforeEach() → tool.execute() → tool afterEach() → tool afterAll(). Merge context from tool beforeAll and tool beforeEach into tool parameters. Handle hook failures with clear error messages (abort execution). Reference research.md Decision 4 for lifecycle pattern.
 **Dependencies**: T026
-**Expected Outcome**: Service executes hooks in correct lifecycle order, merges context
+**Expected Outcome**: Service executes tool-level hooks in correct lifecycle order, merges context
+
+- [ ] **Complete**
+
+---
+
+### T027a: Extend Hook Execution Service with workspace-level hooks
+
+**File**: `packages/backend/src/services/hook-execution.service.ts`
+**Description**: Extend Hook Execution Service to support workspace-level hooks. Implement full lifecycle: workspace beforeAll() → [for each tool: tool beforeAll() → tool beforeEach() → tool.execute() → tool afterEach() → tool afterAll()] → workspace afterAll(). Merge precedence: workspace beforeAll provides base context, tool beforeAll extends/overrides, tool beforeEach extends/overrides for that invocation only. Workspace afterAll runs once after all tools complete. Load workspace hooks from `workspace/{project-name}/beforeAll.ts` and `workspace/{project-name}/afterAll.ts`.
+**Dependencies**: T027
+**Expected Outcome**: Service executes workspace-level and tool-level hooks with correct precedence and merge semantics
 
 - [ ] **Complete**
 
@@ -485,11 +525,12 @@ console.log(getCaptures()); // Should show captured message
 ### T028: Extend Execution Service to integrate tools (in-memory diagnostics)
 
 **File**: `packages/backend/src/services/execution.service.ts`
-**Description**: Extend existing execution service to: 1) Load enabled tools from database, 2) Run beforeAll hooks and capture global context, 3) Transform tools to AI SDK format, wrapping execute function to run beforeEach/afterEach hooks and capture diagnostics, 4) Call SDK adapter executeWithTools() with advancedOptions, 5) Collect tool invocations in-memory (NOT database), 6) Return tool invocations array in ExecutionResult response (extend shared-infra type with toolInvocations field). MUST make T024 pass - GREEN phase.
-**Dependencies**: T024, T027
-**Expected Outcome**: T024 passes - GREEN phase ✅, tool execution works end-to-end, diagnostics returned in-memory
+**Description**: Extend existing execution service to: 1) Load enabled tools from database, 2) Run workspace beforeAll hook and capture shared context, 3) For each tool, run tool beforeAll hooks and merge with workspace context, 4) Transform tools to AI SDK format, wrapping execute function to run beforeEach/afterEach hooks and capture diagnostics, 5) Call SDK adapter executeWithTools() with advancedOptions, 6) Run workspace afterAll hook after all tools complete, 7) Collect tool invocations in-memory (NOT database), 8) Return tool invocations array in ExecutionResult response (extend shared-infra type with toolInvocations field). MUST make T024 pass - GREEN phase.
+**Dependencies**: T024, T027a
+**Expected Outcome**: T024 passes - GREEN phase ✅, tool execution works end-to-end with workspace-level hooks, diagnostics returned in-memory
 
 **Surface Point**: After T028, test tool execution via curl:
+
 ```bash
 curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","advancedOptions":{"toolChoice":"auto"}}' -H "Content-Type: application/json"
 # Returns execution result WITH toolInvocations array embedded
@@ -531,6 +572,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 **Expected Outcome**: T029 passes - GREEN phase ✅
 
 **Surface Point**: After T031, test export via curl:
+
 ```bash
 curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}' -H "Content-Type: application/json"
 # Returns markdown export instructions
@@ -848,12 +890,12 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ---
 
-### T058 [P]: Create docs/features/workspace-setup.md (VS Code integration)
+### T058 [P]: Create docs/features/workspace-setup.md (IDE integration)
 
 **File**: `docs/features/workspace-setup.md`
-**Description**: Create user guide for workspace and editor setup. Include: 1) Workspace structure explanation (workspace/{project-name}/ in promptalicious repo), 2) TypeScript configuration (tsconfig.json with @rootalicious alias), 3) VS Code setup (settings.json to include workspace in TypeScript language server), 4) IntelliSense support for imports from user's project, 5) Editing hook files with full type safety. Include code examples and screenshots (if possible).
+**Description**: Create user guide for workspace and editor setup. Include: 1) Workspace structure explanation (workspace/{project-name}/ in promptalicious repo), 2) TypeScript configuration (tsconfig.json with @rootalicious alias), 3) IDE integration (TypeScript language server will automatically detect workspace tsconfig), 4) IntelliSense support for imports from user's project via @rootalicious alias, 5) Editing hook files with full type safety. Include code examples.
 **Dependencies**: T055
-**Expected Outcome**: Workspace setup and VS Code integration documented
+**Expected Outcome**: Workspace setup and IDE integration documented
 
 - [ ] **Complete**
 
@@ -873,7 +915,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 ### T060: Update docs/api/api-contracts.md with new endpoints
 
 **File**: `docs/api/api-contracts.md`
-**Description**: Extend existing API contracts documentation with new endpoints from spec 003: 1) Project Configuration API (GET /api/project, PUT /api/project, GET /api/project/discovery/status, POST /api/project/discovery/cancel), 2) Tools API (GET /api/tools, GET /api/tools/:id, PATCH /api/tools/:id), 3) Extended Execution API (POST /api/execute with advancedOptions, ExecutionResult.toolInvocations array), 4) Export API (POST /api/export). Include request/response schemas, error codes, example curl commands. Reference contracts/*.yaml files for exact schemas.
+**Description**: Extend existing API contracts documentation with new endpoints from spec 003: 1) Project Configuration API (GET /api/project, PUT /api/project, GET /api/project/discovery/status, POST /api/project/discovery/cancel), 2) Tools API (GET /api/tools, GET /api/tools/:id, PATCH /api/tools/:id), 3) Extended Execution API (POST /api/execute with advancedOptions, ExecutionResult.toolInvocations array), 4) Export API (POST /api/export). Include request/response schemas, error codes, example curl commands. Reference contracts/\*.yaml files for exact schemas.
 **Dependencies**: T056, T057, T058, T059
 **Expected Outcome**: API contracts documentation complete for spec 003
 
@@ -934,6 +976,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 ## Parallel Execution Examples
 
 ### Group 1 Foundation (Parallel):
+
 ```bash
 # Launch T001-T002 together (different migration files):
 Task: "Database migration for project_configuration table"
@@ -941,6 +984,7 @@ Task: "Database migration for tools table"
 ```
 
 ### Group 3 Tools API Contract Tests (All Parallel):
+
 ```bash
 # Launch T015-T017 together (different test cases in same file, but marking as parallel since they're independent):
 Task: "Contract test GET /api/tools"
@@ -949,6 +993,7 @@ Task: "Contract test PATCH /api/tools/:id"
 ```
 
 ### Group 5 Debug Package + Group 4 Tools API (Parallel Groups):
+
 ```bash
 # T020-T021 (debug package) can run in parallel with T018-T019 (tools API finalization):
 Task: "Create @promptalicious/debug package scaffolding"
@@ -956,6 +1001,7 @@ Task: "Add shared type definitions for tools"
 ```
 
 ### Group 12 Integration Tests (All Parallel):
+
 ```bash
 # Launch T052-T054 together (different test files):
 Task: "Integration test for project configuration and tool discovery"
@@ -964,6 +1010,7 @@ Task: "Integration test for tool execution with diagnostics capture"
 ```
 
 ### Group 13 Documentation (Most Parallel):
+
 ```bash
 # Launch T056-T059 together (different doc files):
 Task: "Update README.md with tool integration capability"
@@ -1001,11 +1048,14 @@ Validate quickstart scenarios (quickstart.md) work end-to-end in browser.
 
 ---
 
-**Total Tasks**: 62
+**Total Tasks**: 63 (added T027a for workspace-level hooks)
 **Parallel Tasks**: 14 (marked with [P])
 **Maximum Sequential Chain**: 8 tasks (Group 2, within constitutional 10-task limit)
-**Estimated Completion**: Per plan.md, ~52 tasks originally estimated, reduced to 62 after deferring tool invocation persistence to Feature 004
+**Estimated Completion**: Per plan.md, ~52 tasks originally estimated, expanded to 63 after:
+
+- Deferring tool invocation persistence to Feature 004
+- Adding workspace-level hooks for shared context across all tools (T027a)
 
 ---
 
-**Status**: ✅ Tasks generated, ready for implementation via /implement command
+**Status**: ✅ Tasks generated and updated with workspace-level hooks, ready for implementation via /implement command

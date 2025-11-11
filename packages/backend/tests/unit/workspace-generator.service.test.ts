@@ -6,13 +6,21 @@ import {
   WorkspaceGeneratorService,
 } from "@/services/workspace-generator.service";
 
-const { mockAppendLog, mockIncrementCounters, mockMkdir, mockWriteFile } =
-  vi.hoisted(() => ({
-    mockAppendLog: vi.fn(),
-    mockIncrementCounters: vi.fn(),
-    mockMkdir: vi.fn(),
-    mockWriteFile: vi.fn(),
-  }));
+const {
+  mockAppendLog,
+  mockIncrementCounters,
+  mockMkdir,
+  mockWriteFile,
+  mockSymlink,
+  mockUnlink,
+} = vi.hoisted(() => ({
+  mockAppendLog: vi.fn(),
+  mockIncrementCounters: vi.fn(),
+  mockMkdir: vi.fn(),
+  mockWriteFile: vi.fn(),
+  mockSymlink: vi.fn(),
+  mockUnlink: vi.fn(),
+}));
 
 vi.mock("@/services/discovery-status.service", () => ({
   appendLog: mockAppendLog,
@@ -22,6 +30,8 @@ vi.mock("@/services/discovery-status.service", () => ({
 vi.mock("node:fs/promises", () => ({
   mkdir: mockMkdir,
   writeFile: mockWriteFile,
+  symlink: mockSymlink,
+  unlink: mockUnlink,
 }));
 
 describe("WorkspaceGeneratorService", () => {
@@ -31,6 +41,8 @@ describe("WorkspaceGeneratorService", () => {
     vi.clearAllMocks();
     mockMkdir.mockResolvedValue(undefined);
     mockWriteFile.mockResolvedValue(undefined);
+    mockSymlink.mockResolvedValue(undefined);
+    mockUnlink.mockRejectedValue(new Error("ENOENT"));
 
     workspaceGeneratorService = new WorkspaceGeneratorService();
   });
@@ -53,7 +65,7 @@ describe("WorkspaceGeneratorService", () => {
       );
     });
 
-    it("should generate tsconfig.json with @rootalicious alias", async () => {
+    it("should generate workspace config files", async () => {
       const projectName = "test-project";
       const projectPath = "../test-project";
       const tools: DiscoveredTool[] = [];
@@ -66,7 +78,17 @@ describe("WorkspaceGeneratorService", () => {
 
       expect(mockWriteFile).toHaveBeenCalledWith(
         expect.stringContaining("workspace/test-project/tsconfig.json"),
-        expect.stringContaining("@rootalicious"),
+        expect.any(String),
+      );
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining("workspace/test-project/eslint.config.ts"),
+        expect.any(String),
+      );
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining("workspace/test-project/package.json"),
+        expect.any(String),
       );
 
       const tsconfigCall = mockWriteFile.mock.calls.find((call) =>
@@ -75,13 +97,9 @@ describe("WorkspaceGeneratorService", () => {
       expect(tsconfigCall).toBeDefined();
 
       const tsconfigContent = JSON.parse(String(tsconfigCall![1])) as {
-        compilerOptions: { paths: Record<string, unknown> };
         extends: string;
       };
-      expect(tsconfigContent.compilerOptions.paths).toHaveProperty(
-        "@rootalicious/*",
-      );
-      expect(tsconfigContent.extends).toBe("../../tsconfig.json");
+      expect(tsconfigContent.extends).toBe("../tsconfig.json");
     });
 
     it("should create tool subdirectory for each tool", async () => {
@@ -97,6 +115,8 @@ describe("WorkspaceGeneratorService", () => {
           executeFunction: "async function execute() {}",
           sourceFilePath: "/path/to/tool.ts",
           detectedHookParams: [],
+          typeImports: [],
+          environmentTypes: [],
         },
       ];
 
@@ -127,6 +147,8 @@ describe("WorkspaceGeneratorService", () => {
           executeFunction,
           sourceFilePath: "/path/to/tool.ts",
           detectedHookParams: [],
+          typeImports: [],
+          environmentTypes: [],
         },
       ];
 
@@ -157,6 +179,8 @@ describe("WorkspaceGeneratorService", () => {
           executeFunction: "async function execute() {}",
           sourceFilePath: "/path/to/tool.ts",
           detectedHookParams: ["db"],
+          typeImports: [],
+          environmentTypes: [],
         },
       ];
 
@@ -205,6 +229,8 @@ describe("WorkspaceGeneratorService", () => {
           executeFunction: "async function execute() {}",
           sourceFilePath: "/path/to/tool.ts",
           detectedHookParams: ["db", "authService"],
+          typeImports: [],
+          environmentTypes: [],
         },
       ];
 
@@ -238,6 +264,8 @@ describe("WorkspaceGeneratorService", () => {
           executeFunction: "async function execute() {}",
           sourceFilePath: "/path/to/tool.ts",
           detectedHookParams: [],
+          typeImports: [],
+          environmentTypes: [],
         },
       ];
 

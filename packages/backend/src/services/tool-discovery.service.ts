@@ -18,20 +18,38 @@ interface DiscoverySummary {
   }>;
 }
 
-interface ToolDefinition {
+export interface ToolDefinition {
   id: string;
   name: string;
   description: string;
+  sourceDescription: string;
   parametersSchema: unknown;
   sourceFilePath: string;
   workspaceDir: string;
   detectedHookParams: string[];
   executeFunction: string;
+  typeImports: Array<{
+    typeName: string;
+    importPath: string;
+  }>;
+  environmentTypes: Array<{
+    name: string;
+    type: string;
+    typeImports: Array<{
+      typeName: string;
+      importPath: string;
+    }>;
+  }>;
+}
+
+export interface DiscoveryResult {
+  summary: DiscoverySummary;
+  tools: ToolDefinition[];
 }
 
 export async function discoverTools(
   projectPath: string,
-): Promise<DiscoverySummary> {
+): Promise<DiscoveryResult> {
   discoveryStatusService.appendLog({
     level: "info",
     phase: "scanning",
@@ -45,6 +63,8 @@ export async function discoverTools(
     filesGenerated: 0,
     skippedFiles: [],
   };
+
+  const allTools: ToolDefinition[] = [];
 
   try {
     const tsConfigPath = path.join(projectPath, "tsconfig.json");
@@ -121,10 +141,14 @@ export async function discoverTools(
         });
 
         await saveToolToDatabase(tool);
+        allTools.push(tool);
       }
     }
 
-    return summary;
+    return {
+      summary,
+      tools: allTools,
+    };
   } catch (error) {
     discoveryStatusService.appendLog({
       level: "error",
@@ -170,7 +194,9 @@ function extractToolsFromFile(
       if (!configArg || !Node.isObjectLiteralExpression(configArg)) continue;
 
       const descriptionProp = configArg.getProperty("description");
-      const parametersProp = configArg.getProperty("parameters");
+      const parametersProp =
+        configArg.getProperty("parameters") ||
+        configArg.getProperty("inputSchema");
       const executeProp = configArg.getProperty("execute");
 
       if (!descriptionProp || !parametersProp || !executeProp) continue;
@@ -182,28 +208,48 @@ function extractToolsFromFile(
 
       let executeFunction = "";
       let detectedParams: string[] = [];
+      let executeFunctionNode: Node | undefined;
 
       if (Node.isPropertyAssignment(executeProp)) {
         const initializer = executeProp.getInitializer();
         if (initializer && Node.isFunctionLikeDeclaration(initializer)) {
           executeFunction = initializer.getText();
-          detectedParams = detectUndefinedVariables(initializer);
+          detectedParams = detectClosureVariables(callExpr, initializer);
+          executeFunctionNode = initializer;
         }
       }
+
+      if (!executeFunctionNode) continue;
 
       const toolName = generateToolName(callExpr, sourceFile);
       const sourceFilePath = sourceFile.getFilePath();
       const workspaceDir = `workspace/${path.basename(projectPath)}/${toolName}`;
 
+      const typeImports = extractTypeImports(
+        sourceFile,
+        executeFunctionNode,
+        projectPath,
+      );
+
+      const environmentTypes = extractClosureVariableTypes(
+        sourceFile,
+        executeFunctionNode,
+        detectedParams,
+        projectPath,
+      );
+
       tools.push({
         id: toolName,
         name: toolName,
         description,
+        sourceDescription: description,
         parametersSchema: parameters,
         sourceFilePath,
         workspaceDir,
         detectedHookParams: detectedParams,
         executeFunction,
+        typeImports,
+        environmentTypes,
       });
     }
   } catch (error) {
@@ -248,47 +294,328 @@ function generateToolName(callExpr: Node, sourceFile: SourceFile): string {
   return baseName;
 }
 
-function detectUndefinedVariables(functionNode: Node): string[] {
-  const undefinedVars: Set<string> = new Set();
+function extractTypeImports(
+  sourceFile: SourceFile,
+  executeNode: Node,
+  projectPath: string,
+): Array<{ typeName: string; importPath: string }> {
+  const typeImports: Array<{ typeName: string; importPath: string }> = [];
+  const typeNames = new Set<string>();
 
-  if (!Node.isFunctionLikeDeclaration(functionNode)) {
+  const typeReferences = executeNode.getDescendantsOfKind(
+    SyntaxKind.TypeReference,
+  );
+
+  for (const typeRef of typeReferences) {
+    const typeName = typeRef.getTypeName();
+    if (Node.isIdentifier(typeName)) {
+      const name = typeName.getText();
+      if (name && /^[A-Z]/.test(name)) {
+        typeNames.add(name);
+      }
+    }
+  }
+
+  const importDeclarations = sourceFile.getImportDeclarations();
+
+  for (const importDecl of importDeclarations) {
+    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+    const namedImports = importDecl.getNamedImports();
+
+    for (const namedImport of namedImports) {
+      const typeName = namedImport.getName();
+      if (typeNames.has(typeName)) {
+        let resolvedPath = moduleSpecifier;
+
+        if (moduleSpecifier.startsWith("@/")) {
+          const resolvedSourceFile = importDecl.getModuleSpecifierSourceFile();
+          if (resolvedSourceFile) {
+            const resolvedFilePath = resolvedSourceFile.getFilePath();
+            const relativePath = path.relative(projectPath, resolvedFilePath);
+            const pathWithoutExtension = relativePath.replace(
+              /\.(ts|tsx|js|jsx)$/,
+              "",
+            );
+            resolvedPath = `../rootalicious/${pathWithoutExtension}`;
+          } else {
+            resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+          }
+        } else {
+          resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+        }
+
+        typeImports.push({
+          typeName,
+          importPath: resolvedPath,
+        });
+      }
+    }
+  }
+
+  return typeImports;
+}
+
+function detectClosureVariables(
+  _toolCallExpr: Node,
+  executeFunction: Node,
+): string[] {
+  if (!Node.isFunctionLikeDeclaration(executeFunction)) {
     return [];
   }
 
-  const identifiers = functionNode.getDescendantsOfKind(SyntaxKind.Identifier);
+  const closureVars: Set<string> = new Set();
+  const builtins = new Set([
+    "console",
+    "Promise",
+    "Error",
+    "undefined",
+    "null",
+    "Array",
+    "Object",
+    "String",
+    "Number",
+    "Boolean",
+    "Math",
+    "Date",
+    "JSON",
+    "parseInt",
+    "parseFloat",
+    "isNaN",
+    "isFinite",
+  ]);
 
-  const paramNames = new Set(
-    functionNode.getParameters().map((p) => p.getName()),
+  const executeFunctionParams = new Set(
+    executeFunction.getParameters().map((p) => p.getName()),
+  );
+
+  const identifiers = executeFunction.getDescendantsOfKind(
+    SyntaxKind.Identifier,
   );
 
   for (const identifier of identifiers) {
     const name = identifier.getText();
 
-    if (paramNames.has(name)) continue;
+    if (builtins.has(name)) continue;
+    if (executeFunctionParams.has(name)) continue;
+
+    const parent = identifier.getParent();
+    if (Node.isPropertyAccessExpression(parent)) {
+      if (parent.getNameNode() === identifier) {
+        continue;
+      }
+    }
 
     const symbol = identifier.getSymbol();
     if (!symbol) {
-      undefinedVars.add(name);
+      closureVars.add(name);
       continue;
     }
 
     const declarations = symbol.getDeclarations();
-    const isDefinedInScope = declarations.some((decl: Node) => {
+
+    const isDefinedInExecuteFunction = declarations.some((decl: Node) => {
       const declPos = decl.getPos();
-      const funcStart = functionNode.getPos();
-      const funcEnd = functionNode.getEnd();
+      const funcStart = executeFunction.getPos();
+      const funcEnd = executeFunction.getEnd();
       return declPos >= funcStart && declPos <= funcEnd;
     });
 
-    if (!isDefinedInScope) {
-      undefinedVars.add(name);
+    if (isDefinedInExecuteFunction) continue;
+
+    const isTypeReference = identifier
+      .getAncestors()
+      .some(
+        (ancestor) =>
+          Node.isTypeReference(ancestor) || Node.isTypeNode(ancestor),
+      );
+
+    if (isTypeReference) continue;
+
+    closureVars.add(name);
+  }
+
+  return Array.from(closureVars);
+}
+
+function extractClosureVariableTypes(
+  sourceFile: SourceFile,
+  executeFunction: Node,
+  closureVarNames: string[],
+  projectPath: string,
+): Array<{
+  name: string;
+  type: string;
+  typeImports: Array<{ typeName: string; importPath: string }>;
+}> {
+  if (!Node.isFunctionLikeDeclaration(executeFunction)) {
+    return [];
+  }
+
+  const closureVarTypes: Array<{
+    name: string;
+    type: string;
+    typeImports: Array<{ typeName: string; importPath: string }>;
+  }> = [];
+
+  for (const varName of closureVarNames) {
+    const identifiers = executeFunction
+      .getDescendantsOfKind(SyntaxKind.Identifier)
+      .filter((id) => id.getText() === varName);
+
+    if (identifiers.length === 0) continue;
+
+    const identifier = identifiers[0];
+    if (!identifier) continue;
+
+    const symbol = identifier.getSymbol();
+
+    if (!symbol) {
+      closureVarTypes.push({ name: varName, type: "unknown", typeImports: [] });
+      continue;
+    }
+
+    const declarations = symbol.getDeclarations();
+    if (declarations.length === 0) {
+      closureVarTypes.push({ name: varName, type: "unknown", typeImports: [] });
+      continue;
+    }
+
+    const declaration = declarations[0];
+    let typeText = "unknown";
+    const typeImports: Array<{ typeName: string; importPath: string }> = [];
+
+    if (Node.isVariableDeclaration(declaration)) {
+      const typeNode = declaration.getTypeNode();
+      if (typeNode) {
+        typeText = typeNode.getText();
+        // Extract imports from explicit type annotation
+        extractImportsFromType(typeNode, sourceFile, projectPath, typeImports);
+      } else {
+        // Type is inferred - get it from the type system
+        const type = declaration.getType();
+        typeText = type.getText(declaration);
+        // Extract imports from inferred type by analyzing the type structure
+        extractImportsFromInferredType(
+          type,
+          sourceFile,
+          projectPath,
+          typeImports,
+        );
+      }
+    } else if (Node.isParameterDeclaration(declaration)) {
+      const typeNode = declaration.getTypeNode();
+      if (typeNode) {
+        typeText = typeNode.getText();
+        extractImportsFromType(typeNode, sourceFile, projectPath, typeImports);
+      } else {
+        const type = declaration.getType();
+        typeText = type.getText(declaration);
+        extractImportsFromInferredType(
+          type,
+          sourceFile,
+          projectPath,
+          typeImports,
+        );
+      }
+    }
+
+    closureVarTypes.push({ name: varName, type: typeText, typeImports });
+  }
+
+  return closureVarTypes;
+}
+
+function extractImportsFromType(
+  typeNode: Node,
+  sourceFile: SourceFile,
+  projectPath: string,
+  typeImports: Array<{ typeName: string; importPath: string }>,
+): void {
+  const typeNames = new Set<string>();
+
+  // The typeNode itself might be a TypeReference (e.g., IExecutionContext)
+  // or it might contain TypeReferences (e.g., Promise<IExecutionContext>)
+  const typeReferences = Node.isTypeReference(typeNode)
+    ? [typeNode]
+    : typeNode.getDescendantsOfKind(SyntaxKind.TypeReference);
+
+  for (const typeRef of typeReferences) {
+    const typeName = typeRef.getTypeName();
+    if (Node.isIdentifier(typeName)) {
+      const name = typeName.getText();
+      if (name && /^[A-Z]/.test(name)) {
+        typeNames.add(name);
+      }
     }
   }
 
-  return Array.from(undefinedVars).filter(
-    (name) =>
-      !["console", "Promise", "Error", "undefined", "null"].includes(name),
-  );
+  findImportsForTypes(typeNames, sourceFile, projectPath, typeImports);
+}
+
+function extractImportsFromInferredType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type: any,
+  sourceFile: SourceFile,
+  projectPath: string,
+  typeImports: Array<{ typeName: string; importPath: string }>,
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const typeText: string = type.getText();
+  const typeNames = new Set<string>();
+
+  // Extract type names from the type text (e.g., "IExecutionContext" from inferred type)
+  const typeNameMatches = typeText.matchAll(/\b([A-Z][a-zA-Z0-9]*)\b/g);
+  for (const match of typeNameMatches) {
+    const typeName = match[1];
+    if (typeName) {
+      typeNames.add(typeName);
+    }
+  }
+
+  findImportsForTypes(typeNames, sourceFile, projectPath, typeImports);
+}
+
+function findImportsForTypes(
+  typeNames: Set<string>,
+  sourceFile: SourceFile,
+  projectPath: string,
+  typeImports: Array<{ typeName: string; importPath: string }>,
+): void {
+  const importDeclarations = sourceFile.getImportDeclarations();
+
+  for (const importDecl of importDeclarations) {
+    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+    const namedImports = importDecl.getNamedImports();
+
+    for (const namedImport of namedImports) {
+      const typeName = namedImport.getName();
+      if (typeNames.has(typeName)) {
+        let resolvedPath = moduleSpecifier;
+
+        if (moduleSpecifier.startsWith("@/")) {
+          const resolvedSourceFile = importDecl.getModuleSpecifierSourceFile();
+          if (resolvedSourceFile) {
+            const resolvedFilePath = resolvedSourceFile.getFilePath();
+            const relativePath = path.relative(projectPath, resolvedFilePath);
+            const pathWithoutExtension = relativePath.replace(
+              /\.(ts|tsx|js|jsx)$/,
+              "",
+            );
+            resolvedPath = `../rootalicious/${pathWithoutExtension}`;
+          } else {
+            resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+          }
+        } else {
+          resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+        }
+
+        typeImports.push({
+          typeName,
+          importPath: resolvedPath,
+        });
+      }
+    }
+  }
 }
 
 async function saveToolToDatabase(tool: ToolDefinition): Promise<void> {
@@ -304,6 +631,8 @@ async function saveToolToDatabase(tool: ToolDefinition): Promise<void> {
       workspaceDir: tool.workspaceDir,
       enabled: true,
       detectedHookParams: tool.detectedHookParams,
+      typeImports: tool.typeImports,
+      environmentTypes: tool.environmentTypes,
     })
     .onConflictDoUpdate({
       target: tools.id,
@@ -315,6 +644,8 @@ async function saveToolToDatabase(tool: ToolDefinition): Promise<void> {
         sourceFilePath: tool.sourceFilePath,
         workspaceDir: tool.workspaceDir,
         detectedHookParams: tool.detectedHookParams,
+        typeImports: tool.typeImports,
+        environmentTypes: tool.environmentTypes,
         updatedAt: new Date(),
       },
     });

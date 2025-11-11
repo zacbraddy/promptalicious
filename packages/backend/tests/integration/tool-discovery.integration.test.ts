@@ -61,9 +61,9 @@ export const greetUser = tool({
 
       const result = await toolDiscoveryService.discoverTools(fixtureDir);
 
-      expect(result.filesScanned).toBeGreaterThan(0);
-      expect(result.filesWithToolImports).toBe(1);
-      expect(result.toolsDiscovered).toBe(1);
+      expect(result.summary.filesScanned).toBeGreaterThan(0);
+      expect(result.summary.filesWithToolImports).toBe(1);
+      expect(result.summary.toolsDiscovered).toBe(1);
 
       const savedTools = await db.select().from(tools);
       expect(savedTools).toHaveLength(1);
@@ -104,7 +104,7 @@ export const getUserProfile = tool({
 
       const result = await toolDiscoveryService.discoverTools(fixtureDir);
 
-      expect(result.toolsDiscovered).toBe(1);
+      expect(result.summary.toolsDiscovered).toBe(1);
 
       const savedTools = await db.select().from(tools);
       expect(savedTools).toHaveLength(1);
@@ -151,7 +151,7 @@ export const multiplyNumbers = tool({
 
       const result = await toolDiscoveryService.discoverTools(fixtureDir);
 
-      expect(result.toolsDiscovered).toBe(2);
+      expect(result.summary.toolsDiscovered).toBe(2);
 
       const savedTools = await db.select().from(tools);
       expect(savedTools).toHaveLength(2);
@@ -182,11 +182,11 @@ export function regularFunction() {
 
       const result = await toolDiscoveryService.discoverTools(fixtureDir);
 
-      expect(result.filesScanned).toBeGreaterThan(0);
-      expect(result.filesWithToolImports).toBe(0);
-      expect(result.toolsDiscovered).toBe(0);
-      expect(result.skippedFiles.length).toBeGreaterThan(0);
-      expect(result.skippedFiles[0]?.reason).toContain("AI SDK");
+      expect(result.summary.filesScanned).toBeGreaterThan(0);
+      expect(result.summary.filesWithToolImports).toBe(0);
+      expect(result.summary.toolsDiscovered).toBe(0);
+      expect(result.summary.skippedFiles.length).toBeGreaterThan(0);
+      expect(result.summary.skippedFiles[0]?.reason).toContain("AI SDK");
 
       await cleanupFixture(fixtureDir);
     });
@@ -307,8 +307,8 @@ export const badTool = tool({
 
       const result = await toolDiscoveryService.discoverTools(fixtureDir);
 
-      expect(result.filesScanned).toBeGreaterThan(0);
-      expect(result.toolsDiscovered).toBe(0);
+      expect(result.summary.filesScanned).toBeGreaterThan(0);
+      expect(result.summary.toolsDiscovered).toBe(0);
 
       await cleanupFixture(fixtureDir);
     });

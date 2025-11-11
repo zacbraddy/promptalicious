@@ -6,6 +6,7 @@
 **Input**: User description: "Introduce tooling: Now that we've gotten ourselves to the point where we can successfully make a call to a LLM via the application we need to start making progress towards what we're trying to actually achieve with the software. A big step towards that will be to introduce the ability to add tools to your call to the LLM."
 
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → ✅ Feature description provided
@@ -27,6 +28,7 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
@@ -36,6 +38,7 @@
 ## Product Vision
 
 Promptalicious is "Postman for LLMs" - a debugging and iteration tool that allows developers to:
+
 1. Connect their existing codebase containing LLM tool implementations
 2. Discover and configure tools without modifying source code
 3. Iterate rapidly on prompts, tool descriptions, and SDK options
@@ -43,6 +46,8 @@ Promptalicious is "Postman for LLMs" - a debugging and iteration tool that allow
 5. Export working configurations back to their codebase with minimal friction
 
 This feature establishes the foundation: tool discovery, configuration, execution, and basic export.
+
+**Supported AI SDK Versions**: Vercel AI SDK v4.x and v5.x (supports both `parameters` and `inputSchema` properties for backwards compatibility)
 
 ---
 
@@ -97,6 +102,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ### Functional Requirements
 
 #### Project Configuration & Discovery
+
 - **FR-001**: System MUST provide a folder picker in frontend settings to configure relative path from promptalicious to target project
 
 - **FR-002**: System MUST scan configured project for files importing `tool` function from `ai` SDK using static analysis
@@ -107,9 +113,13 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Analysing `execute` function for undefined variables to determine hook parameter requirements
 
 - **FR-004**: System MUST create a gitignored workspace directory (`promptalicious-workspace/`) containing:
+  - Workspace-level `environment.d.ts` file with `WorkspaceEnvironment` type (union of all tool environments)
+  - Workspace-level `beforeAll.ts` hook (runs once before all tools, returns `Promise<Partial<WorkspaceEnvironment>>`)
+  - Workspace-level `afterAll.ts` hook (runs once after all tools complete)
   - Per-tool subdirectories identified by tool name or ID
-  - `tool.ts` file containing extracted `execute` function
-  - Auto-generated hook stub files: `beforeAll.ts`, `beforeEach.ts`, `afterEach.ts`, `afterAll.ts`
+  - Tool-level `tool.ts` file containing extracted `execute` function with `import "./environment"` for type-safe environment access
+  - Tool-level `environment.d.ts` file containing type imports and ambient declarations using `declare global` blocks for closure variables
+  - Tool-level hook stub files: `beforeAll.ts`, `beforeEach.ts`, `afterEach.ts`, `afterAll.ts` with typed return values (`Promise<Partial<ToolEnvironment>>`)
   - `tsconfig.json` with `@rootalicious` path alias pointing to target project
 
 - **FR-005**: System MUST display discovered tools in frontend with:
@@ -120,22 +130,28 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Link to view/edit workspace files
 
 #### Hook System
-- **FR-006**: Auto-generated hook stub files MUST indicate detected parameters needed by tool execution
 
-- **FR-007**: Users MUST be able to edit hook files in their code editor with full import access to target project via `@rootalicious` alias
+- **FR-006**: Auto-generated hook stub files MUST indicate detected parameters needed by tool execution. Environment type declarations MUST be generated in `environment.d.ts` with proper type imports from the user's project using `import` (not `import type`) to support both interfaces and classes
 
-- **FR-008**: Hook files MUST export a default function returning an object containing parameter values
+- **FR-007**: Users MUST be able to edit hook files in their code editor with full import access to target project via `@rootalicious` alias. Tool files MUST import environment declarations using `import "./environment"` pattern (not triple-slash references) to comply with ESLint rules
 
-- **FR-009**: System MUST execute hooks in sequence during tool invocation:
-  - `beforeAll()` - Once before any tool invocations (returns global context)
-  - `beforeEach()` - Before each tool invocation (returns per-invocation context)
-  - Tool `execute()` with merged context from both hooks
-  - `afterEach()` - After each tool invocation
-  - `afterAll()` - Once after all tool invocations complete
+- **FR-008**: Hook files MUST export a default function returning `Promise<Partial<ToolEnvironment>>` where `ToolEnvironment` is the type generated from detected closure variables. Tool execution environment MUST be made available via ambient declarations using `declare global` blocks
+
+- **FR-009**: System MUST execute hooks in sequence during LLM execution with workspace-level and tool-level hooks:
+  - Workspace `beforeAll()` - Once at start of LLM execution (returns shared context for all tools)
+  - For each tool invocation:
+    - Tool `beforeAll()` - Once before any invocations of this tool (returns tool-specific context, merged with workspace context)
+    - Tool `beforeEach()` - Before each invocation (returns per-invocation context, merged with workspace + tool context)
+    - Tool `execute()` - Runs with merged context (workspace beforeAll + tool beforeAll + tool beforeEach)
+    - Tool `afterEach()` - After each invocation
+    - Tool `afterAll()` - Once after all invocations of this tool complete
+  - Workspace `afterAll()` - Once at end of LLM execution (cleanup shared resources)
+  - Merge precedence (later overrides earlier): workspace beforeAll → tool beforeAll → tool beforeEach
 
 - **FR-010**: Hook execution failures MUST abort execution with clear error messages indicating which hook failed and why
 
 #### Tool Configuration
+
 - **FR-011**: Users MUST be able to enable/disable individual tools for a prompt execution
 
 - **FR-012**: Users MUST be able to edit tool descriptions in frontend interface
@@ -145,6 +161,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 - **FR-014**: System MUST persist tool configurations across page refreshes during execution
 
 #### AI SDK Options Configuration
+
 - **FR-015**: Frontend MUST expose AI SDK call-level options in an "Advanced Options" section (collapsed by default):
   - `maxTokens` / `maxTokenBudget`
   - `temperature`
@@ -158,6 +175,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 - **FR-017**: Advanced option values MUST default to sensible values if not specified in source code, otherwise default to source code values
 
 #### Tool Execution & Diagnostics
+
 - **FR-018**: System MUST provide `@promptalicious/debug` package exporting `capturelicious(message, variables)` function importable in tool files
 
 - **FR-019**: `capturelicious()` calls during tool execution MUST capture output and display in real-time in frontend diagnostics
@@ -184,6 +202,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 - **FR-022**: Tool execution errors MUST NOT abort entire execution - system continues with remaining tools and marks failed invocations
 
 #### Export Functionality
+
 - **FR-023**: System MUST provide "Export Instructions" button that generates code-based instructions including:
   - Final tool `execute` function code
   - AI SDK options object with current frontend values
@@ -193,16 +212,19 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 - **FR-024**: Export instructions MUST be generated without requiring LLM calls (code-generated output)
 
 #### Multi-SDK Architecture (Foundation Only)
+
 - **FR-025**: Tool discovery, extraction, and option mapping MUST be implemented behind an abstract interface to support future SDK integrations
 
 - **FR-026**: AI SDK integration MUST be the only implemented SDK adapter for this feature, but architecture MUST support adding additional SDK adapters without refactoring core system
 
 #### Project Management
+
 - **FR-027**: System MUST allow user to assign a name to the project configuration
   - Default: derived from target folder name (e.g., "my-project" from "../my-project")
   - Editable in Settings page
 
 #### Discovery Observability
+
 - **FR-028**: System MUST provide real-time progress feedback during tool discovery
   - Tool discovery runs asynchronously after project configuration
   - Frontend polls `/api/project/discovery/status` for progress updates
@@ -234,6 +256,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ### Key Entities
 
 #### Project Configuration
+
 - **What it represents**: Connection between promptalicious and user's codebase
 - **Key attributes**:
   - Project name (user-editable, defaults to folder name)
@@ -243,6 +266,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Path alias configuration (`@rootalicious`)
 
 #### Tool Definition
+
 - **What it represents**: A discovered tool available for LLM execution
 - **Key attributes**:
   - Unique identifier
@@ -255,6 +279,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Workspace directory path
 
 #### Tool Configuration
+
 - **What it represents**: User's customized settings for a specific tool
 - **Key attributes**:
   - Tool identifier
@@ -264,6 +289,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Relationship to execution
 
 #### Hook Definition
+
 - **What it represents**: Pre/post execution scripts providing context to tools
 - **Key attributes**:
   - Hook type (beforeAll, beforeEach, afterEach, afterAll)
@@ -273,6 +299,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Export function signature
 
 #### Tool Execution Result
+
 - **What it represents**: Outcome and diagnostics from a single tool invocation
 - **Key attributes**:
   - Tool identifier
@@ -288,6 +315,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Relationship to parent execution
 
 #### Tool Execution Summary
+
 - **What it represents**: Aggregated statistics across all tool calls in an execution
 - **Key attributes**:
   - Total invocations (overall and per tool)
@@ -298,6 +326,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
   - Relationship to execution result
 
 #### Discovery Log Entry
+
 - **What it represents**: Single log entry from tool discovery process
 - **Key attributes**:
   - Timestamp
@@ -311,12 +340,14 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ## Review & Acceptance Checklist
 
 ### Content Quality
+
 - [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
@@ -340,6 +371,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ## Scope Boundaries
 
 ### In Scope (Feature 003)
+
 ✅ Single project support
 ✅ AI SDK tool discovery and extraction
 ✅ Hook system with auto-generated stubs
@@ -353,6 +385,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ✅ Multi-SDK abstraction layer (architecture only, AI SDK implementation)
 
 ### Out of Scope (Future Features)
+
 ❌ Multi-project support (planned for future)
 ❌ Execution history and replay (planned for future)
 ❌ Database-backed caching (planned for future)
@@ -363,6 +396,7 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ❌ Additional SDK integrations (planned for future)
 
 **Documentation Scope**:
+
 - ✅ Document ONLY features implemented in spec 003
 - ❌ Do NOT mention future specs (004, 005) or planned features
 - ❌ Do NOT speculate about multi-project, history, reset, or rescan
@@ -383,11 +417,13 @@ As a developer debugging LLM tool calls, I want to integrate my existing tool im
 ## Additional Notes
 
 ### Reference Architecture
+
 See `private/reference-architecture.md` for detailed analysis of existing tool implementation patterns in reference project. This document informed the hook system design and SDK abstraction requirements.
 
 **⚠️ PRIVACY WARNING**: The `private/` directory MUST be deleted before merging this branch to main to prevent reference project details from entering the open-source repository.
 
 ### Design Constraints
+
 - Must integrate with existing GPT-4o-mini + Vercel AI SDK execution path
 - Must maintain retrofuturistic dark theme (shadcn/ui + Tailwind)
 - Must preserve page refresh recovery capability
@@ -395,7 +431,79 @@ See `private/reference-architecture.md` for detailed analysis of existing tool i
 - Must follow DDD/Onion architecture patterns where beneficial
 - Should surface working software frequently (max 5 tasks before surfacing)
 
+### Implementation Notes
+
+#### Environment Type System (TypeScript Ambient Declarations)
+
+The workspace generator creates type-safe environment variables for tool execution using modern TypeScript patterns:
+
+**Pattern**: `import "./environment"` with `declare global` blocks
+
+**Rationale**:
+
+- Avoids triple-slash references (`/// <reference path="..."/>`) which trigger ESLint warnings (`@typescript-eslint/triple-slash-reference`)
+- Uses modern import syntax for loading ambient declarations
+- Supports both interfaces and classes by using regular `import` (not `import type`)
+- Provides full type safety for closure variables in generated tool files
+
+**Generated File Structure**:
+
+1. **environment.d.ts** - Contains type imports and ambient declarations:
+
+   ```typescript
+   import { IExecutionContext } from "../rootalicious/...";
+   import { IOpenCVClient } from "../rootalicious/...";
+
+   export type ToolEnvironment = {
+     context: IExecutionContext;
+     opencv: IOpenCVClient;
+   };
+
+   declare global {
+     const context: IExecutionContext;
+   }
+   declare global {
+     const opencv: IOpenCVClient;
+   }
+   ```
+
+2. **tool.ts** - Imports environment for type-safe variable access:
+
+   ```typescript
+   import "./environment";
+
+   export default async (params: ToolParams): Promise<ToolResponse> => {
+     // context and opencv are now available with full type information
+     const frame = context.frames.find(...);
+   };
+   ```
+
+3. **beforeAll.ts / beforeEach.ts** - Return typed environment objects:
+
+   ```typescript
+   import type { ToolEnvironment } from "./environment";
+
+   export default async function beforeAll(): Promise<
+     Partial<ToolEnvironment>
+   > {
+     return {
+       context: undefined, // TODO: Provide context
+       opencv: undefined, // TODO: Provide opencv
+     };
+   }
+   ```
+
+**Type Import Resolution**:
+
+- Tool Discovery Service extracts type names from closure variables using ts-morph AST traversal
+- Finds corresponding imports in source file
+- Resolves `@/` path aliases to `../rootalicious/` relative paths for workspace imports
+- Handles both explicit type annotations (`context: IExecutionContext`) and inferred types
+
+**Key Decision**: Use regular `import` instead of `import type` to support both type-only constructs (interfaces) and runtime constructs (classes used as types)
+
 ### Non-Functional Considerations
+
 - **Performance**: Not a first-class concern for this feature. Promptalicious is a local development tool running on the developer's machine. Performance optimisation is deferred unless it materially impacts developer experience (e.g., tool discovery taking minutes instead of seconds, or UI becoming unresponsive). Reasonable performance expectations:
   - Tool discovery: seconds for typical projects (<1000 files)
   - Execution diagnostics: near real-time display (<1s update latency)
@@ -404,6 +512,7 @@ See `private/reference-architecture.md` for detailed analysis of existing tool i
 - **Reliability**: Local operation reduces external failure modes; error handling focuses on clear user feedback rather than uptime targets
 
 ### Future Feature Dependencies
+
 - Feature 004 (Project Management & History) builds on this feature's workspace and configuration system
 - Feature 005 (Reset & AI-Assisted Export) extends this feature's export functionality
 - Additional SDK support (Feature 005+) uses the abstraction layer established here

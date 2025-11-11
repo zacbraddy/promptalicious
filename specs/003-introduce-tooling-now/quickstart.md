@@ -11,9 +11,11 @@ This document provides step-by-step instructions for testing the core tool integ
 ## Prerequisites
 
 1. **Promptalicious running locally**:
+
    ```bash
    pnpm dev
    ```
+
    - Backend: http://localhost:3000
    - Frontend: http://localhost:5173
 
@@ -47,60 +49,60 @@ pnpm add ai @ai-sdk/openai zod
 **File**: `~/test-project/src/tools/weather.ts`
 
 ```typescript
-import { tool } from 'ai'
-import { z } from 'zod'
+import { tool } from "ai";
+import { z } from "zod";
 
 export const getWeather = tool({
-  description: 'Get current weather for a location',
+  description: "Get current weather for a location",
   parameters: z.object({
-    location: z.string().describe('City name or zip code'),
-    units: z.enum(['celsius', 'fahrenheit']).optional().default('celsius')
+    location: z.string().describe("City name or zip code"),
+    units: z.enum(["celsius", "fahrenheit"]).optional().default("celsius"),
   }),
   execute: async ({ location, units, weatherService }) => {
     // weatherService is an undefined variable → will be detected as hook parameter
-    const data = await weatherService.getCurrentWeather(location, units)
+    const data = await weatherService.getCurrentWeather(location, units);
     return {
       location,
       temperature: data.temp,
       conditions: data.conditions,
-      humidity: data.humidity
-    }
-  }
-})
+      humidity: data.humidity,
+    };
+  },
+});
 ```
 
 **File**: `~/test-project/src/tools/database.ts`
 
 ```typescript
-import { tool } from 'ai'
-import { z } from 'zod'
-import { capturelicious } from '@promptalicious/debug'
+import { tool } from "ai";
+import { z } from "zod";
+import { capturelicious } from "@promptalicious/debug";
 
 export const getUserProfile = tool({
-  description: 'Fetch user profile from database',
+  description: "Fetch user profile from database",
   parameters: z.object({
-    userId: z.string().describe('User ID to lookup')
+    userId: z.string().describe("User ID to lookup"),
   }),
   execute: async ({ userId, db }) => {
     // db is an undefined variable → will be detected as hook parameter
-    capturelicious('Starting user profile lookup', { userId })
+    capturelicious("Starting user profile lookup", { userId });
 
-    const user = await db.users.findUnique({ where: { id: userId } })
+    const user = await db.users.findUnique({ where: { id: userId } });
 
     if (!user) {
-      capturelicious('User not found', { userId })
-      throw new Error(`User not found: ${userId}`)
+      capturelicious("User not found", { userId });
+      throw new Error(`User not found: ${userId}`);
     }
 
-    capturelicious('User found', { userName: user.name })
+    capturelicious("User found", { userName: user.name });
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      createdAt: user.createdAt
-    }
-  }
-})
+      createdAt: user.createdAt,
+    };
+  },
+});
 ```
 
 ### 3. Create tsconfig.json
@@ -146,6 +148,7 @@ export const getUserProfile = tool({
    - Tools are now accessible via Tools API
 
 **API Call** (behind the scenes):
+
 ```bash
 curl -X PUT http://localhost:3000/api/project \
   -H "Content-Type: application/json" \
@@ -153,6 +156,7 @@ curl -X PUT http://localhost:3000/api/project \
 ```
 
 **Expected Response** (202 Accepted):
+
 ```json
 {
   "configuration": {
@@ -169,11 +173,13 @@ curl -X PUT http://localhost:3000/api/project \
 ```
 
 **Frontend then polls** (every 500ms):
+
 ```bash
 curl http://localhost:3000/api/project/discovery/status
 ```
 
 **Status Response** (while discovering):
+
 ```json
 {
   "isDiscovering": true,
@@ -197,13 +203,18 @@ curl http://localhost:3000/api/project/discovery/status
       "level": "info",
       "phase": "analyzing",
       "message": "Extracted tool 'getWeather' with parameters",
-      "context": { "toolName": "getWeather", "detectedParams": ["weatherService"], "linesExtracted": 12 }
+      "context": {
+        "toolName": "getWeather",
+        "detectedParams": ["weatherService"],
+        "linesExtracted": 12
+      }
     }
   ]
 }
 ```
 
 **Status Response** (complete):
+
 ```json
 {
   "isDiscovering": false,
@@ -239,11 +250,13 @@ curl http://localhost:3000/api/project/discovery/status
    - OK button enabled to close modal
 
 **API Call** (behind the scenes):
+
 ```bash
 curl -X POST http://localhost:3000/api/project/discovery/cancel
 ```
 
 **Expected Response**:
+
 ```json
 {
   "cancelled": true,
@@ -257,6 +270,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 2. Check for `workspace/test-project/` directory (should be gitignored)
 3. Verify user's test project is **untouched** (no promptalicious files)
 4. Verify structure:
+
    ```
    ~/promptalicious/workspace/test-project/
    ├── tsconfig.json
@@ -275,12 +289,14 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
    ```
 
 5. Verify user's project is clean:
+
    ```bash
    cd ~/test-project
    ls -la | grep promptalicious  # Should return nothing!
    ```
 
 6. Open `beforeAll.ts` for `getUserProfile` tool:
+
    ```typescript
    // Auto-generated hook stub for tool: getUserProfile
    // Detected parameters: db
@@ -288,8 +304,8 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
    export default async function beforeAll() {
      return {
-       db: undefined  // TODO: Provide database connection
-     }
+       db: undefined, // TODO: Provide database connection
+     };
    }
    ```
 
@@ -313,11 +329,13 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
      - "View Details" button
 
 **API Call**:
+
 ```bash
 curl http://localhost:3000/api/tools
 ```
 
 **Expected Response**:
+
 ```json
 {
   "tools": [
@@ -361,6 +379,7 @@ curl http://localhost:3000/api/tools
    - `sourceDescription` becomes null (frontend is now source of truth)
 
 **API Call**:
+
 ```bash
 curl -X PATCH http://localhost:3000/api/tools/getUserProfile \
   -H "Content-Type: application/json" \
@@ -368,6 +387,7 @@ curl -X PATCH http://localhost:3000/api/tools/getUserProfile \
 ```
 
 **Expected Response**:
+
 ```json
 {
   "id": "getUserProfile",
@@ -388,6 +408,7 @@ curl -X PATCH http://localhost:3000/api/tools/getUserProfile \
    - Tool will not be included in LLM execution
 
 **API Call**:
+
 ```bash
 curl -X PATCH http://localhost:3000/api/tools/getWeather \
   -H "Content-Type: application/json" \
@@ -402,16 +423,17 @@ curl -X PATCH http://localhost:3000/api/tools/getWeather \
 
 1. Open `~/promptalicious/workspace/test-project/getUserProfile/beforeAll.ts` in your editor
 2. Replace stub with actual implementation:
+
    ```typescript
-   import { PrismaClient } from '@rootalicious/node_modules/@prisma/client'
+   import { PrismaClient } from "@rootalicious/node_modules/@prisma/client";
 
    export default async function beforeAll() {
-     const db = new PrismaClient()
-     await db.$connect()
+     const db = new PrismaClient();
+     await db.$connect();
 
      return {
-       db  // Provides database connection to tool execution
-     }
+       db, // Provides database connection to tool execution
+     };
    }
    ```
 
@@ -424,6 +446,7 @@ curl -X PATCH http://localhost:3000/api/tools/getWeather \
    ```
 
 **Expected**:
+
 - Full TypeScript support in editor
 - Imports work via `@rootalicious` alias (points to user's project)
 - User's project at `~/test-project` remains completely untouched
@@ -462,6 +485,7 @@ curl -X PATCH http://localhost:3000/api/tools/getWeather \
    - Completion displays results + tool diagnostics
 
 **Expected Result Display**:
+
 - **Prompt Response**: "The user profile for abc123 is: [formatted data]"
 - **Execution Diagnostics** (from spec 002):
   - Input tokens: 150
@@ -481,6 +505,7 @@ curl -X PATCH http://localhost:3000/api/tools/getWeather \
     - "User found" { userName: "John Doe" }
 
 **API Call**:
+
 ```bash
 curl -X POST http://localhost:3000/api/execute \
   -H "Content-Type: application/json" \
@@ -494,16 +519,19 @@ curl -X POST http://localhost:3000/api/execute \
 ```
 
 **Poll Status**:
+
 ```bash
 curl http://localhost:3000/api/execute/status
 ```
 
 **Get Result** (includes tool invocations in-memory):
+
 ```bash
 curl http://localhost:3000/api/execute/{executionId}
 ```
 
 **Expected Response** (with toolInvocations array):
+
 ```json
 {
   "id": "exec_123",
@@ -520,7 +548,11 @@ curl http://localhost:3000/api/execute/{executionId}
       "toolName": "getUserProfile",
       "timestamp": "2025-11-10T15:30:00Z",
       "inputParams": { "userId": "abc123" },
-      "output": { "id": "abc123", "name": "John Doe", "email": "john@example.com" },
+      "output": {
+        "id": "abc123",
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
       "executionDurationMs": 450,
       "inputTokens": 50,
       "outputTokens": 100,
@@ -530,8 +562,16 @@ curl http://localhost:3000/api/execute/{executionId}
       "errorStack": null,
       "llmReasoning": null,
       "debugOutput": [
-        { "timestamp": "2025-11-10T15:30:00.100Z", "message": "Starting user profile lookup", "variables": { "userId": "abc123" } },
-        { "timestamp": "2025-11-10T15:30:00.450Z", "message": "User found", "variables": { "userName": "John Doe" } }
+        {
+          "timestamp": "2025-11-10T15:30:00.100Z",
+          "message": "Starting user profile lookup",
+          "variables": { "userId": "abc123" }
+        },
+        {
+          "timestamp": "2025-11-10T15:30:00.450Z",
+          "message": "User found",
+          "variables": { "userName": "John Doe" }
+        }
       ]
     }
   ]
@@ -558,6 +598,7 @@ curl http://localhost:3000/api/execute/{executionId}
    - Download as .md file button
 
 **API Call**:
+
 ```bash
 curl -X POST http://localhost:3000/api/export \
   -H "Content-Type: application/json" \
@@ -565,6 +606,7 @@ curl -X POST http://localhost:3000/api/export \
 ```
 
 **Expected Response**:
+
 ```json
 {
   "markdown": "# Export Instructions\n\nGenerated: 2025-11-10T15:30:00Z\n\n## Changes Summary\n- 2 tools configured\n- 1 tool enabled\n...",
@@ -587,10 +629,11 @@ curl -X POST http://localhost:3000/api/export \
 **Scenario**: beforeAll() hook fails to connect to database
 
 **Steps**:
+
 1. Modify `beforeAll.ts` to throw error:
    ```typescript
    export default async function beforeAll() {
-     throw new Error('Database connection failed')
+     throw new Error("Database connection failed");
    }
    ```
 2. Execute prompt that requires getUserProfile tool
@@ -605,6 +648,7 @@ curl -X POST http://localhost:3000/api/export \
 **Scenario**: Tool throws error during execution
 
 **Steps**:
+
 1. Execute prompt: "Get profile for nonexistent user xyz999"
 2. Tool executes, user not found, throws error
 3. **Expected Result**:
@@ -622,6 +666,7 @@ curl -X POST http://localhost:3000/api/export \
 **Scenario**: User enters non-existent project path
 
 **Steps**:
+
 1. Navigate to Settings → Project Configuration
 2. Enter path: `../nonexistent-project`
 3. Click Save
@@ -659,18 +704,21 @@ curl -X POST http://localhost:3000/api/export \
 After testing:
 
 1. Delete test project workspace (inside promptalicious repo):
+
    ```bash
    cd ~/promptalicious
    rm -rf workspace/test-project
    ```
 
 2. Verify user's test project is still clean (no promptalicious files):
+
    ```bash
    cd ~/test-project
    ls -la  # Should see only user's original files
    ```
 
 3. Reset database (optional):
+
    ```bash
    cd ~/promptalicious
    pnpm --filter @promptalicious/backend db:reset
