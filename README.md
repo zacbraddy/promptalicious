@@ -167,12 +167,12 @@ Read the full guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
 <table>
   <tr>
     <td width="20%" align="center">
-      <img src="https://www.subly.co/logo.svg" alt="Subly" width="100" />
+      <img src="docs/assets/subly.png" alt="Subly" width="100" />
     </td>
     <td width="80%">
       <strong>Subly</strong><br/>
-      AI-powered video subtitling and translation platform helping creators make their content accessible worldwide.<br/>
-      <a href="https://www.subly.co">subly.co</a>
+      AI-powered web video accessibility platform, ensuring that your video content has the widest audience possible<br/>
+      <a href="https://getsubly.com">getsubly.com</a>
     </td>
   </tr>
 </table>
