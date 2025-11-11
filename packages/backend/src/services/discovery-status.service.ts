@@ -14,6 +14,8 @@ interface LogContext {
   reason?: string;
   linesExtracted?: number;
   detectedParams?: string[];
+  filesGenerated?: number;
+  error?: string;
 }
 
 interface DiscoveryLogEntry {
