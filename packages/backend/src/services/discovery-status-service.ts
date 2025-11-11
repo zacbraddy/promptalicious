@@ -69,6 +69,7 @@ class DiscoveryStatusService {
   };
   private logs: DiscoveryLogEntry[] = [];
   private result?: DiscoveryResult;
+  private cancellationRequested: boolean = false;
 
   private constructor() {}
 
@@ -169,6 +170,19 @@ class DiscoveryStatusService {
     this.logs = [];
     this.result = undefined;
   }
+
+  public requestCancellation(): void {
+    this.cancellationRequested = true;
+  }
+
+  public isCancellationRequested(): boolean {
+    return this.cancellationRequested;
+  }
+
+  public acknowledgeCancellation(): void {
+    this.cancellationRequested = false;
+    this.resetState();
+  }
 }
 
 const service = DiscoveryStatusService.getInstance();
@@ -207,4 +221,16 @@ export function markError(error: string): void {
 
 export function resetState(): void {
   return service.resetState();
+}
+
+export function requestCancellation(): void {
+  return service.requestCancellation();
+}
+
+export function isCancellationRequested(): boolean {
+  return service.isCancellationRequested();
+}
+
+export function acknowledgeCancellation(): void {
+  return service.acknowledgeCancellation();
 }

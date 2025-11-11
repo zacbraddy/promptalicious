@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/connection";
 import { projectConfiguration } from "@/db/schema";
 import { logger } from "@/lib/logger";
+import * as discoveryCancelService from "@/services/discovery-cancel-service";
 import * as discoveryStatusService from "@/services/discovery-status-service";
 
 export interface ProjectConfigurationData {
@@ -138,4 +139,10 @@ export function getDiscoveryStatus(): Promise<{
   };
 }> {
   return Promise.resolve(discoveryStatusService.getCurrentStatus());
+}
+
+export async function cancelDiscovery(
+  workspacePath: string,
+): Promise<discoveryCancelService.CancellationResult> {
+  return await discoveryCancelService.cancelDiscovery(workspacePath);
 }
