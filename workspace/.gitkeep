@@ -1,0 +1,4 @@
+# This directory contains per-project workspaces
+# Each project gets a subdirectory with tool implementations and hooks
+#
+# Directory is gitignored but tracked via .gitkeep to ensure it exists

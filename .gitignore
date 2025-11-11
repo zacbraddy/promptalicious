@@ -30,3 +30,7 @@ postgresql/
 
 # Test fixtures (generated during integration tests)
 packages/backend/tests/fixtures/tool-discovery/
+
+# Workspace directory (user-specific tool implementations)
+workspace/*
+!workspace/.gitkeep

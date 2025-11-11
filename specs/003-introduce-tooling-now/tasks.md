@@ -352,7 +352,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 **Surface Point**: After T016, test complete discovery flow via curl and verify workspace created
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
