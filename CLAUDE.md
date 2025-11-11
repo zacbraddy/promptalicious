@@ -96,6 +96,53 @@ import { ConfigurationResponse } from "../../shared-infra/src/types/api";
 - `vitest.config.ts`: Configured with resolve.alias in both root and project levels
 - All environments now support the `@/` alias ✅
 
+### Backend File Naming Convention
+
+**CRITICAL**: All backend package files MUST follow kebab-case naming with type-specific suffixes.
+
+**Pattern**: `<module-name>.<implementation-type>.([test|integration|contract]).ts`
+
+**Suffix Types**:
+- `.service.ts` - Service layer files (e.g., `config.service.ts`, `llm.service.ts`)
+- `.route.ts` - API route handlers (e.g., `execute.route.ts`, `config.route.ts`)
+- `.middleware.ts` - Express/Hono middleware (e.g., `error-handler.middleware.ts`)
+- `.schema.ts` - Database schema definitions (e.g., `pricing.schema.ts`, `llm-config.schema.ts`)
+- `.test.ts` - Unit tests (e.g., `config.service.test.ts`)
+- `.integration.ts` - Integration tests (e.g., `execute-abort.integration.test.ts`)
+- `.contract.ts` - Contract tests (e.g., `config-get.contract.test.ts`)
+- `.e2e.ts` - End-to-end tests (future use)
+
+**Examples**:
+```typescript
+// Services
+src/services/config.service.ts
+src/services/cost-calculation.service.ts
+src/services/discovery-status.service.ts
+
+// Routes
+src/routes/config.route.ts
+src/routes/project-configuration.route.ts
+
+// Middleware
+src/middleware/error-handler.middleware.ts
+
+// Schemas
+src/db/schema/llm-config.schema.ts
+src/db/schema/pricing.schema.ts
+
+// Tests
+tests/unit/config.service.test.ts
+tests/unit/cost-calculation.service.edge-cases.test.ts
+tests/integration/execute-abort.integration.test.ts
+tests/contract/config-get.contract.test.ts
+```
+
+**Why**:
+- Consistent kebab-case improves readability and Unix-friendliness
+- Type suffixes make file purpose immediately clear
+- Test suffixes enable precise test targeting
+- Reduces cognitive load when navigating codebase
+
 ### Package Installation Protocol
 
 **CRITICAL**: When adding new packages, ALWAYS use `pnpm add <package>@latest` instead of manually editing package.json.

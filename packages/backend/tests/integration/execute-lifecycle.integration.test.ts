@@ -9,7 +9,7 @@ import type {
 import app from "@/app";
 import { db } from "@/db/connection";
 import { llmConfig, pricingInfo, exchangeRates } from "@/db/schema";
-import { executionStateCacheService } from "@/services/executionStateCacheService";
+import { executionStateCacheService } from "@/services/execution-state-cache.service";
 
 describe("Backend execution lifecycle (integration)", () => {
   let savedConfig: typeof llmConfig.$inferSelect | null = null;

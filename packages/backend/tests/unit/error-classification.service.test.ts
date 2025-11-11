@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   classifyError,
   createExecutionError,
-} from "@/services/errorClassificationService";
+} from "@/services/error-classification.service";
 
 describe("errorClassificationService", () => {
   describe("classifyError", () => {

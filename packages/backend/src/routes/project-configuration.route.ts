@@ -13,7 +13,7 @@ import {
   updateProjectConfiguration,
   startDiscovery,
   getDiscoveryStatus,
-} from "@/services/projectConfigurationService";
+} from "@/services/project-configuration.service";
 
 const projectConfigurationRouter = new Hono();
 

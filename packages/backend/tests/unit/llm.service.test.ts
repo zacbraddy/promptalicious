@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generateText } from "ai";
 
-import { executePrompt, LLMExecutionError } from "@/services/llmService";
+import { executePrompt, LLMExecutionError } from "@/services/llm.service";
 
 vi.mock("ai", () => ({
   generateText: vi.fn(),

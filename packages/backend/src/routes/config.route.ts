@@ -18,7 +18,7 @@ import {
   updateConfig,
   testConnection,
   getApiKey,
-} from "../services/configService";
+} from "../services/config.service";
 
 const configRouter = new Hono();
 

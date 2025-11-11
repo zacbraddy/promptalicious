@@ -4,7 +4,7 @@ import type {
   ExecutionError,
 } from "@promptalicious/shared-infra";
 
-import { executionStateCacheService } from "@/services/executionStateCacheService";
+import { executionStateCacheService } from "@/services/execution-state-cache.service";
 
 describe("executionStateCacheService", () => {
   beforeEach(() => {

@@ -5,11 +5,11 @@ import type {
 } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as configService from "@/services/configService";
-import * as llmService from "@/services/llmService";
+import * as configService from "@/services/config.service";
+import * as llmService from "@/services/llm.service";
 
-vi.mock("@/services/llmService");
-vi.mock("@/services/configService");
+vi.mock("@/services/llm.service");
+vi.mock("@/services/config.service");
 
 describe("POST /execute endpoint contract (Error Responses)", () => {
   beforeEach(() => {

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { PricingInfoResponse } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as pricingService from "@/services/pricingService";
-import * as exchangeRateService from "@/services/exchangeRateService";
+import * as pricingService from "@/services/pricing.service";
+import * as exchangeRateService from "@/services/exchange-rate.service";
 
-vi.mock("@/services/pricingService");
-vi.mock("@/services/exchangeRateService");
+vi.mock("@/services/pricing.service");
+vi.mock("@/services/exchange-rate.service");
 
 describe("GET /pricing - Contract Test", () => {
   beforeEach(() => {

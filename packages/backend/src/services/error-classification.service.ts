@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 
 import type { ErrorType, ExecutionError } from "@promptalicious/shared-infra";
 
-import { LLMExecutionError } from "./llmService";
+import { LLMExecutionError } from "./llm.service";
 
 export interface ClassifiedError {
   errorType: ErrorType;

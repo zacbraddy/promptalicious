@@ -10,7 +10,7 @@ import type {
 import app from "@/app";
 import { db } from "@/db/connection";
 import { llmConfig, pricingInfo, exchangeRates } from "@/db/schema";
-import { executionStateCacheService } from "@/services/executionStateCacheService";
+import { executionStateCacheService } from "@/services/execution-state-cache.service";
 
 describe("POST /execute/abort - Integration Tests", () => {
   beforeAll(async () => {

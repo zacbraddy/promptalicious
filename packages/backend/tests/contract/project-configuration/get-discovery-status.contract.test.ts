@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { DiscoveryStatus } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as projectConfigService from "@/services/projectConfigurationService";
+import * as projectConfigService from "@/services/project-configuration.service";
 
-vi.mock("@/services/projectConfigurationService", () => ({
+vi.mock("@/services/project-configuration.service", () => ({
   getProjectConfiguration: vi.fn(),
   updateProjectConfiguration: vi.fn(),
   startDiscovery: vi.fn(),

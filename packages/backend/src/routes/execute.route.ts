@@ -12,13 +12,13 @@ import type {
   ExecutionError,
 } from "@promptalicious/shared-infra";
 
-import { getConfig, getApiKey } from "@/services/configService";
-import { executePrompt, LLMExecutionError } from "@/services/llmService";
-import { calculateCost } from "@/services/costCalculationService";
-import { createExecutionError } from "@/services/errorClassificationService";
-import { getPricingData } from "@/services/pricingService";
-import { getExchangeRate } from "@/services/exchangeRateService";
-import { executionStateCacheService } from "@/services/executionStateCacheService";
+import { getConfig, getApiKey } from "@/services/config.service";
+import { executePrompt, LLMExecutionError } from "@/services/llm.service";
+import { calculateCost } from "@/services/cost-calculation.service";
+import { createExecutionError } from "@/services/error-classification.service";
+import { getPricingData } from "@/services/pricing.service";
+import { getExchangeRate } from "@/services/exchange-rate.service";
+import { executionStateCacheService } from "@/services/execution-state-cache.service";
 import { logger } from "@/lib/logger";
 
 const router = new Hono();

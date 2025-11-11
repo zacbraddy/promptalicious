@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import type { PricingInfoResponse } from "@promptalicious/shared-infra";
 
-import { getPricingData } from "@/services/pricingService";
-import { getExchangeRate } from "@/services/exchangeRateService";
+import { getPricingData } from "@/services/pricing.service";
+import { getExchangeRate } from "@/services/exchange-rate.service";
 import { logger } from "@/lib/logger";
 
 const pricingRouter = new Hono();

@@ -6,18 +6,18 @@ import type {
 } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as configService from "@/services/configService";
-import * as costCalculationService from "@/services/costCalculationService";
-import * as exchangeRateService from "@/services/exchangeRateService";
-import * as llmService from "@/services/llmService";
-import * as pricingService from "@/services/pricingService";
-import { executionStateCacheService } from "@/services/executionStateCacheService";
+import * as configService from "@/services/config.service";
+import * as costCalculationService from "@/services/cost-calculation.service";
+import * as exchangeRateService from "@/services/exchange-rate.service";
+import * as llmService from "@/services/llm.service";
+import * as pricingService from "@/services/pricing.service";
+import { executionStateCacheService } from "@/services/execution-state-cache.service";
 
-vi.mock("@/services/llmService");
-vi.mock("@/services/costCalculationService");
-vi.mock("@/services/configService");
-vi.mock("@/services/pricingService");
-vi.mock("@/services/exchangeRateService");
+vi.mock("@/services/llm.service");
+vi.mock("@/services/cost-calculation.service");
+vi.mock("@/services/config.service");
+vi.mock("@/services/pricing.service");
+vi.mock("@/services/exchange-rate.service");
 
 describe("POST /execute endpoint contract (Success Response)", () => {
   const validRequest: ExecutePromptRequest = {

@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/connection";
 import { projectConfiguration } from "@/db/schema";
 import { logger } from "@/lib/logger";
-import * as discoveryCancelService from "@/services/discovery-cancel-service";
-import * as discoveryStatusService from "@/services/discovery-status-service";
+import * as discoveryCancelService from "@/services/discovery-cancel.service";
+import * as discoveryStatusService from "@/services/discovery-status.service";
 
 export interface ProjectConfigurationData {
   name: string;

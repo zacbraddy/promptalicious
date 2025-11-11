@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import * as configService from "../../src/services/configService.js";
-import { db } from "../../src/db/connection.js";
+import * as configService from "@/services/config.service";
+import { db } from "@/db/connection";
 
-vi.mock("../../src/db/connection.js", () => ({
+vi.mock("@/db/connection", () => ({
   db: {
     select: vi.fn(),
     update: vi.fn(),

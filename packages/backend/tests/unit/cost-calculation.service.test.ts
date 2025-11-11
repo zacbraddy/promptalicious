@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { calculateCost } from "@/services/costCalculationService";
+import { calculateCost } from "@/services/cost-calculation.service";
 
 describe("costCalculationService", () => {
   describe("calculateCost", () => {

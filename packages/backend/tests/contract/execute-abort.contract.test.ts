@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AbortExecutionResponse } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as executionStateCacheService from "@/services/executionStateCacheService";
+import * as executionStateCacheService from "@/services/execution-state-cache.service";
 
-vi.mock("@/services/executionStateCacheService", () => ({
+vi.mock("@/services/execution-state-cache.service", () => ({
   executionStateCacheService: {
     abortCurrentExecution: vi.fn(),
   },

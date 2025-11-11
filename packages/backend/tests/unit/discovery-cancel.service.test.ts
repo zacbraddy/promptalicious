@@ -2,13 +2,13 @@ import * as fs from "fs/promises";
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { cancelDiscovery } from "@/services/discovery-cancel-service";
-import * as discoveryStatusService from "@/services/discovery-status-service";
+import { cancelDiscovery } from "@/services/discovery-cancel.service";
+import * as discoveryStatusService from "@/services/discovery-status.service";
 import { db } from "@/db/connection";
 import { tools } from "@/db/schema";
 
 vi.mock("fs/promises");
-vi.mock("@/services/discovery-status-service", () => ({
+vi.mock("@/services/discovery-status.service", () => ({
   requestCancellation: vi.fn(),
   getCurrentStatus: vi.fn(),
   acknowledgeCancellation: vi.fn(),

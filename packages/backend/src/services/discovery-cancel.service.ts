@@ -4,7 +4,7 @@ import {
   acknowledgeCancellation,
   getCurrentStatus,
   requestCancellation,
-} from "@/services/discovery-status-service";
+} from "@/services/discovery-status.service";
 import { db } from "@/db/connection";
 import { tools } from "@/db/schema";
 

@@ -9,13 +9,13 @@ import {
   getPricingData,
   fetchPricingData,
   cachePricingData,
-} from "@/services/pricingService";
+} from "@/services/pricing.service";
 import {
   initializeExchangeRateCache,
   getExchangeRate,
   fetchExchangeRate,
   cacheExchangeRate,
-} from "@/services/exchangeRateService";
+} from "@/services/exchange-rate.service";
 
 describe("Pricing cache initialization on backend startup (integration)", () => {
   beforeAll(async () => {

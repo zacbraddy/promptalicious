@@ -113,9 +113,9 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T007: Implement Project Configuration API routes and service
 
 **Files**:
-- `packages/backend/src/routes/project-configuration.ts`
-- `packages/backend/src/services/projectConfigurationService.ts`
-- `packages/backend/tests/unit/projectConfigurationService.test.ts`
+- `packages/backend/src/routes/project-configuration.route.ts`
+- `packages/backend/src/services/project-configuration.service.ts`
+- `packages/backend/tests/unit/project-configuration.service.test.ts`
 
 **Description**:
 1. Write unit tests for projectConfigurationService (RED phase - 11 tests covering get/update/startDiscovery)
@@ -137,8 +137,8 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T008: Implement Discovery Status Service (track progress, incremental logs)
 
 **Files**:
-- `packages/backend/src/services/discovery-status-service.ts`
-- `packages/backend/tests/unit/discovery-status-service.test.ts`
+- `packages/backend/src/services/discovery-status.service.ts`
+- `packages/backend/tests/unit/discovery-status.service.test.ts`
 
 **Description**:
 1. Write unit tests for discovery-status-service (RED phase):
@@ -166,7 +166,7 @@ This ensures complete service implementation, not just stubs with mocked tests.
 
 ### T009: Implement Discovery Status API route (GET /api/project/discovery/status)
 
-**File**: `packages/backend/src/routes/project-configuration.ts`
+**File**: `packages/backend/src/routes/project-configuration.route.ts`
 **Description**: Implement GET /api/project/discovery/status endpoint that calls Discovery Status Service.getCurrentStatus(). Returns isDiscovering, phase, progress, logs (incremental), and result (when complete). No additional unit tests needed (service already tested in T008, contract test exists in T004). MUST make T004 pass - GREEN phase.
 **Dependencies**: T004, T008
 **Expected Outcome**: T004 passes - GREEN phase ✅
@@ -178,8 +178,8 @@ This ensures complete service implementation, not just stubs with mocked tests.
 ### T010: Implement Discovery Cancel Service (abort + cleanup)
 
 **Files**:
-- `packages/backend/src/services/discovery-cancel-service.ts`
-- `packages/backend/tests/unit/discovery-cancel-service.test.ts`
+- `packages/backend/src/services/discovery-cancel.service.ts`
+- `packages/backend/tests/unit/discovery-cancel.service.test.ts`
 
 **Description**:
 1. Write unit tests for discovery-cancel-service (RED phase):
@@ -205,7 +205,7 @@ This ensures complete service implementation, not just stubs with mocked tests.
 
 ### T011: Implement Discovery Cancel API route (POST /api/project/discovery/cancel)
 
-**File**: `packages/backend/src/routes/project-configuration.ts`
+**File**: `packages/backend/src/routes/project-configuration.route.ts`
 **Description**: Implement POST /api/project/discovery/cancel endpoint that calls Discovery Cancel Service.cancelDiscovery(). Returns 200 with cancelled: true and cleanup message, or 404 if no discovery in progress. No additional unit tests needed (service already tested in T010, contract test exists in T005). MUST make T005 pass - GREEN phase.
 **Dependencies**: T005, T010
 **Expected Outcome**: T005 passes - GREEN phase ✅
@@ -244,8 +244,8 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 ### T013: Implement Tool Discovery Service (ts-morph integration, progress events)
 
 **Files**:
-- `packages/backend/src/services/tool-discovery-service.ts`
-- `packages/backend/tests/unit/tool-discovery-service.test.ts`
+- `packages/backend/src/services/tool-discovery.service.ts`
+- `packages/backend/tests/unit/tool-discovery.service.test.ts`
 
 **Description**:
 1. Write unit tests for tool-discovery-service (RED phase):
@@ -279,8 +279,8 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 ### T014: Implement Workspace Generator Service (directory structure, hook stubs, tsconfig.json)
 
 **Files**:
-- `packages/backend/src/services/workspace-generator-service.ts`
-- `packages/backend/tests/unit/workspace-generator-service.test.ts`
+- `packages/backend/src/services/workspace-generator.service.ts`
+- `packages/backend/tests/unit/workspace-generator.service.test.ts`
 
 **Description**:
 1. Write unit tests for workspace-generator-service (RED phase):
@@ -311,7 +311,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T015: Integrate Tool Discovery into PUT /api/project (async flow)
 
-**File**: `packages/backend/src/routes/project-configuration.ts`
+**File**: `packages/backend/src/routes/project-configuration.route.ts`
 **Description**: Update PUT /api/project to: 1) Validate targetProjectPath exists and is directory, 2) Derive workspace path and project name (defaults to folder name), 3) Save configuration to database, 4) Start async discovery (Tool Discovery Service → Workspace Generator Service) in background, 5) Return 202 Accepted immediately. Discovery runs async, updates Discovery Status Service with progress/logs.
 **Dependencies**: T014
 **Expected Outcome**: PUT /api/project triggers async tool discovery, returns 202
@@ -337,7 +337,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T017 [P]: Contract test GET /api/tools (list all tools)
 
-**File**: `packages/backend/tests/contract/tools.test.ts`
+**File**: `packages/backend/tests/contract/tools.contract.test.ts`
 **Description**: Write failing contract test for GET /api/tools endpoint. Expects 200 with tools array (each tool has id, name, description, sourceDescription, enabled, timestamps) or 404 when no project configured. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T016
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -348,7 +348,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T018 [P]: Contract test GET /api/tools/:id (tool detail)
 
-**File**: `packages/backend/tests/contract/tools.test.ts`
+**File**: `packages/backend/tests/contract/tools.contract.test.ts`
 **Description**: Write failing contract test for GET /api/tools/:id endpoint. Expects 200 with ToolDetail (includes parametersSchema, sourceFilePath, workspaceDir, detectedHookParams) or 404 when tool not found. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T016
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -359,7 +359,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T019 [P]: Contract test PATCH /api/tools/:id (update description/enabled)
 
-**File**: `packages/backend/tests/contract/tools.test.ts`
+**File**: `packages/backend/tests/contract/tools.contract.test.ts`
 **Description**: Write failing contract test for PATCH /api/tools/:id endpoint. Expects 200 with updated tool. When description is updated, sourceDescription becomes null (frontend is now source of truth). Test enabling/disabling tools. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T016
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -370,7 +370,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 
 ### T020: Implement Tools API routes (list, detail, update)
 
-**File**: `packages/backend/src/routes/tools.ts`
+**File**: `packages/backend/src/routes/tools.route.ts`
 **Description**: Implement GET /api/tools (list all), GET /api/tools/:id (detail), and PATCH /api/tools/:id (update). List returns all discovered tools. Detail returns full tool information including parametersSchema and detectedHookParams. Update allows changing description (nulls sourceDescription on first edit) and enabled flag. MUST make T017-T019 pass - GREEN phase.
 **Dependencies**: T017, T018, T019
 **Expected Outcome**: T017-T019 pass - GREEN phase ✅
@@ -436,7 +436,7 @@ console.log(getCaptures()); // Should show captured message
 
 ### T024: Contract test extended POST /api/execute (with advancedOptions)
 
-**File**: `packages/backend/tests/contract/execution.test.ts`
+**File**: `packages/backend/tests/contract/execution.contract.test.ts`
 **Description**: Extend existing POST /api/execute contract test to include advancedOptions object (toolChoice, maxToolRoundtrips, temperature, topP, maxTokens, maxRetries). Verify these options are accepted and applied. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T023
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -473,7 +473,7 @@ console.log(getCaptures()); // Should show captured message
 
 ### T027: Implement Hook Execution Service
 
-**File**: `packages/backend/src/services/hook-execution-service.ts`
+**File**: `packages/backend/src/services/hook-execution.service.ts`
 **Description**: Create service to dynamically load and execute hook files from workspace. Implement lifecycle: beforeAll() → beforeEach() → tool.execute() → afterEach() → afterAll(). Merge context from beforeAll and beforeEach into tool parameters. Handle hook failures with clear error messages (abort execution). Reference research.md Decision 4 for lifecycle pattern.
 **Dependencies**: T026
 **Expected Outcome**: Service executes hooks in correct lifecycle order, merges context
@@ -484,7 +484,7 @@ console.log(getCaptures()); // Should show captured message
 
 ### T028: Extend Execution Service to integrate tools (in-memory diagnostics)
 
-**File**: `packages/backend/src/services/execution-service.ts`
+**File**: `packages/backend/src/services/execution.service.ts`
 **Description**: Extend existing execution service to: 1) Load enabled tools from database, 2) Run beforeAll hooks and capture global context, 3) Transform tools to AI SDK format, wrapping execute function to run beforeEach/afterEach hooks and capture diagnostics, 4) Call SDK adapter executeWithTools() with advancedOptions, 5) Collect tool invocations in-memory (NOT database), 6) Return tool invocations array in ExecutionResult response (extend shared-infra type with toolInvocations field). MUST make T024 pass - GREEN phase.
 **Dependencies**: T024, T027
 **Expected Outcome**: T024 passes - GREEN phase ✅, tool execution works end-to-end, diagnostics returned in-memory
@@ -503,7 +503,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 
 ### T029: Contract test POST /api/export (generate instructions)
 
-**File**: `packages/backend/tests/contract/export.test.ts`
+**File**: `packages/backend/tests/contract/export.contract.test.ts`
 **Description**: Write failing contract test for POST /api/export endpoint. Expects 200 with markdown string (export instructions), generatedAt timestamp, toolsIncluded count, advancedOptions object. Test includeDisabledTools parameter. Test 404 when no tools configured. Test MUST FAIL (no implementation yet) - RED phase.
 **Dependencies**: T028
 **Expected Outcome**: Test FAILS - RED phase ✅
@@ -514,7 +514,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 
 ### T030: Implement Export Service (template-based markdown generation)
 
-**File**: `packages/backend/src/services/export-service.ts`
+**File**: `packages/backend/src/services/export.service.ts`
 **Description**: Create service to generate markdown export instructions using template-based approach (NO LLM). Template includes: 1) Changes summary (tool count, enabled tools, AI SDK options), 2) For each tool: updated execute function from workspace, updated description, original source file path, 3) AI SDK call configuration with advancedOptions, 4) Refactoring checklist. Reference research.md Decision 7 for template structure and quickstart.md Step 9 for example output.
 **Dependencies**: T029
 **Expected Outcome**: Service generates deterministic markdown instructions
@@ -525,7 +525,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 
 ### T031: Implement Export API route
 
-**File**: `packages/backend/src/routes/export.ts`
+**File**: `packages/backend/src/routes/export.route.ts`
 **Description**: Implement POST /api/export endpoint that calls Export Service. Accepts includeDisabledTools boolean parameter. Returns markdown string with generated instructions, timestamp, and metadata. MUST make T029 pass - GREEN phase.
 **Dependencies**: T029, T030
 **Expected Outcome**: T029 passes - GREEN phase ✅
@@ -780,7 +780,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ### T052 [P]: Integration test for project configuration and tool discovery
 
-**File**: `packages/backend/tests/integration/project-discovery.test.ts`
+**File**: `packages/backend/tests/integration/project-discovery.integration.test.ts`
 **Description**: Write integration test for full discovery flow: 1) PUT /api/project with real test project path, 2) Poll GET /api/project/discovery/status until complete, 3) Verify workspace directory created with correct structure, 4) Verify tools saved to database, 5) Verify GET /api/tools returns discovered tools, 6) Clean up test workspace after test. Use real filesystem and database (not mocked).
 **Dependencies**: T051
 **Expected Outcome**: Integration test validates end-to-end discovery flow
@@ -791,7 +791,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ### T053 [P]: Integration test for hook execution lifecycle
 
-**File**: `packages/backend/tests/integration/hook-execution.test.ts`
+**File**: `packages/backend/tests/integration/hook-execution.integration.test.ts`
 **Description**: Write integration test for hook lifecycle: 1) Create test workspace with hook files, 2) Implement beforeAll/beforeEach/afterEach/afterAll hooks that modify shared state, 3) Execute tool and verify hooks ran in correct order (beforeAll once → beforeEach per invocation → tool execute → afterEach per invocation → afterAll once), 4) Verify context merging (beforeAll + beforeEach context available in tool execute). Use real filesystem, no mocks.
 **Dependencies**: T051
 **Expected Outcome**: Integration test validates hook lifecycle and context merging
@@ -802,7 +802,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ### T054 [P]: Integration test for tool execution with diagnostics capture
 
-**File**: `packages/backend/tests/integration/tool-execution.test.ts`
+**File**: `packages/backend/tests/integration/tool-execution.integration.test.ts`
 **Description**: Write integration test for tool execution: 1) Create test tool with capturelicious() debug calls, 2) Execute prompt that triggers tool, 3) Verify tool invocations returned in ExecutionResult.toolInvocations array (in-memory, not database), 4) Verify diagnostics include correct data (inputParams, output, timing, tokens), 5) Verify debug output captured from capturelicious(). Use real Vercel AI SDK with fixture responses.
 **Dependencies**: T051
 **Expected Outcome**: Integration test validates tool execution and in-memory diagnostics capture
@@ -813,7 +813,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ### T055: Integration test for discovery cancellation and cleanup
 
-**File**: `packages/backend/tests/integration/discovery-cancellation.test.ts`
+**File**: `packages/backend/tests/integration/discovery-cancellation.integration.test.ts`
 **Description**: Write integration test for discovery cancellation: 1) PUT /api/project to start discovery, 2) Immediately POST /api/project/discovery/cancel, 3) Verify discovery stops (phase changes to 'cancelled' or 'idle'), 4) Verify partial workspace files removed, 5) Verify no tools saved to database, 6) Verify no project configuration saved. Use real filesystem and database.
 **Dependencies**: T052, T053, T054
 **Expected Outcome**: Integration test validates cancellation and cleanup

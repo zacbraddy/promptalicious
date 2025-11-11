@@ -3,11 +3,11 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import type { Context } from "hono";
 
-import { errorHandler } from "./middleware/errorHandler";
-import configRouter from "./routes/config";
-import pricingRouter from "./routes/pricing";
-import executeRouter from "./routes/execute";
-import projectConfigurationRouter from "./routes/project-configuration";
+import { errorHandler } from "./middleware/error-handler.middleware";
+import configRouter from "./routes/config.route";
+import pricingRouter from "./routes/pricing.route";
+import executeRouter from "./routes/execute.route";
+import projectConfigurationRouter from "./routes/project-configuration.route";
 
 const app = new Hono();
 

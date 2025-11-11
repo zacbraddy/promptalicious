@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import * as projectConfigService from "@/services/projectConfigurationService";
+import * as projectConfigService from "@/services/project-configuration.service";
 import { db } from "@/db/connection";
 
 vi.mock("@/db/connection", () => ({

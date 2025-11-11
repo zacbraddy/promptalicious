@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import * as pricingService from "@/services/pricingService";
+import * as pricingService from "@/services/pricing.service";
 import { db } from "@/db/connection";
 
 vi.mock("@/db/connection", () => ({

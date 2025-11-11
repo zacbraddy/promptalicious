@@ -3,8 +3,8 @@ import { serve } from "@hono/node-server";
 import app from "./app";
 import { config } from "./config";
 import { logger } from "./lib/logger";
-import { initializePricingCache } from "./services/pricingService";
-import { initializeExchangeRateCache } from "./services/exchangeRateService";
+import { initializePricingCache } from "./services/pricing.service";
+import { initializeExchangeRateCache } from "./services/exchange-rate.service";
 
 async function startServer() {
   logger.info(`Starting server on port ${config.server.port}...`);

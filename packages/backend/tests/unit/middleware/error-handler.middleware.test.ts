@@ -6,7 +6,7 @@ import {
   errorHandler,
   AppError,
   type ErrorResponse,
-} from "../../../src/middleware/errorHandler.js";
+} from "@/middleware/error-handler.middleware";
 
 describe("errorHandler middleware", () => {
   let app: Hono;

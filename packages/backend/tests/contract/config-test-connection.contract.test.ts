@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TestConnectionResponse } from "@promptalicious/shared-infra";
 
 import app from "@/app";
-import * as configService from "@/services/configService";
+import * as configService from "@/services/config.service";
 
-vi.mock("@/services/configService", () => ({
+vi.mock("@/services/config.service", () => ({
   getConfig: vi.fn(),
   updateConfig: vi.fn(),
   testConnection: vi.fn(),

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import axios from "axios";
 
-import * as exchangeRateService from "../../src/services/exchangeRateService.js";
-import { db } from "../../src/db/connection.js";
+import * as pricingService from "@/services/pricing.service";
+import { db } from "@/db/connection";
 
 vi.mock("axios");
 
-vi.mock("../../src/db/connection.js", () => ({
+vi.mock("@/db/connection", () => ({
   db: {
     select: vi.fn(),
     update: vi.fn(),
@@ -22,20 +22,21 @@ vi.mock("../../src/lib/logger.js", () => ({
   },
 }));
 
-describe("exchangeRateService", () => {
+describe("pricingService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("fetchExchangeRate", () => {
-    it("should successfully fetch USD→GBP exchange rate from Frankfurter API", async () => {
+  describe("fetchPricingData", () => {
+    it("should successfully fetch pricing data from llmpricing.ai", async () => {
       const mockApiResponse = {
-        amount: 1.0,
-        base: "USD",
-        date: "2025-11-04",
-        rates: {
-          GBP: 0.79,
-        },
+        provider: "OpenAI",
+        model: "gpt-4o-mini",
+        input_tokens: 1000,
+        output_tokens: 1000,
+        input_cost: 0.00015,
+        output_cost: 0.0006,
+        total_cost: 0.00075,
       };
 
       vi.mocked(axios.get).mockResolvedValue({
@@ -46,69 +47,57 @@ describe("exchangeRateService", () => {
         config: {} as never,
       });
 
-      const result = await exchangeRateService.fetchExchangeRate();
+      const result = await pricingService.fetchPricingData();
 
-      expect(result).toBe(0.79);
+      expect(result).toEqual({
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
+      });
       expect(axios.get).toHaveBeenCalledWith(
-        "https://api.frankfurter.dev/v1/latest?base=USD&symbols=GBP",
+        "https://llmpricing.ai/api/prices",
         expect.objectContaining({
+          params: {
+            provider: "OpenAI",
+            model: "gpt-4o-mini",
+            input_tokens: 1000,
+            output_tokens: 1000,
+          },
           timeout: 10000,
         }),
       );
     });
 
-    it("should throw error when API call fails", async () => {
+    it("should fall back to hardcoded values when API request fails", async () => {
       vi.mocked(axios.get).mockRejectedValue(new Error("Network error"));
 
-      await expect(exchangeRateService.fetchExchangeRate()).rejects.toThrow(
-        "Network error",
-      );
+      const result = await pricingService.fetchPricingData();
+
+      expect(result).toEqual({
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
+      });
     });
 
-    it("should throw error when API returns invalid rate", async () => {
-      const mockApiResponse = {
-        amount: 1.0,
-        base: "USD",
-        date: "2025-11-04",
-        rates: {
-          GBP: -0.5, // Invalid negative rate
-        },
+    it("should fall back to hardcoded values when API returns invalid data", async () => {
+      const mockInvalidResponse = {
+        provider: "OpenAI",
+        model: "gpt-4o-mini",
       };
 
       vi.mocked(axios.get).mockResolvedValue({
-        data: mockApiResponse,
+        data: mockInvalidResponse,
         status: 200,
         statusText: "OK",
         headers: {},
         config: {} as never,
       });
 
-      await expect(exchangeRateService.fetchExchangeRate()).rejects.toThrow(
-        "Invalid exchange rate returned from API",
-      );
-    });
+      const result = await pricingService.fetchPricingData();
 
-    it("should throw error when API returns zero rate", async () => {
-      const mockApiResponse = {
-        amount: 1.0,
-        base: "USD",
-        date: "2025-11-04",
-        rates: {
-          GBP: 0, // Invalid zero rate
-        },
-      };
-
-      vi.mocked(axios.get).mockResolvedValue({
-        data: mockApiResponse,
-        status: 200,
-        statusText: "OK",
-        headers: {},
-        config: {} as never,
+      expect(result).toEqual({
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
       });
-
-      await expect(exchangeRateService.fetchExchangeRate()).rejects.toThrow(
-        "Invalid exchange rate returned from API",
-      );
     });
 
     it("should handle timeout errors", async () => {
@@ -116,14 +105,17 @@ describe("exchangeRateService", () => {
         new Error("timeout of 10000ms exceeded"),
       );
 
-      await expect(exchangeRateService.fetchExchangeRate()).rejects.toThrow(
-        "timeout of 10000ms exceeded",
-      );
+      const result = await pricingService.fetchPricingData();
+
+      expect(result).toEqual({
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
+      });
     });
   });
 
-  describe("cacheExchangeRate", () => {
-    it("should insert new exchange rate when no existing data", async () => {
+  describe("cachePricingData", () => {
+    it("should insert new pricing data when no existing data", async () => {
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
@@ -137,32 +129,34 @@ describe("exchangeRateService", () => {
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
       vi.mocked(db.insert).mockReturnValue(mockInsertChain as never);
 
-      await exchangeRateService.cacheExchangeRate(0.79);
+      await pricingService.cachePricingData(0.00000015, 0.0000006);
 
       expect(db.select).toHaveBeenCalled();
       expect(db.insert).toHaveBeenCalled();
       expect(mockInsertChain.values).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromCurrency: "USD",
-          toCurrency: "GBP",
-          rate: "0.790000",
+          model: "gpt-4o-mini",
+          provider: "openai",
+          inputTokenPriceUsd: "0.0000001500",
+          outputTokenPriceUsd: "0.0000006000",
         }),
       );
     });
 
-    it("should update existing exchange rate when data exists", async () => {
-      const mockExistingRate = {
+    it("should update existing pricing data when data exists", async () => {
+      const mockExistingPricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.75",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.0000001",
+        outputTokenPriceUsd: "0.0000005",
         lastUpdated: new Date(),
       };
 
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockExistingRate]),
+        limit: vi.fn().mockResolvedValue([mockExistingPricing]),
       };
 
       const mockUpdateChain = {
@@ -173,13 +167,14 @@ describe("exchangeRateService", () => {
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
       vi.mocked(db.update).mockReturnValue(mockUpdateChain as never);
 
-      await exchangeRateService.cacheExchangeRate(0.79);
+      await pricingService.cachePricingData(0.00000015, 0.0000006);
 
       expect(db.select).toHaveBeenCalled();
       expect(db.update).toHaveBeenCalled();
       expect(mockUpdateChain.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          rate: "0.790000",
+          inputTokenPriceUsd: "0.0000001500",
+          outputTokenPriceUsd: "0.0000006000",
         }),
       );
     });
@@ -193,60 +188,63 @@ describe("exchangeRateService", () => {
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      await expect(exchangeRateService.cacheExchangeRate(0.79)).rejects.toThrow(
-        "Failed to cache exchange rate",
-      );
+      await expect(
+        pricingService.cachePricingData(0.00000015, 0.0000006),
+      ).rejects.toThrow("Failed to cache pricing data");
     });
   });
 
-  describe("getExchangeRate", () => {
-    it("should return exchange rate data with staleness information", async () => {
-      const mockRate = {
+  describe("getPricingData", () => {
+    it("should return pricing data with staleness information", async () => {
+      const mockPricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.79",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
         lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       };
 
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockRate]),
+        limit: vi.fn().mockResolvedValue([mockPricing]),
       };
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      const result = await exchangeRateService.getExchangeRate();
+      const result = await pricingService.getPricingData();
 
       expect(result).toMatchObject({
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: 0.79,
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: 0.00000015,
+        outputTokenPriceUsd: 0.0000006,
         isStale: false,
         daysSinceUpdate: 3,
       });
     });
 
-    it("should mark exchange rate as stale when older than 7 days", async () => {
-      const mockRate = {
+    it("should mark pricing as stale when older than 7 days", async () => {
+      const mockPricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.79",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
         lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
       };
 
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockRate]),
+        limit: vi.fn().mockResolvedValue([mockPricing]),
       };
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      const result = await exchangeRateService.getExchangeRate();
+      const result = await pricingService.getPricingData();
 
       expect(result).toMatchObject({
         isStale: true,
@@ -254,7 +252,7 @@ describe("exchangeRateService", () => {
       });
     });
 
-    it("should return null when no exchange rate data exists", async () => {
+    it("should return null when no pricing data exists", async () => {
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
@@ -263,7 +261,7 @@ describe("exchangeRateService", () => {
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      const result = await exchangeRateService.getExchangeRate();
+      const result = await pricingService.getPricingData();
 
       expect(result).toBeNull();
     });
@@ -277,19 +275,20 @@ describe("exchangeRateService", () => {
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      await expect(exchangeRateService.getExchangeRate()).rejects.toThrow(
-        "Failed to retrieve exchange rate",
+      await expect(pricingService.getPricingData()).rejects.toThrow(
+        "Failed to retrieve pricing data",
       );
     });
   });
 
-  describe("initializeExchangeRateCache", () => {
+  describe("initializePricingCache", () => {
     it("should skip initialization when fresh cache exists", async () => {
-      const mockFreshRate = {
+      const mockFreshPricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.79",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
         lastUpdated: new Date(),
         isStale: false,
         daysSinceUpdate: 0,
@@ -298,17 +297,17 @@ describe("exchangeRateService", () => {
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockFreshRate]),
+        limit: vi.fn().mockResolvedValue([mockFreshPricing]),
       };
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
 
-      await exchangeRateService.initializeExchangeRateCache();
+      await pricingService.initializePricingCache();
 
       expect(axios.get).not.toHaveBeenCalled();
     });
 
-    it("should fetch and cache exchange rate when no cache exists", async () => {
+    it("should fetch and cache pricing when no cache exists", async () => {
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
@@ -319,37 +318,41 @@ describe("exchangeRateService", () => {
         values: vi.fn().mockResolvedValue(undefined),
       };
 
-      const mockApiResponse = {
-        amount: 1.0,
-        base: "USD",
-        date: "2025-11-04",
-        rates: {
-          GBP: 0.79,
-        },
-      };
+      const mockHtml = `
+        <html>
+          <body>
+            <div>
+              <h3>GPT-4o mini</h3>
+              <p>$0.150 / 1M input tokens</p>
+              <p>$0.600 / 1M output tokens</p>
+            </div>
+          </body>
+        </html>
+      `;
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
       vi.mocked(db.insert).mockReturnValue(mockInsertChain as never);
       vi.mocked(axios.get).mockResolvedValue({
-        data: mockApiResponse,
+        data: mockHtml,
         status: 200,
         statusText: "OK",
         headers: {},
         config: {} as never,
       });
 
-      await exchangeRateService.initializeExchangeRateCache();
+      await pricingService.initializePricingCache();
 
       expect(axios.get).toHaveBeenCalled();
       expect(db.insert).toHaveBeenCalled();
     });
 
-    it("should fetch and cache exchange rate when cache is stale", async () => {
-      const mockStaleRate = {
+    it("should fetch and cache pricing when cache is stale", async () => {
+      const mockStalePricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.75",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
         lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         isStale: true,
         daysSinceUpdate: 10,
@@ -358,7 +361,7 @@ describe("exchangeRateService", () => {
       const mockSelectChain = {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockStaleRate]),
+        limit: vi.fn().mockResolvedValue([mockStalePricing]),
       };
 
       const mockUpdateChain = {
@@ -366,37 +369,41 @@ describe("exchangeRateService", () => {
         where: vi.fn().mockResolvedValue(undefined),
       };
 
-      const mockApiResponse = {
-        amount: 1.0,
-        base: "USD",
-        date: "2025-11-04",
-        rates: {
-          GBP: 0.79,
-        },
-      };
+      const mockHtml = `
+        <html>
+          <body>
+            <div>
+              <h3>GPT-4o mini</h3>
+              <p>$0.150 / 1M input tokens</p>
+              <p>$0.600 / 1M output tokens</p>
+            </div>
+          </body>
+        </html>
+      `;
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
       vi.mocked(db.update).mockReturnValue(mockUpdateChain as never);
       vi.mocked(axios.get).mockResolvedValue({
-        data: mockApiResponse,
+        data: mockHtml,
         status: 200,
         statusText: "OK",
         headers: {},
         config: {} as never,
       });
 
-      await exchangeRateService.initializeExchangeRateCache();
+      await pricingService.initializePricingCache();
 
       expect(axios.get).toHaveBeenCalled();
       expect(db.update).toHaveBeenCalled();
     });
 
     it("should handle initialization failure gracefully when cache exists", async () => {
-      const mockStaleRate = {
+      const mockStalePricing = {
         id: 1,
-        fromCurrency: "USD",
-        toCurrency: "GBP",
-        rate: "0.75",
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUsd: "0.00000015",
+        outputTokenPriceUsd: "0.0000006",
         lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         isStale: true,
         daysSinceUpdate: 10,
@@ -407,29 +414,14 @@ describe("exchangeRateService", () => {
         where: vi.fn().mockReturnThis(),
         limit: vi
           .fn()
-          .mockResolvedValueOnce([mockStaleRate])
-          .mockResolvedValueOnce([mockStaleRate]),
+          .mockResolvedValueOnce([mockStalePricing])
+          .mockResolvedValueOnce([mockStalePricing]),
       };
 
       vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
       vi.mocked(axios.get).mockRejectedValue(new Error("Network error"));
 
-      await exchangeRateService.initializeExchangeRateCache();
-
-      expect(axios.get).toHaveBeenCalled();
-    });
-
-    it("should handle initialization failure gracefully when no cache exists", async () => {
-      const mockSelectChain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([]),
-      };
-
-      vi.mocked(db.select).mockReturnValue(mockSelectChain as never);
-      vi.mocked(axios.get).mockRejectedValue(new Error("Network error"));
-
-      await exchangeRateService.initializeExchangeRateCache();
+      await pricingService.initializePricingCache();
 
       expect(axios.get).toHaveBeenCalled();
     });

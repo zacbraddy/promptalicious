@@ -14,7 +14,7 @@ import type { ExecutePromptErrorResponse } from "@promptalicious/shared-infra";
 import app from "@/app";
 import { db } from "@/db/connection";
 import { llmConfig, pricingInfo, exchangeRates } from "@/db/schema";
-import * as llmService from "@/services/llmService";
+import * as llmService from "@/services/llm.service";
 
 describe("Error scenarios in prompt execution (integration)", () => {
   let savedConfig: typeof llmConfig.$inferSelect | null = null;

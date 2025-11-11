@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
-import * as discoveryStatusService from "@/services/discovery-status-service";
+import * as discoveryStatusService from "@/services/discovery-status.service";
 
 describe("discoveryStatusService", () => {
   beforeEach(() => {
