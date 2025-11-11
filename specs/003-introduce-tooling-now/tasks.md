@@ -237,7 +237,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Dependencies**: T011
 **Expected Outcome**: ts-morph available in backend package
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
