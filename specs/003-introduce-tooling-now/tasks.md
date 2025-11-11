@@ -272,7 +272,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Dependencies**: T012
 **Expected Outcome**: Unit tests pass, service discovers tools using ts-morph
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
