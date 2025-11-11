@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/connection";
 import { projectConfiguration } from "@/db/schema";
 import { logger } from "@/lib/logger";
+import * as discoveryStatusService from "@/services/discovery-status-service";
 
 export interface ProjectConfigurationData {
   name: string;
@@ -136,5 +137,5 @@ export function getDiscoveryStatus(): Promise<{
     error?: string | null;
   };
 }> {
-  throw new Error("Not implemented");
+  return Promise.resolve(discoveryStatusService.getCurrentStatus());
 }

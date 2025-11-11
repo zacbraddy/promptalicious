@@ -12,6 +12,7 @@ import {
   getProjectConfiguration,
   updateProjectConfiguration,
   startDiscovery,
+  getDiscoveryStatus,
 } from "@/services/projectConfigurationService";
 
 const projectConfigurationRouter = new Hono();
@@ -133,5 +134,25 @@ projectConfigurationRouter.put(
     }
   },
 );
+
+projectConfigurationRouter.get("/discovery/status", async (c: Context) => {
+  try {
+    const status = await getDiscoveryStatus();
+    return c.json(status, 200);
+  } catch (error) {
+    return c.json(
+      {
+        error: {
+          errorType: "unknown",
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : "Failed to retrieve discovery status",
+        },
+      },
+      500,
+    );
+  }
+});
 
 export default projectConfigurationRouter;
