@@ -387,7 +387,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Dependencies**: T016
 **Expected Outcome**: Test FAILS - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

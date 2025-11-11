@@ -389,3 +389,341 @@ describe("GET /api/tools/:id endpoint contract", () => {
     });
   });
 });
+
+describe("PATCH /api/tools/:id endpoint contract", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("Success response (200)", () => {
+    it("should return 200 with updated tool when description is changed", async () => {
+      const mockUpdatedTool = {
+        id: "getUserProfile",
+        name: "getUserProfile",
+        description: "Updated description from frontend",
+        sourceDescription: null,
+        parametersSchema: {
+          type: "object",
+          properties: {
+            userId: { type: "string" },
+          },
+          required: ["userId"],
+        },
+        sourceFilePath: "/path/to/user/project/src/tools/getUserProfile.ts",
+        workspaceDir: "workspace/my-project/getUserProfile",
+        enabled: true,
+        detectedHookParams: ["db", "authService"],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T02:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/getUserProfile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: "Updated description from frontend",
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool).toBeDefined();
+      expect(json.tool.description).toBe("Updated description from frontend");
+      expect(json.tool.sourceDescription).toBeNull();
+      expect(json.tool.updatedAt).not.toBe(
+        mockUpdatedTool.createdAt.toISOString(),
+      );
+    });
+
+    it("should return 200 with updated tool when enabled status is changed", async () => {
+      const mockUpdatedTool = {
+        id: "getWeather",
+        name: "getWeather",
+        description: "Get current weather for a location",
+        sourceDescription: "Get current weather for a location",
+        parametersSchema: {
+          type: "object",
+          properties: {
+            location: { type: "string" },
+          },
+        },
+        sourceFilePath: "/path/to/user/project/src/tools/getWeather.ts",
+        workspaceDir: "workspace/my-project/getWeather",
+        enabled: true,
+        detectedHookParams: [],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T02:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/getWeather", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          enabled: true,
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool).toBeDefined();
+      expect(json.tool.enabled).toBe(true);
+    });
+
+    it("should return 200 when disabling a tool", async () => {
+      const mockUpdatedTool = {
+        id: "getWeather",
+        name: "getWeather",
+        description: "Get current weather for a location",
+        sourceDescription: "Get current weather for a location",
+        parametersSchema: {
+          type: "object",
+          properties: {
+            location: { type: "string" },
+          },
+        },
+        sourceFilePath: "/path/to/user/project/src/tools/getWeather.ts",
+        workspaceDir: "workspace/my-project/getWeather",
+        enabled: false,
+        detectedHookParams: [],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T02:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/getWeather", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          enabled: false,
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool).toBeDefined();
+      expect(json.tool.enabled).toBe(false);
+    });
+
+    it("should return 200 when updating both description and enabled status", async () => {
+      const mockUpdatedTool = {
+        id: "processData",
+        name: "processData",
+        description: "New description",
+        sourceDescription: null,
+        parametersSchema: {
+          type: "object",
+          properties: {
+            data: { type: "string" },
+          },
+        },
+        sourceFilePath: "/path/to/user/project/src/tools/processData.ts",
+        workspaceDir: "workspace/my-project/processData",
+        enabled: false,
+        detectedHookParams: ["processor"],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T02:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/processData", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: "New description",
+          enabled: false,
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool).toBeDefined();
+      expect(json.tool.description).toBe("New description");
+      expect(json.tool.sourceDescription).toBeNull();
+      expect(json.tool.enabled).toBe(false);
+    });
+
+    it("should return updated tool with all required fields matching ToolDetail schema", async () => {
+      const mockUpdatedTool = {
+        id: "testTool",
+        name: "testTool",
+        description: "Updated test description",
+        sourceDescription: null,
+        parametersSchema: {
+          type: "object",
+          properties: {
+            param1: { type: "string" },
+          },
+        },
+        sourceFilePath: "/path/to/source/testTool.ts",
+        workspaceDir: "workspace/test-project/testTool",
+        enabled: true,
+        detectedHookParams: ["context"],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T03:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/testTool", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: "Updated test description",
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      const tool = json.tool;
+      expect(tool).toBeDefined();
+      expect(typeof tool.id).toBe("string");
+      expect(tool.id.length).toBeGreaterThan(0);
+      expect(typeof tool.name).toBe("string");
+      expect(typeof tool.description).toBe("string");
+      expect(typeof tool.parametersSchema).toBe("object");
+      expect(typeof tool.sourceFilePath).toBe("string");
+      expect(typeof tool.workspaceDir).toBe("string");
+      expect(typeof tool.enabled).toBe("boolean");
+      expect(Array.isArray(tool.detectedHookParams)).toBe(true);
+      expect(typeof tool.createdAt).toBe("string");
+      expect(new Date(tool.createdAt).toISOString()).toBe(tool.createdAt);
+      expect(typeof tool.updatedAt).toBe("string");
+      expect(new Date(tool.updatedAt).toISOString()).toBe(tool.updatedAt);
+    });
+
+    it("should preserve sourceDescription when only enabled status is updated", async () => {
+      const mockUpdatedTool = {
+        id: "preserveSource",
+        name: "preserveSource",
+        description: "Original description",
+        sourceDescription: "Original description",
+        parametersSchema: {
+          type: "object",
+          properties: {},
+        },
+        sourceFilePath: "/path/to/source/preserveSource.ts",
+        workspaceDir: "workspace/my-project/preserveSource",
+        enabled: false,
+        detectedHookParams: [],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T01:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/preserveSource", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          enabled: false,
+        }),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool.sourceDescription).toBe("Original description");
+      expect(json.tool.sourceDescription).not.toBeNull();
+    });
+  });
+
+  describe("Not found response (404)", () => {
+    it("should return 404 when tool not found", async () => {
+      vi.mocked(toolsService.updateTool).mockResolvedValue(null);
+
+      const res = await app.request("/api/tools/nonExistentTool", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: "Updated description",
+        }),
+      });
+      const json = (await res.json()) as {
+        error: string;
+        message: string;
+      };
+
+      expect(res.status).toBe(404);
+      expect(json.error).toBeDefined();
+      expect(json.error).toBe("not_found");
+      expect(json.message).toContain("Tool not found");
+    });
+
+    it("should return standard error schema in 404 response", async () => {
+      vi.mocked(toolsService.updateTool).mockResolvedValue(null);
+
+      const res = await app.request("/api/tools/missingTool", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          enabled: false,
+        }),
+      });
+      const json = (await res.json()) as {
+        error: string;
+        message: string;
+      };
+
+      expect(res.status).toBe(404);
+      expect(typeof json.error).toBe("string");
+      expect(typeof json.message).toBe("string");
+      expect(json.message.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Request validation", () => {
+    it("should handle empty request body", async () => {
+      const mockUpdatedTool = {
+        id: "unchangedTool",
+        name: "unchangedTool",
+        description: "Original description",
+        sourceDescription: "Original description",
+        parametersSchema: {
+          type: "object",
+          properties: {},
+        },
+        sourceFilePath: "/path/to/source/unchangedTool.ts",
+        workspaceDir: "workspace/my-project/unchangedTool",
+        enabled: true,
+        detectedHookParams: [],
+        createdAt: new Date("2025-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2025-01-10T00:00:00.000Z"),
+      };
+
+      vi.mocked(toolsService.updateTool).mockResolvedValue(mockUpdatedTool);
+
+      const res = await app.request("/api/tools/unchangedTool", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+      const json = (await res.json()) as { tool: typeof mockUpdatedTool };
+
+      expect(res.status).toBe(200);
+      expect(json.tool).toBeDefined();
+    });
+  });
+});
