@@ -485,7 +485,7 @@ console.log(getCaptures()); // Should show captured message
 **Dependencies**: T024
 **Expected Outcome**: Interface defined for SDK abstraction
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

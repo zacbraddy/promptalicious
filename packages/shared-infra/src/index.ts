@@ -7,6 +7,8 @@ export type {
   LLMConfiguration,
   PricingInformation,
   ExchangeRate,
+  AdvancedOptions,
+  ToolChoice,
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
