@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import app from "@/app";
-
-// @ts-expect-error - RED phase: service not implemented yet
 import * as toolsService from "@/services/tools.service";
 
 vi.mock("@/services/tools.service", () => ({
@@ -10,8 +8,6 @@ vi.mock("@/services/tools.service", () => ({
   getTool: vi.fn(),
   updateTool: vi.fn(),
 }));
-
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 describe("GET /api/tools endpoint contract", () => {
   beforeEach(() => {

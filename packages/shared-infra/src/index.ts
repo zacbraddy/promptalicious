@@ -41,3 +41,5 @@ export {
 } from "./validation/config";
 
 export { MAX_PROMPT_LENGTH } from "./validation/prompt";
+
+export { updateToolSchema, type UpdateToolData } from "./validation/tools";

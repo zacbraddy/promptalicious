@@ -8,6 +8,7 @@ import configRouter from "./routes/config.route";
 import pricingRouter from "./routes/pricing.route";
 import executeRouter from "./routes/execute.route";
 import projectConfigurationRouter from "./routes/project-configuration.route";
+import toolsRouter from "./routes/tools.route";
 
 const app = new Hono();
 
@@ -34,5 +35,6 @@ app.route("/api/config", configRouter);
 app.route("/api/pricing", pricingRouter);
 app.route("/api/execute", executeRouter);
 app.route("/api/project", projectConfigurationRouter);
+app.route("/api/tools", toolsRouter);
 
 export default app;
