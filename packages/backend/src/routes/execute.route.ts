@@ -20,6 +20,7 @@ import { getPricingData } from "@/services/pricing.service";
 import { getExchangeRate } from "@/services/exchange-rate.service";
 import { executionStateCacheService } from "@/services/execution-state-cache.service";
 import { logger } from "@/lib/logger";
+import { executeWithAdvancedOptions } from "@/services/tool-integration.service";
 
 const router = new Hono();
 
@@ -133,7 +134,7 @@ router.post("/", async (c: Context) => {
 
   try {
     const body = await c.req.json<ExecutePromptRequest>();
-    const { promptText } = body;
+    const { promptText, advancedOptions } = body;
 
     if (!promptText || promptText.trim().length === 0) {
       const execution: PromptExecution = {
@@ -194,18 +195,46 @@ router.post("/", async (c: Context) => {
     );
 
     try {
-      const llmResult = await executePrompt(
-        promptText,
-        apiKey,
-        config.selectedModel,
-        abortController.signal,
-      );
-
       const pricingData = await getPricingData();
       const exchangeRateData = await getExchangeRate();
 
       if (!pricingData || !exchangeRateData) {
         throw new Error("Pricing or exchange rate data not available");
+      }
+
+      let llmResult;
+      let toolInvocations;
+
+      if (advancedOptions) {
+        logger.info(
+          { executionId, hasAdvancedOptions: true },
+          "Executing with advanced options",
+        );
+
+        const toolResult = await executeWithAdvancedOptions(
+          promptText,
+          apiKey,
+          config.selectedModel,
+          advancedOptions,
+          abortController.signal,
+        );
+
+        llmResult = {
+          responseText: toolResult.responseText,
+          inputTokenCount: toolResult.inputTokenCount,
+          outputTokenCount: toolResult.outputTokenCount,
+          totalTokenCount: toolResult.totalTokenCount,
+          executionDurationMs: toolResult.executionDurationMs,
+        };
+
+        toolInvocations = toolResult.toolInvocations;
+      } else {
+        llmResult = await executePrompt(
+          promptText,
+          apiKey,
+          config.selectedModel,
+          abortController.signal,
+        );
       }
 
       const estimatedCostGBP = calculateCost(
@@ -227,6 +256,7 @@ router.post("/", async (c: Context) => {
         totalTokenCount: llmResult.totalTokenCount,
         executionDurationMs: llmResult.executionDurationMs,
         estimatedCostGBP,
+        toolInvocations,
       };
 
       executionStateCacheService.setExecutionResult(result);

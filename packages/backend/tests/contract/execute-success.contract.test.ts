@@ -11,6 +11,7 @@ import * as costCalculationService from "@/services/cost-calculation.service";
 import * as exchangeRateService from "@/services/exchange-rate.service";
 import * as llmService from "@/services/llm.service";
 import * as pricingService from "@/services/pricing.service";
+import * as toolIntegrationService from "@/services/tool-integration.service";
 import { executionStateCacheService } from "@/services/execution-state-cache.service";
 
 vi.mock("@/services/llm.service");
@@ -18,6 +19,7 @@ vi.mock("@/services/cost-calculation.service");
 vi.mock("@/services/config.service");
 vi.mock("@/services/pricing.service");
 vi.mock("@/services/exchange-rate.service");
+vi.mock("@/services/tool-integration.service");
 
 describe("POST /execute endpoint contract (Success Response)", () => {
   const validRequest: ExecutePromptRequest = {
@@ -78,6 +80,18 @@ describe("POST /execute endpoint contract (Success Response)", () => {
         );
       },
     );
+
+    vi.mocked(
+      toolIntegrationService.executeWithAdvancedOptions,
+    ).mockResolvedValue({
+      responseText:
+        "TypeScript generics allow you to create reusable components that work with multiple types while maintaining type safety. They use angle brackets <T> to define type parameters that are determined when the function or class is used.",
+      inputTokenCount: 15,
+      outputTokenCount: 42,
+      totalTokenCount: 57,
+      executionDurationMs: 1842,
+      toolInvocations: [],
+    });
   });
 
   describe("Success responses (200)", () => {
@@ -575,20 +589,24 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-      const expectedCall = expect.objectContaining({
-        advancedOptions: expect.objectContaining({
-          toolChoice: "auto",
-          maxToolRoundtrips: 5,
-          temperature: 0.7,
-          topP: 0.9,
-          maxTokens: 2000,
-          maxRetries: 3,
-        }),
+      const expectedAdvancedOptions = expect.objectContaining({
+        toolChoice: "auto",
+        maxToolRoundtrips: 5,
+        temperature: 0.7,
+        topP: 0.9,
+        maxTokens: 2000,
+        maxRetries: 3,
       });
       /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
-      expect(vi.mocked(llmService.executePrompt)).toHaveBeenCalledWith(
-        expectedCall,
+      expect(
+        vi.mocked(toolIntegrationService.executeWithAdvancedOptions),
+      ).toHaveBeenCalledWith(
+        validRequest.promptText,
+        "sk-test-mock-api-key",
+        "gpt-4o-mini",
+        expectedAdvancedOptions,
+        expect.any(AbortSignal),
       );
     });
   });

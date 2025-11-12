@@ -536,7 +536,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 # Returns execution result WITH toolInvocations array embedded
 ```
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

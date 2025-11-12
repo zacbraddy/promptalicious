@@ -13,6 +13,21 @@ import type {
 
 export class VercelAISDKAdapter implements SDKAdapter {
   name = "vercel-ai-sdk";
+  private apiKey?: string;
+  private model?: string;
+  private abortSignal?: AbortSignal;
+
+  setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+  }
+
+  setModel(model: string): void {
+    this.model = model;
+  }
+
+  setAbortSignal(signal: AbortSignal): void {
+    this.abortSignal = signal;
+  }
 
   discoverTools(_projectPath: string): Promise<ToolDefinition[]> {
     throw new Error(
@@ -29,8 +44,14 @@ export class VercelAISDKAdapter implements SDKAdapter {
 
     const startTime = Date.now();
 
+    if (!this.apiKey) {
+      throw new Error(
+        "API key not set. Please set API key via setApiKey() before calling executeWithTools().",
+      );
+    }
+
     const provider = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY ?? "",
+      apiKey: this.apiKey,
     });
 
     const toolInvocations: ToolInvocationResult[] = [];
@@ -134,8 +155,9 @@ export class VercelAISDKAdapter implements SDKAdapter {
       topP?: number;
       maxTokens?: number;
       maxRetries?: number;
+      abortSignal?: AbortSignal;
     } = {
-      model: provider("gpt-4o-mini"),
+      model: provider(this.model ?? "gpt-4o-mini"),
       prompt,
       tools: aiTools,
       toolChoice: toolChoiceValue,
@@ -143,6 +165,7 @@ export class VercelAISDKAdapter implements SDKAdapter {
       topP: validatedOptions.topP,
       maxTokens: validatedOptions.maxTokens,
       maxRetries: validatedOptions.maxRetries,
+      abortSignal: this.abortSignal,
     };
 
     const result = await generateText(generateTextOptions);

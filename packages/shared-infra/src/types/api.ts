@@ -1,3 +1,5 @@
+import type { ToolInvocationResult } from "./tools.js";
+
 export type ExecutionStatus =
   | "pending"
   | "in_progress"
@@ -31,6 +33,7 @@ export interface ExecutionResult {
   totalTokenCount: number;
   executionDurationMs: number;
   estimatedCostGBP: number;
+  toolInvocations?: ToolInvocationResult[];
 }
 
 export interface ExecutionError {

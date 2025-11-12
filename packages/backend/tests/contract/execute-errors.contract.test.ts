@@ -7,9 +7,13 @@ import type {
 import app from "@/app";
 import * as configService from "@/services/config.service";
 import * as llmService from "@/services/llm.service";
+import * as pricingService from "@/services/pricing.service";
+import * as exchangeRateService from "@/services/exchange-rate.service";
 
 vi.mock("@/services/llm.service");
 vi.mock("@/services/config.service");
+vi.mock("@/services/pricing.service");
+vi.mock("@/services/exchange-rate.service");
 
 describe("POST /execute endpoint contract (Error Responses)", () => {
   beforeEach(() => {
@@ -26,6 +30,27 @@ describe("POST /execute endpoint contract (Error Responses)", () => {
     vi.mocked(configService.getApiKey).mockResolvedValue(
       "sk-test-mock-api-key",
     );
+
+    vi.mocked(pricingService.getPricingData).mockResolvedValue({
+      id: 1,
+      model: "gpt-4o-mini",
+      provider: "openai",
+      inputTokenPriceUsd: 0.00000015,
+      outputTokenPriceUsd: 0.0000006,
+      lastUpdated: new Date("2025-01-01T00:00:00.000Z"),
+      isStale: false,
+      daysSinceUpdate: 0,
+    });
+
+    vi.mocked(exchangeRateService.getExchangeRate).mockResolvedValue({
+      id: 1,
+      fromCurrency: "USD",
+      toCurrency: "GBP",
+      rate: 0.79,
+      lastUpdated: new Date("2025-01-01T00:00:00.000Z"),
+      isStale: false,
+      daysSinceUpdate: 0,
+    });
   });
 
   describe("Validation error (400)", () => {
