@@ -496,7 +496,7 @@ console.log(getCaptures()); // Should show captured message
 **Dependencies**: T025
 **Expected Outcome**: Vercel AI SDK adapter ready for tool execution
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -507,7 +507,7 @@ console.log(getCaptures()); // Should show captured message
 **Dependencies**: T026
 **Expected Outcome**: Service executes tool-level hooks in correct lifecycle order, merges context
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
