@@ -2,7 +2,6 @@ import createEslintConfig from "@promptalicious/shared-infra/eslint";
 
 export default createEslintConfig({
   tsconfigRootDir: import.meta.dirname,
-  ignores: ["scripts/**/*.ts", "workspace/**/*"],
   rules: {
     "no-console": "off",
   },

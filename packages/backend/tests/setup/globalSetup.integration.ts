@@ -4,8 +4,6 @@ import pg from "pg";
 
 import { testConnection } from "../../src/services/config.service.js";
 
-/* eslint-disable no-console */
-
 export default async function setup({
   provide,
 }: {

@@ -206,7 +206,6 @@ describe("Configuration persistence and validation flow (integration)", () => {
       existingConfig.length > 0 && existingConfig[0]?.apiKey;
 
     if (!hasValidApiKey || !existingConfig[0]) {
-      // eslint-disable-next-line no-console
       console.warn("No valid API key in database - skipping persistence test");
       return;
     }

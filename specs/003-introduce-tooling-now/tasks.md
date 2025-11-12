@@ -433,7 +433,7 @@ curl -X PATCH http://localhost:3000/api/tools/getUserProfile -d '{"description":
 **Dependencies**: T021
 **Expected Outcome**: Debug package scaffolded, ready for implementation
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

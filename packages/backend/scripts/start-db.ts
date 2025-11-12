@@ -1,8 +1,6 @@
 #!/usr/bin/env tsx
 import { execSync } from "child_process";
 
-/* eslint-disable no-console */
-
 async function startDatabase() {
   console.log("Starting PostgreSQL Docker container...");
 

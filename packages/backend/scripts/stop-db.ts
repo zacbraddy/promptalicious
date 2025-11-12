@@ -1,8 +1,6 @@
 #!/usr/bin/env tsx
 import { execSync } from "child_process";
 
-/* eslint-disable no-console */
-
 function stopDatabase() {
   console.log("Stopping PostgreSQL Docker container...");
 

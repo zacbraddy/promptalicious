@@ -1,8 +1,6 @@
 #!/usr/bin/env tsx
 import { execSync } from "child_process";
 
-/* eslint-disable no-console */
-
 async function resetDatabase() {
   console.log("Resetting PostgreSQL Docker container...");
   console.log("⚠️  WARNING: This will delete all data in the database!");
