@@ -70,8 +70,24 @@ export interface ExchangeRate {
   lastUpdated: string;
 }
 
+export enum ToolChoice {
+  Auto = "auto",
+  Required = "required",
+  None = "none",
+}
+
+export interface AdvancedOptions {
+  toolChoice?: ToolChoice | string;
+  maxToolRoundtrips?: number;
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  maxRetries?: number;
+}
+
 export interface ExecutePromptRequest {
   promptText: string;
+  advancedOptions?: AdvancedOptions;
 }
 
 export interface ExecutePromptSuccessResponse {

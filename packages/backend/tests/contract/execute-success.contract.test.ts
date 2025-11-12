@@ -324,4 +324,272 @@ describe("POST /execute endpoint contract (Success Response)", () => {
       executionStateCacheService.clearCache();
     });
   });
+
+  describe("Advanced Options validation", () => {
+    it("should accept advancedOptions in request body", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "auto",
+          maxToolRoundtrips: 5,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens: 2000,
+          maxRetries: 3,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with toolChoice as 'auto'", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "auto",
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with toolChoice as 'required'", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "required",
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with toolChoice as 'none'", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "none",
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with toolChoice as specific tool name", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "getUserProfile",
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with maxToolRoundtrips", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          maxToolRoundtrips: 10,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with temperature", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          temperature: 1.5,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with topP", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          topP: 0.95,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with maxTokens", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          maxTokens: 4096,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept advancedOptions with maxRetries", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          maxRetries: 5,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept partial advancedOptions object", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          temperature: 0.8,
+          maxTokens: 1500,
+        },
+      };
+
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept request without advancedOptions (backwards compatibility)", async () => {
+      const response = await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validRequest),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should pass advancedOptions to LLM service", async () => {
+      const requestWithOptions: ExecutePromptRequest = {
+        promptText: validRequest.promptText,
+        advancedOptions: {
+          toolChoice: "auto",
+          maxToolRoundtrips: 5,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens: 2000,
+          maxRetries: 3,
+        },
+      };
+
+      await app.request("/api/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestWithOptions),
+      });
+
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      const expectedCall = expect.objectContaining({
+        advancedOptions: expect.objectContaining({
+          toolChoice: "auto",
+          maxToolRoundtrips: 5,
+          temperature: 0.7,
+          topP: 0.9,
+          maxTokens: 2000,
+          maxRetries: 3,
+        }),
+      });
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+      expect(vi.mocked(llmService.executePrompt)).toHaveBeenCalledWith(
+        expectedCall,
+      );
+    });
+  });
 });

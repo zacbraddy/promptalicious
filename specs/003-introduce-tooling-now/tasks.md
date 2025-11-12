@@ -470,7 +470,7 @@ console.log(getCaptures()); // Should show captured message
 **Dependencies**: T023
 **Expected Outcome**: Test FAILS - RED phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
