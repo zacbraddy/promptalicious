@@ -50,6 +50,9 @@ export class WorkspaceGeneratorService {
 
       let filesGenerated = 0;
 
+      await this.generateWorkspaceHooks(workspacePath, tools);
+      filesGenerated += 3;
+
       for (const tool of tools) {
         const toolDir = path.join(workspacePath, tool.id);
         await fs.mkdir(toolDir, { recursive: true });
@@ -280,6 +283,102 @@ ${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${nam
       .join("\n");
 
     return normalized.trim();
+  }
+
+  private async generateWorkspaceHooks(
+    workspacePath: string,
+    tools: DiscoveredTool[],
+  ): Promise<void> {
+    const allEnvironmentTypes = new Map<
+      string,
+      {
+        type: string;
+        typeImports: Array<{ typeName: string; importPath: string }>;
+      }
+    >();
+
+    for (const tool of tools) {
+      for (const envType of tool.environmentTypes) {
+        if (!allEnvironmentTypes.has(envType.name)) {
+          allEnvironmentTypes.set(envType.name, {
+            type: envType.type,
+            typeImports: envType.typeImports,
+          });
+        }
+      }
+    }
+
+    const allTypeImports = new Map<string, string>();
+    for (const [, envType] of allEnvironmentTypes) {
+      for (const typeImport of envType.typeImports) {
+        allTypeImports.set(typeImport.typeName, typeImport.importPath);
+      }
+    }
+
+    const imports = Array.from(allTypeImports.entries())
+      .map(
+        ([typeName, importPath]) =>
+          `import type { ${typeName} } from "${importPath}";`,
+      )
+      .join("\n");
+
+    const envTypeProperties =
+      allEnvironmentTypes.size > 0
+        ? Array.from(allEnvironmentTypes.entries())
+            .map(([name, { type }]) => `  ${name}?: ${type};`)
+            .join("\n")
+        : "  // No environment variables detected across tools";
+
+    const environmentContent = `// Auto-generated workspace-level environment declarations
+// This is a union of all environment variables needed across all tools
+// Workspace hooks can provide shared resources available to all tools
+
+${imports ? imports + "\n\n" : ""}export type WorkspaceEnvironment = {
+${envTypeProperties}
+};
+`;
+
+    const beforeAllContent = `// Auto-generated workspace-level beforeAll hook
+// This hook runs ONCE before any tool invocations
+// Use it to initialize shared resources available to ALL tools
+
+import type { WorkspaceEnvironment } from "./environment";
+
+export default async function beforeAll(): Promise<Partial<WorkspaceEnvironment>> {
+  // Initialize shared resources here (e.g., database connections, services)
+  // These will be available to all tools in their execution context
+  return {
+    // TODO: Provide shared resources
+  };
+}
+`;
+
+    const afterAllContent = `// Auto-generated workspace-level afterAll hook
+// This hook runs ONCE after all tool invocations have completed
+// Use it to cleanup shared resources
+
+import type { WorkspaceEnvironment } from "./environment";
+
+export default async function afterAll(): Promise<void> {
+  // Cleanup shared resources here
+  // This runs after all tools have finished executing
+}
+`;
+
+    await Promise.all([
+      fs.writeFile(
+        path.join(workspacePath, "environment.d.ts"),
+        environmentContent,
+      ),
+      fs.writeFile(path.join(workspacePath, "beforeAll.ts"), beforeAllContent),
+      fs.writeFile(path.join(workspacePath, "afterAll.ts"), afterAllContent),
+    ]);
+
+    discoveryStatusService.appendLog({
+      level: "info",
+      phase: "generating",
+      message: `Generated workspace-level hooks (${allEnvironmentTypes.size} environment variables)`,
+    });
   }
 
   private async generateHookStubs(

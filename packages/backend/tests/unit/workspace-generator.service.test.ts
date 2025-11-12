@@ -240,12 +240,14 @@ describe("WorkspaceGeneratorService", () => {
         tools,
       );
 
-      const beforeAllCall = mockWriteFile.mock.calls.find((call) =>
-        String(call[0]).includes("beforeAll.ts"),
+      const toolBeforeAllCall = mockWriteFile.mock.calls.find(
+        (call) =>
+          String(call[0]).includes("getUserProfile") &&
+          String(call[0]).includes("beforeAll.ts"),
       );
-      expect(beforeAllCall).toBeDefined();
+      expect(toolBeforeAllCall).toBeDefined();
 
-      const beforeAllContent = String(beforeAllCall![1]);
+      const beforeAllContent = String(toolBeforeAllCall![1]);
       expect(beforeAllContent).toContain("db");
       expect(beforeAllContent).toContain("authService");
       expect(beforeAllContent).toContain("TODO");

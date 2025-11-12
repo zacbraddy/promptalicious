@@ -518,7 +518,7 @@ console.log(getCaptures()); // Should show captured message
 **Dependencies**: T027
 **Expected Outcome**: Service executes workspace-level and tool-level hooks with correct precedence and merge semantics
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

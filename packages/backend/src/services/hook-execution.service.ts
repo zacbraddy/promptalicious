@@ -11,7 +11,15 @@ interface ToolState {
   workspaceDir: string;
 }
 
+interface WorkspaceState {
+  beforeAllExecuted: boolean;
+  beforeAllContext: Record<string, unknown>;
+  afterAllExecuted: boolean;
+  workspaceRootDir: string;
+}
+
 const toolStates = new Map<string, ToolState>();
+const workspaceStates = new Map<string, WorkspaceState>();
 
 export async function loadHook(
   workspaceDir: string,
@@ -50,11 +58,86 @@ export async function executeHook(
   }
 }
 
+export async function loadWorkspaceHook(
+  workspaceRootDir: string,
+  hookType: "beforeAll" | "afterAll",
+): Promise<HookFunction | null> {
+  const hookPath = path.join(workspaceRootDir, `${hookType}.ts`);
+
+  try {
+    await access(hookPath);
+  } catch {
+    return null;
+  }
+
+  try {
+    const fileUrl = `file://${hookPath}?t=${Date.now()}`;
+    const hookModule = (await import(fileUrl)) as { default: HookFunction };
+    return hookModule.default;
+  } catch (error) {
+    throw new Error(
+      `Failed to load workspace ${hookType} hook: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+export async function executeWorkspaceBeforeAll(
+  workspaceRootDir: string,
+): Promise<Record<string, unknown>> {
+  let workspaceState = workspaceStates.get(workspaceRootDir);
+  if (!workspaceState) {
+    workspaceState = {
+      beforeAllExecuted: false,
+      beforeAllContext: {},
+      afterAllExecuted: false,
+      workspaceRootDir,
+    };
+    workspaceStates.set(workspaceRootDir, workspaceState);
+  }
+
+  if (workspaceState.beforeAllExecuted) {
+    return workspaceState.beforeAllContext;
+  }
+
+  const beforeAllFn = await loadWorkspaceHook(workspaceRootDir, "beforeAll");
+  if (beforeAllFn) {
+    workspaceState.beforeAllContext = await executeHook(
+      beforeAllFn,
+      "beforeAll",
+    );
+  }
+  workspaceState.beforeAllExecuted = true;
+
+  return workspaceState.beforeAllContext;
+}
+
+export async function executeWorkspaceAfterAll(
+  workspaceRootDir: string,
+): Promise<void> {
+  const workspaceState = workspaceStates.get(workspaceRootDir);
+
+  if (!workspaceState || !workspaceState.beforeAllExecuted) {
+    return;
+  }
+
+  if (workspaceState.afterAllExecuted) {
+    return;
+  }
+
+  const afterAllFn = await loadWorkspaceHook(workspaceRootDir, "afterAll");
+  if (afterAllFn) {
+    await executeHook(afterAllFn, "afterAll");
+  }
+
+  workspaceState.afterAllExecuted = true;
+}
+
 export async function executeToolLifecycle(
   workspaceDir: string,
   toolId: string,
   toolExecute: (params: unknown) => Promise<unknown>,
   params: unknown,
+  workspaceContext?: Record<string, unknown>,
 ): Promise<unknown> {
   let toolState = toolStates.get(toolId);
   if (!toolState) {
@@ -85,6 +168,7 @@ export async function executeToolLifecycle(
 
   const mergedParams = {
     ...(typeof params === "object" && params !== null ? params : {}),
+    ...(workspaceContext || {}),
     ...beforeAllContext,
     ...beforeEachContext,
   };
@@ -136,6 +220,11 @@ export function resetToolState(toolId: string): void {
   toolStates.delete(toolId);
 }
 
+export function resetWorkspaceState(workspaceRootDir: string): void {
+  workspaceStates.delete(workspaceRootDir);
+}
+
 export function resetAllToolStates(): void {
   toolStates.clear();
+  workspaceStates.clear();
 }

@@ -507,4 +507,458 @@ describe("hookExecutionService", () => {
       ).rejects.toThrow("Hook execution failed (afterAll)");
     });
   });
+
+  describe("loadWorkspaceHook", () => {
+    it("should load workspace beforeAll hook and return function", async () => {
+      const hookContent = `
+        export default async function beforeAll() {
+          return { sharedDb: "connection" };
+        }
+      `;
+      await writeFile(path.join(tempWorkspaceDir, "beforeAll.ts"), hookContent);
+
+      const hookFn = await hookExecutionService.loadWorkspaceHook(
+        tempWorkspaceDir,
+        "beforeAll",
+      );
+
+      expect(hookFn).toBeDefined();
+      expect(typeof hookFn).toBe("function");
+    });
+
+    it("should load workspace afterAll hook and return function", async () => {
+      const hookContent = `
+        export default async function afterAll() {
+          return undefined;
+        }
+      `;
+      await writeFile(path.join(tempWorkspaceDir, "afterAll.ts"), hookContent);
+
+      const hookFn = await hookExecutionService.loadWorkspaceHook(
+        tempWorkspaceDir,
+        "afterAll",
+      );
+
+      expect(hookFn).toBeDefined();
+      expect(typeof hookFn).toBe("function");
+    });
+
+    it("should return null if workspace hook file does not exist", async () => {
+      const hookFn = await hookExecutionService.loadWorkspaceHook(
+        tempWorkspaceDir,
+        "beforeAll",
+      );
+
+      expect(hookFn).toBeNull();
+    });
+
+    it("should throw error if workspace hook file contains invalid syntax", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        "this is invalid TypeScript { syntax",
+      );
+
+      await expect(
+        hookExecutionService.loadWorkspaceHook(tempWorkspaceDir, "beforeAll"),
+      ).rejects.toThrow("Failed to load workspace beforeAll hook");
+    });
+  });
+
+  describe("executeWorkspaceBeforeAll", () => {
+    it("should execute workspace beforeAll hook and return context", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { sharedDb: "connection", config: { env: "test" } };
+        }
+      `,
+      );
+
+      const context =
+        await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      expect(context).toEqual({
+        sharedDb: "connection",
+        config: { env: "test" },
+      });
+    });
+
+    it("should return empty object if workspace beforeAll hook does not exist", async () => {
+      const context =
+        await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      expect(context).toEqual({});
+    });
+
+    it("should cache workspace beforeAll context and return same context on subsequent calls", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        let callCount = 0;
+        export default async function beforeAll() {
+          callCount++;
+          globalThis.__workspaceBeforeAllCallCount = callCount;
+          return { sharedDb: "connection", callCount };
+        }
+      `,
+      );
+
+      const context1 =
+        await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+      const context2 =
+        await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      expect(context1).toEqual({ sharedDb: "connection", callCount: 1 });
+      expect(context2).toEqual({ sharedDb: "connection", callCount: 1 });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__workspaceBeforeAllCallCount).toBe(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).__workspaceBeforeAllCallCount;
+    });
+
+    it("should throw error if workspace beforeAll hook execution fails", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          throw new Error("Workspace initialization failed");
+        }
+      `,
+      );
+
+      await expect(
+        hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir),
+      ).rejects.toThrow("Hook execution failed (beforeAll)");
+    });
+  });
+
+  describe("executeWorkspaceAfterAll", () => {
+    it("should execute workspace afterAll hook after beforeAll was called", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { sharedDb: "connection" };
+        }
+      `,
+      );
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "afterAll.ts"),
+        `
+        export default async function afterAll() {
+          globalThis.__workspaceAfterAllExecuted = true;
+          return undefined;
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+      await hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__workspaceAfterAllExecuted).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).__workspaceAfterAllExecuted;
+    });
+
+    it("should not execute workspace afterAll if beforeAll was never called", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "afterAll.ts"),
+        `
+        export default async function afterAll() {
+          globalThis.__workspaceAfterAllNeverCalled = true;
+          return undefined;
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir);
+
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (globalThis as any).__workspaceAfterAllNeverCalled,
+      ).toBeUndefined();
+    });
+
+    it("should execute workspace afterAll only once", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { sharedDb: "connection" };
+        }
+      `,
+      );
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "afterAll.ts"),
+        `
+        let callCount = 0;
+        export default async function afterAll() {
+          callCount++;
+          globalThis.__workspaceAfterAllCallCount = callCount;
+          return undefined;
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+      await hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir);
+      await hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__workspaceAfterAllCallCount).toBe(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).__workspaceAfterAllCallCount;
+    });
+
+    it("should throw error if workspace afterAll hook fails", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { sharedDb: "connection" };
+        }
+      `,
+      );
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "afterAll.ts"),
+        `
+        export default async function afterAll() {
+          throw new Error("Workspace cleanup failed");
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      await expect(
+        hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir),
+      ).rejects.toThrow("Hook execution failed (afterAll)");
+    });
+
+    it("should do nothing if workspace afterAll hook does not exist", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { sharedDb: "connection" };
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      await expect(
+        hookExecutionService.executeWorkspaceAfterAll(tempWorkspaceDir),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("executeToolLifecycle with workspace context", () => {
+    const mockToolId = "test-tool";
+    const mockParams = { userId: "123" };
+
+    it("should merge workspace context with tool contexts", async () => {
+      const workspaceContext = { sharedDb: "connection", config: "shared" };
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { toolDb: "tool-connection", config: "tool-override" };
+        }
+      `,
+      );
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeEach.ts"),
+        `
+        export default async function beforeEach() {
+          return { requestId: "abc", config: "request-override" };
+        }
+      `,
+      );
+
+      const mockToolExecute = vi.fn().mockResolvedValue({ result: "success" });
+
+      await hookExecutionService.executeToolLifecycle(
+        tempWorkspaceDir,
+        mockToolId,
+        mockToolExecute,
+        mockParams,
+        workspaceContext,
+      );
+
+      expect(mockToolExecute).toHaveBeenCalledWith({
+        userId: "123",
+        sharedDb: "connection",
+        config: "request-override",
+        toolDb: "tool-connection",
+        requestId: "abc",
+      });
+    });
+
+    it("should use tool context to override workspace context", async () => {
+      const workspaceContext = { db: "workspace-db", logger: "workspace" };
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { db: "tool-db" };
+        }
+      `,
+      );
+
+      const mockToolExecute = vi.fn().mockResolvedValue({ result: "success" });
+
+      await hookExecutionService.executeToolLifecycle(
+        tempWorkspaceDir,
+        mockToolId,
+        mockToolExecute,
+        mockParams,
+        workspaceContext,
+      );
+
+      expect(mockToolExecute).toHaveBeenCalledWith({
+        userId: "123",
+        db: "tool-db",
+        logger: "workspace",
+      });
+    });
+
+    it("should use beforeEach context to override workspace and tool contexts", async () => {
+      const workspaceContext = {
+        db: "workspace-db",
+        logger: "workspace",
+        requestId: "workspace-request",
+      };
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { db: "tool-db", requestId: "tool-request" };
+        }
+      `,
+      );
+
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeEach.ts"),
+        `
+        export default async function beforeEach() {
+          return { requestId: "invocation-request" };
+        }
+      `,
+      );
+
+      const mockToolExecute = vi.fn().mockResolvedValue({ result: "success" });
+
+      await hookExecutionService.executeToolLifecycle(
+        tempWorkspaceDir,
+        mockToolId,
+        mockToolExecute,
+        mockParams,
+        workspaceContext,
+      );
+
+      expect(mockToolExecute).toHaveBeenCalledWith({
+        userId: "123",
+        db: "tool-db",
+        logger: "workspace",
+        requestId: "invocation-request",
+      });
+    });
+
+    it("should work when workspace context is undefined", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        export default async function beforeAll() {
+          return { db: "connection" };
+        }
+      `,
+      );
+
+      const mockToolExecute = vi.fn().mockResolvedValue({ result: "success" });
+
+      await hookExecutionService.executeToolLifecycle(
+        tempWorkspaceDir,
+        mockToolId,
+        mockToolExecute,
+        mockParams,
+        undefined,
+      );
+
+      expect(mockToolExecute).toHaveBeenCalledWith({
+        userId: "123",
+        db: "connection",
+      });
+    });
+  });
+
+  describe("resetWorkspaceState", () => {
+    it("should reset workspace beforeAll execution tracking", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        let callCount = 0;
+        export default async function beforeAll() {
+          callCount++;
+          globalThis.__workspaceResetTest = callCount;
+          return { db: "connection" };
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__workspaceResetTest).toBe(1);
+
+      hookExecutionService.resetWorkspaceState(tempWorkspaceDir);
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__workspaceResetTest).toBe(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).__workspaceResetTest;
+    });
+  });
+
+  describe("resetAllToolStates", () => {
+    it("should reset both tool and workspace states", async () => {
+      await writeFile(
+        path.join(tempWorkspaceDir, "beforeAll.ts"),
+        `
+        let callCount = 0;
+        export default async function beforeAll() {
+          callCount++;
+          globalThis.__resetAllStatesTest = callCount;
+          return { db: "connection" };
+        }
+      `,
+      );
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__resetAllStatesTest).toBe(1);
+
+      hookExecutionService.resetAllToolStates();
+
+      await hookExecutionService.executeWorkspaceBeforeAll(tempWorkspaceDir);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      expect((globalThis as any).__resetAllStatesTest).toBe(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      delete (globalThis as any).__resetAllStatesTest;
+    });
+  });
 });
