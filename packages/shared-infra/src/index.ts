@@ -30,6 +30,14 @@ export type {
   DiscoverySummary,
 } from "./types/api";
 
+export type {
+  ToolDefinition,
+  ToolInvocationResult,
+  DebugMessage,
+  HookDefinition,
+  WorkspaceStructure,
+} from "./types/tools";
+
 export {
   updateConfigSchema,
   settingsFormSchema,

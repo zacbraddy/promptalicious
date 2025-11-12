@@ -398,7 +398,7 @@ curl -X POST http://localhost:3000/api/project/discovery/cancel
 **Dependencies**: T017, T018, T019
 **Expected Outcome**: T017-T019 pass - GREEN phase ✅
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -420,7 +420,7 @@ curl -X PATCH http://localhost:3000/api/tools/getUserProfile -d '{"description":
 # Returns updated tool, sourceDescription is now null
 ```
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
