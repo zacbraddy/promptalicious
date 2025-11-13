@@ -6,6 +6,7 @@ import { API_KEY_PLACEHOLDER } from "@promptalicious/shared-infra";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsForm } from "@/components/SettingsForm";
 import { ProjectConfigurationForm } from "@/components/ProjectConfigurationForm";
+import { DiscoveryProgressModal } from "@/components/DiscoveryProgressModal";
 import {
   useGetConfig,
   useUpdateConfig,
@@ -27,6 +28,7 @@ export function SettingsPage() {
     useGetProjectConfiguration();
   const updateProjectConfigMutation = useUpdateProjectConfiguration();
   const [isProjectFormSubmitting, setIsProjectFormSubmitting] = useState(false);
+  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
 
   const handleSubmit = async (formData: {
     selectedModel: string;
@@ -82,10 +84,13 @@ export function SettingsPage() {
     targetProjectPath: string;
   }) => {
     try {
-      await updateProjectConfigMutation.mutateAsync({
+      const response = await updateProjectConfigMutation.mutateAsync({
         name: formData.name,
         targetProjectPath: formData.targetProjectPath,
       });
+      if (response.discoveryStarted) {
+        setShowDiscoveryModal(true);
+      }
       toast.success("Project configuration saved successfully");
     } catch (error) {
       let errorMessage = "Failed to save project configuration";
@@ -182,6 +187,11 @@ export function SettingsPage() {
           <div className="absolute inset-0 bg-black/20 rounded-xl pointer-events-none" />
         )}
       </div>
+
+      <DiscoveryProgressModal
+        open={showDiscoveryModal}
+        onOpenChange={setShowDiscoveryModal}
+      />
     </div>
   );
 }

@@ -602,7 +602,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T032
 **Expected Outcome**: Settings page shows Project Configuration section
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -613,7 +613,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T033
 **Expected Outcome**: Modal shows real-time discovery progress with polling
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
