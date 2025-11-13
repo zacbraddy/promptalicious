@@ -2,6 +2,7 @@ import type {
   ExecutionResult,
   ExecutionError,
   ExecutionStatus,
+  AdvancedOptions,
 } from "@promptalicious/shared-infra";
 
 export interface ExecutionState {
@@ -11,6 +12,7 @@ export interface ExecutionState {
   startTimestamp: Date;
   abortController: AbortController;
   status: ExecutionStatus;
+  advancedOptions?: AdvancedOptions;
 }
 
 export interface CompletedExecutionState extends ExecutionState {
@@ -26,6 +28,7 @@ class ExecutionStateCacheService {
     promptText: string,
     targetModel: string,
     abortController: AbortController,
+    advancedOptions?: AdvancedOptions,
   ): void {
     this.currentExecution = {
       executionId,
@@ -34,6 +37,7 @@ class ExecutionStateCacheService {
       startTimestamp: new Date(),
       abortController,
       status: "in_progress",
+      advancedOptions,
     };
   }
 

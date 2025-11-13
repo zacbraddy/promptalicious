@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import app from "@/app";
-
-// TODO: Remove eslint-disable once export.service.ts is implemented (GREEN phase)
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import * as exportService from "@/services/export.service";
 
 vi.mock("@/services/export.service", () => ({

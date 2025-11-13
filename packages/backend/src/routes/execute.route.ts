@@ -187,6 +187,7 @@ router.post("/", async (c: Context) => {
       promptText,
       config.selectedModel,
       abortController,
+      advancedOptions,
     );
 
     logger.info(
