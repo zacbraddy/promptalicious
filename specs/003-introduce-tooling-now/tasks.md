@@ -624,7 +624,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T034
 **Expected Outcome**: Cancel button aborts discovery and cleans up workspace
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

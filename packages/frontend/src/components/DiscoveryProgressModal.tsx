@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useGetDiscoveryStatus } from "@/hooks/useProjectConfiguration";
+import {
+  useGetDiscoveryStatus,
+  useCancelDiscovery,
+} from "@/hooks/useProjectConfiguration";
 
 interface DiscoveryProgressModalProps {
   open: boolean;
@@ -95,9 +99,12 @@ export function DiscoveryProgressModal({
 }: DiscoveryProgressModalProps) {
   const queryClient = useQueryClient();
   const { status, isLoading } = useGetDiscoveryStatus();
+  const cancelMutation = useCancelDiscovery();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const prevLogCountRef = useRef(0);
   const hasOpenedRef = useRef(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && !hasOpenedRef.current) {
@@ -126,6 +133,23 @@ export function DiscoveryProgressModal({
       }
     }
   }, [status?.logs]);
+
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
+
+  const handleCancelConfirm = () => {
+    cancelMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        setCancelledMessage(data.message);
+        setShowCancelConfirm(false);
+      },
+    });
+  };
+
+  const handleCancelDialogCancel = () => {
+    setShowCancelConfirm(false);
+  };
 
   if (isLoading || !status) {
     return (
@@ -258,13 +282,77 @@ export function DiscoveryProgressModal({
             </div>
           )}
 
+          {cancelledMessage && (
+            <div className="border rounded-lg p-4 bg-muted/50 border-muted">
+              <div className="text-sm text-muted-foreground flex items-start gap-2">
+                <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium mb-1">Discovery Cancelled</p>
+                  <p>{cancelledMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isInProgress && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Discovery in progress...</span>
             </div>
           )}
+
+          {isInProgress && (
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={handleCancelClick}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Cancelling...
+                  </>
+                ) : (
+                  "Cancel Discovery"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {showCancelConfirm && (
+          <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cancel Discovery?</DialogTitle>
+                <DialogDescription>
+                  Are you sure? Partial workspace files will be removed and
+                  project will not be configured.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={handleCancelDialogCancel}>
+                  No, Continue
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelConfirm}
+                  disabled={cancelMutation.isPending}
+                >
+                  {cancelMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Yes, Cancel Discovery"
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
