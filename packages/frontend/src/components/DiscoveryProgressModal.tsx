@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
@@ -97,6 +98,7 @@ export function DiscoveryProgressModal({
   open,
   onOpenChange,
 }: DiscoveryProgressModalProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { status, isLoading } = useGetDiscoveryStatus();
   const cancelMutation = useCancelDiscovery();
@@ -149,6 +151,13 @@ export function DiscoveryProgressModal({
 
   const handleCancelDialogCancel = () => {
     setShowCancelConfirm(false);
+  };
+
+  const handleOkClick = () => {
+    if (status?.phase === "complete" && !cancelledMessage) {
+      void navigate("/tools");
+    }
+    onOpenChange(false);
   };
 
   if (isLoading || !status) {
@@ -301,8 +310,8 @@ export function DiscoveryProgressModal({
             </div>
           )}
 
-          {isInProgress && (
-            <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2">
+            {isInProgress && (
               <Button
                 variant="outline"
                 onClick={handleCancelClick}
@@ -317,8 +326,15 @@ export function DiscoveryProgressModal({
                   "Cancel Discovery"
                 )}
               </Button>
-            </div>
-          )}
+            )}
+            <Button
+              variant="default"
+              onClick={handleOkClick}
+              disabled={isInProgress}
+            >
+              OK
+            </Button>
+          </div>
         </div>
 
         {showCancelConfirm && (

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
 
 import { SettingsPage } from "@/pages/SettingsPage";
 import * as apiClient from "@/services/apiClient";
@@ -13,6 +14,7 @@ vi.mock("@/services/apiClient", () => ({
   updateProjectConfiguration: vi.fn(),
   getDiscoveryStatus: vi.fn(),
   cancelDiscovery: vi.fn(),
+  getPricing: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -38,7 +40,9 @@ function createTestQueryClient() {
 function renderWithQueryClient(ui: React.ReactElement) {
   const queryClient = createTestQueryClient();
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </BrowserRouter>,
   );
 }
 
@@ -48,6 +52,31 @@ describe("SettingsPage", () => {
     vi.mocked(apiClient.getProjectConfiguration).mockRejectedValue({
       status: 404,
       message: "No project configured",
+    });
+    vi.mocked(apiClient.getPricing).mockResolvedValue({
+      pricing: {
+        id: 1,
+        model: "gpt-4o-mini",
+        provider: "openai",
+        inputTokenPriceUSD: 0.00015,
+        outputTokenPriceUSD: 0.0006,
+        lastUpdated: new Date().toISOString(),
+      },
+      exchangeRate: {
+        id: 1,
+        fromCurrency: "USD",
+        toCurrency: "GBP",
+        rate: 0.79,
+        lastUpdated: new Date().toISOString(),
+      },
+      staleness: {
+        isStale: false,
+        daysSinceUpdate: 0,
+      },
+    });
+    vi.mocked(apiClient.getDiscoveryStatus).mockRejectedValue({
+      status: 404,
+      message: "No discovery in progress",
     });
   });
 
@@ -70,7 +99,7 @@ describe("SettingsPage", () => {
       config: {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: "https://api.openai.com/v1",
+        baseURL: "https://api.openai.com/v1",
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
       },
@@ -108,7 +137,7 @@ describe("SettingsPage", () => {
       config: {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: undefined,
+        baseURL: undefined,
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
       },
@@ -128,7 +157,7 @@ describe("SettingsPage", () => {
       config: {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: undefined,
+        baseURL: undefined,
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
       },
@@ -151,7 +180,7 @@ describe("SettingsPage", () => {
       config: {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: undefined,
+        baseURL: undefined,
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
       },
@@ -172,7 +201,7 @@ describe("SettingsPage", () => {
       config: {
         id: 1,
         selectedModel: "gpt-4o-mini",
-        providerEndpoint: undefined,
+        baseURL: undefined,
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
       },

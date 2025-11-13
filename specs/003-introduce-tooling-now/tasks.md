@@ -635,7 +635,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T035
 **Expected Outcome**: OK button closes modal after discovery completes/cancels
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
