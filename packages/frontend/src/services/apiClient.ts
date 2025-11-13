@@ -11,6 +11,10 @@ import type {
   ExecutionStatusResponse,
   AbortExecutionResponse,
   PricingInfoResponse,
+  ProjectConfiguration,
+  UpdateProjectConfigurationRequest,
+  UpdateProjectConfigurationSuccessResponse,
+  DiscoveryStatus,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -144,6 +148,56 @@ export async function abortExecution(): Promise<AbortExecutionResponse> {
 export async function getPricing(): Promise<PricingInfoResponse> {
   try {
     const response = await apiClient.get<PricingInfoResponse>("/pricing");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function getProjectConfiguration(): Promise<ProjectConfiguration> {
+  try {
+    const response = await apiClient.get<ProjectConfiguration>("/project");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function updateProjectConfiguration(
+  data: UpdateProjectConfigurationRequest,
+): Promise<UpdateProjectConfigurationSuccessResponse> {
+  try {
+    const response =
+      await apiClient.put<UpdateProjectConfigurationSuccessResponse>(
+        "/project",
+        data,
+      );
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function getDiscoveryStatus(): Promise<DiscoveryStatus> {
+  try {
+    const response = await apiClient.get<DiscoveryStatus>(
+      "/project/discovery/status",
+    );
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function cancelDiscovery(): Promise<{
+  cancelled: boolean;
+  message: string;
+}> {
+  try {
+    const response = await apiClient.post<{
+      cancelled: boolean;
+      message: string;
+    }>("/project/discovery/cancel");
     return response.data;
   } catch (error) {
     handleAxiosError(error);

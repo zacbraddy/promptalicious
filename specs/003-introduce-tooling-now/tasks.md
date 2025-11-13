@@ -560,7 +560,7 @@ curl -X POST http://localhost:3000/api/execute -d '{"prompt":"Test with tools","
 **Dependencies**: T029
 **Expected Outcome**: Service generates deterministic markdown instructions
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -578,7 +578,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 # Returns markdown export instructions
 ```
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -591,7 +591,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T031
 **Expected Outcome**: React hooks ready for Settings page
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
