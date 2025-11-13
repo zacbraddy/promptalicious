@@ -9,6 +9,10 @@ vi.mock("@/services/apiClient", () => ({
   getConfig: vi.fn(),
   updateConfig: vi.fn(),
   testConnection: vi.fn(),
+  getProjectConfiguration: vi.fn(),
+  updateProjectConfiguration: vi.fn(),
+  getDiscoveryStatus: vi.fn(),
+  cancelDiscovery: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -41,6 +45,10 @@ function renderWithQueryClient(ui: React.ReactElement) {
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(apiClient.getProjectConfiguration).mockRejectedValue({
+      status: 404,
+      message: "No project configured",
+    });
   });
 
   afterEach(() => {

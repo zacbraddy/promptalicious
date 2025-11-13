@@ -5,11 +5,16 @@ import { API_KEY_PLACEHOLDER } from "@promptalicious/shared-infra";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsForm } from "@/components/SettingsForm";
+import { ProjectConfigurationForm } from "@/components/ProjectConfigurationForm";
 import {
   useGetConfig,
   useUpdateConfig,
   useTestConnection,
 } from "@/hooks/useConfig";
+import {
+  useGetProjectConfiguration,
+  useUpdateProjectConfiguration,
+} from "@/hooks/useProjectConfiguration";
 import { ApiError } from "@/services/apiClient";
 
 export function SettingsPage() {
@@ -17,6 +22,11 @@ export function SettingsPage() {
   const updateConfigMutation = useUpdateConfig();
   const testConnectionMutation = useTestConnection();
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+
+  const { data: projectConfig, isLoading: isProjectConfigLoading } =
+    useGetProjectConfiguration();
+  const updateProjectConfigMutation = useUpdateProjectConfiguration();
+  const [isProjectFormSubmitting, setIsProjectFormSubmitting] = useState(false);
 
   const handleSubmit = async (formData: {
     selectedModel: string;
@@ -58,6 +68,27 @@ export function SettingsPage() {
       toast.success("Connection test successful");
     } catch (error) {
       let errorMessage = "Failed to test connection";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleProjectConfigSubmit = async (formData: {
+    name: string;
+    targetProjectPath: string;
+  }) => {
+    try {
+      await updateProjectConfigMutation.mutateAsync({
+        name: formData.name,
+        targetProjectPath: formData.targetProjectPath,
+      });
+      toast.success("Project configuration saved successfully");
+    } catch (error) {
+      let errorMessage = "Failed to save project configuration";
       if (error instanceof ApiError) {
         errorMessage = error.message;
       } else if (error instanceof Error) {
@@ -118,6 +149,36 @@ export function SettingsPage() {
         </Card>
 
         {isFormSubmitting && (
+          <div className="absolute inset-0 bg-black/20 rounded-xl pointer-events-none" />
+        )}
+      </div>
+
+      <div className="relative">
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isProjectConfigLoading ? (
+              <div className="flex items-center justify-center gap-3 py-8 text-accent">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-lg">
+                  Loading project configuration...
+                </span>
+              </div>
+            ) : (
+              <ProjectConfigurationForm
+                initialName={projectConfig?.name || ""}
+                initialTargetPath={projectConfig?.targetProjectPath || ""}
+                onSubmit={handleProjectConfigSubmit}
+                isSubmitting={updateProjectConfigMutation.isPending}
+                onSubmittingChange={setIsProjectFormSubmitting}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {isProjectFormSubmitting && (
           <div className="absolute inset-0 bg-black/20 rounded-xl pointer-events-none" />
         )}
       </div>
