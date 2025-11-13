@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { eq } from "drizzle-orm";
 
@@ -31,6 +32,10 @@ export async function executeWithAdvancedOptions(
 ): Promise<ToolIntegrationResult> {
   resetAllToolStates();
 
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const repoRoot = path.resolve(__dirname, "../../../..");
+
   const enabledTools = await db
     .select()
     .from(tools)
@@ -48,14 +53,14 @@ export async function executeWithAdvancedOptions(
       );
     }
 
-    workspaceRootDir = path.resolve(process.cwd(), projectConfig.workspacePath);
+    workspaceRootDir = path.resolve(repoRoot, projectConfig.workspacePath);
     workspaceContext = await executeWorkspaceBeforeAll(workspaceRootDir);
   }
 
   const adapterTools: AdapterToolDefinition[] = [];
 
   for (const tool of enabledTools) {
-    const toolWorkspaceDir = path.resolve(process.cwd(), tool.workspaceDir);
+    const toolWorkspaceDir = path.resolve(repoRoot, tool.workspaceDir);
 
     const toolFilePath = path.join(toolWorkspaceDir, "tool.ts");
 

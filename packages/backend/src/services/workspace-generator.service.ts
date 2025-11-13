@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { execa } from "execa";
 
@@ -35,7 +36,10 @@ export class WorkspaceGeneratorService {
     tools: DiscoveredTool[],
   ): Promise<void> {
     try {
-      const workspacePath = path.join(process.cwd(), "workspace", projectName);
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      const repoRoot = path.resolve(__dirname, "../../../..");
+      const workspacePath = path.join(repoRoot, "workspace", projectName);
 
       discoveryStatusService.appendLog({
         level: "info",

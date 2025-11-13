@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
-import { join } from "path";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath } from "url";
 
 import { eq } from "drizzle-orm";
 import type { AdvancedOptions } from "@promptalicious/shared-infra";
@@ -193,7 +194,10 @@ const result = await generateText({
 
 async function readToolExecuteFunction(workspaceDir: string): Promise<string> {
   try {
-    const toolFilePath = join(process.cwd(), workspaceDir, "tool.ts");
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const repoRoot = resolve(__dirname, "../../../..");
+    const toolFilePath = join(repoRoot, workspaceDir, "tool.ts");
     const toolFileContent = await fs.readFile(toolFilePath, "utf-8");
 
     const lines = toolFileContent.split("\n");

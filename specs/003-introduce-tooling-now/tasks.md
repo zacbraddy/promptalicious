@@ -457,7 +457,7 @@ capturelicious("Test message", { foo: "bar" });
 console.log(getCaptures()); // Should show captured message
 ```
 
-- [x] **Complete**
+- [x] **Complete*
 
 ---
 
