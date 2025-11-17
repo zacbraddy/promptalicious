@@ -8,7 +8,6 @@ export type {
   PricingInformation,
   ExchangeRate,
   AdvancedOptions,
-  ToolChoice,
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
   ExecutePromptErrorResponse,
@@ -31,6 +30,8 @@ export type {
   DiscoveryLogEntry,
   DiscoverySummary,
 } from "./types/api";
+
+export { ToolChoice } from "./types/api";
 
 export type {
   ToolDefinition,

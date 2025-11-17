@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
+  AdvancedOptions as AdvancedOptionsType,
 } from "@promptalicious/shared-infra";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { ResponseDisplay } from "@/components/ResponseDisplay";
 import { DiagnosticsDisplay } from "@/components/DiagnosticsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { PricingInfo } from "@/components/PricingInfo";
+import { AdvancedOptions } from "@/components/AdvancedOptions";
 import {
   executePrompt,
   abortExecution,
@@ -23,6 +25,9 @@ import { useExecutionStatus } from "@/hooks/useExecutionStatus";
 export function ExecutePromptPage() {
   const { status: executionStatus } = useExecutionStatus();
   const [localPromptText, setLocalPromptText] = useState("");
+  const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptionsType>(
+    {},
+  );
 
   const executePromptMutation = useMutation<
     ExecutePromptSuccessResponse,
@@ -48,7 +53,12 @@ export function ExecutePromptPage() {
   const handleExecute = () => {
     if (!promptText.trim()) return;
     executePromptMutation.reset();
-    executePromptMutation.mutate({ promptText });
+    executePromptMutation.mutate({
+      promptText,
+      advancedOptions: Object.keys(advancedOptions).length
+        ? advancedOptions
+        : undefined,
+    });
   };
 
   const handleCancel = () => {
@@ -97,6 +107,11 @@ export function ExecutePromptPage() {
               onChange={setLocalPromptText}
               disabled={isExecuting}
               placeholder="Enter your system prompt here..."
+            />
+            <AdvancedOptions
+              options={advancedOptions}
+              onChange={setAdvancedOptions}
+              disabled={isExecuting}
             />
             <ExecuteControls
               onExecute={handleExecute}
