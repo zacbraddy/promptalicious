@@ -89,3 +89,14 @@ export interface DiscoverySummary {
     reason: string;
   }>;
 }
+
+export interface ExportRequest {
+  includeDisabledTools?: boolean;
+}
+
+export interface ExportResponse {
+  markdown: string;
+  generatedAt: string;
+  toolsIncluded: number;
+  advancedOptions?: Record<string, unknown>;
+}

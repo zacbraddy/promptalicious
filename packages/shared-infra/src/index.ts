@@ -39,6 +39,8 @@ export type {
   DebugMessage,
   HookDefinition,
   WorkspaceStructure,
+  ExportRequest,
+  ExportResponse,
 } from "./types/tools";
 
 export {

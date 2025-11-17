@@ -16,6 +16,8 @@ import type {
   UpdateProjectConfigurationSuccessResponse,
   DiscoveryStatus,
   ToolDefinition,
+  ExportRequest,
+  ExportResponse,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -235,6 +237,17 @@ export async function updateTool(
       data,
     );
     return response.data.tool;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function generateExport(
+  data: ExportRequest = {},
+): Promise<ExportResponse> {
+  try {
+    const response = await apiClient.post<ExportResponse>("/export", data);
+    return response.data;
   } catch (error) {
     handleAxiosError(error);
   }
