@@ -21,6 +21,11 @@ export function useGetTool(toolId: string) {
   });
 }
 
+interface UpdateToolContext {
+  previousTools?: ToolDefinition[];
+  previousTool?: ToolDefinition;
+}
+
 export function useUpdateTool() {
   const queryClient = useQueryClient();
 
@@ -30,9 +35,49 @@ export function useUpdateTool() {
     {
       toolId: string;
       data: Partial<Pick<ToolDefinition, "description" | "enabled">>;
-    }
+    },
+    UpdateToolContext
   >({
     mutationFn: ({ toolId, data }) => updateTool(toolId, data),
+    onMutate: async ({ toolId, data }) => {
+      await queryClient.cancelQueries({ queryKey: TOOLS_QUERY_KEY });
+      await queryClient.cancelQueries({ queryKey: toolQueryKey(toolId) });
+
+      const previousTools =
+        queryClient.getQueryData<ToolDefinition[]>(TOOLS_QUERY_KEY);
+      const previousTool = queryClient.getQueryData<ToolDefinition>(
+        toolQueryKey(toolId),
+      );
+
+      if (previousTools) {
+        queryClient.setQueryData<ToolDefinition[]>(
+          TOOLS_QUERY_KEY,
+          previousTools.map((tool) =>
+            tool.id === toolId ? { ...tool, ...data } : tool,
+          ),
+        );
+      }
+
+      if (previousTool) {
+        queryClient.setQueryData<ToolDefinition>(toolQueryKey(toolId), {
+          ...previousTool,
+          ...data,
+        });
+      }
+
+      return { previousTools, previousTool };
+    },
+    onError: (_error, variables, context) => {
+      if (context?.previousTools) {
+        queryClient.setQueryData(TOOLS_QUERY_KEY, context.previousTools);
+      }
+      if (context?.previousTool) {
+        queryClient.setQueryData(
+          toolQueryKey(variables.toolId),
+          context.previousTool,
+        );
+      }
+    },
     onSuccess: (updatedTool) => {
       void queryClient.invalidateQueries({
         queryKey: TOOLS_QUERY_KEY,

@@ -694,7 +694,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T040
 **Expected Outcome**: Tools page displays all discovered tools
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -705,7 +705,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T041
 **Expected Outcome**: Users can enable/disable tools with immediate UI feedback
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
