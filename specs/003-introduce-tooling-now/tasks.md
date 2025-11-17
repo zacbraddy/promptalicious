@@ -801,7 +801,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T049
 **Expected Outcome**: Modal shows export instructions with copy/download
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
