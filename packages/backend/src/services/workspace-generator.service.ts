@@ -261,7 +261,7 @@ ${envTypeProperties}
 ${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${name}: ${type};\n}`).join("\n")}
 `;
 
-    const envPath = path.join(toolDir, "environment.d.ts");
+    const envPath = path.join(toolDir, "environment.ts");
     await fs.writeFile(envPath, environmentContent);
   }
 
@@ -371,7 +371,7 @@ export default async function afterAll(): Promise<void> {
 
     await Promise.all([
       fs.writeFile(
-        path.join(workspacePath, "environment.d.ts"),
+        path.join(workspacePath, "environment.ts"),
         environmentContent,
       ),
       fs.writeFile(path.join(workspacePath, "beforeAll.ts"), beforeAllContent),

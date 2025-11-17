@@ -34,6 +34,8 @@ export interface ExecutionResult {
   executionDurationMs: number;
   estimatedCostGBP: number;
   toolInvocations?: ToolInvocationResult[];
+  finishReason?: string;
+  reasoning?: string;
 }
 
 export interface ExecutionError {

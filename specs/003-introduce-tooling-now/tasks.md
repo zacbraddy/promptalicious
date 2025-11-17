@@ -753,7 +753,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T045
 **Expected Outcome**: Execute page shows Advanced Options section
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -764,7 +764,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T046
 **Expected Outcome**: Execution results show tool invocation summary from ExecutionResult
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
