@@ -814,7 +814,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 **Surface Point**: After T051, export functionality working in browser with markdown display, copy, and download
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -871,7 +871,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 ### T056 [P]: Update README.md with tool integration capability
 
 **File**: `README.md` (repository root)
-**Description**: Add "Tool Integration" to "Current capabilities" section in README. Brief description: "Connect your existing codebase with AI SDK tool() definitions, configure tools, execute prompts with tool support, and observe detailed diagnostics." No mention of future specs.
+**Description**: Add "Tool Integration" to "Current capabilities" section in README. Brief description: "Connect your existing codebase with AI SDK tool() definitions, configure tools, execute prompts with tool support, and observe detailed diagnostics." No mention of future specs. Must mention what elements promptalicious is currently compatibile with i.e. vercel ai sdk (version) and o4-mini model.
 **Dependencies**: T055
 **Expected Outcome**: README.md updated with tool integration in capabilities list
 

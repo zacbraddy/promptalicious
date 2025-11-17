@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Wrench, Eye } from "lucide-react";
+import { Loader2, Wrench, Eye, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { ToolDefinition } from "@promptalicious/shared-infra";
 
@@ -8,12 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useGetTools, useUpdateTool } from "@/hooks/useTools";
 import { ToolDetailModal } from "@/components/ToolDetailModal";
+import { ExportModal } from "@/components/ExportModal";
 
 export function ToolsPage() {
   const { data: tools, isLoading, isError, error } = useGetTools();
   const updateToolMutation = useUpdateTool();
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const isNoProjectConfigured =
     isError &&
@@ -101,13 +103,23 @@ export function ToolsPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-6 w-6" />
-              Discovered Tools
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                ({tools.length} {tools.length === 1 ? "tool" : "tools"})
-              </span>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-6 w-6" />
+                Discovered Tools
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({tools.length} {tools.length === 1 ? "tool" : "tools"})
+                </span>
+              </CardTitle>
+              <Button
+                variant="default"
+                onClick={() => setIsExportModalOpen(true)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Export Instructions
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -166,6 +178,12 @@ export function ToolsPage() {
         toolId={selectedToolId}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        includeDisabledTools={false}
       />
     </>
   );

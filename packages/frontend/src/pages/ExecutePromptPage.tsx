@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { FileText } from "lucide-react";
 import type {
   ExecutePromptRequest,
   ExecutePromptSuccessResponse,
@@ -8,6 +9,7 @@ import type {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PromptInput } from "@/components/PromptInput";
 import { ExecuteControls } from "@/components/ExecuteControls";
 import { ResponseDisplay } from "@/components/ResponseDisplay";
@@ -16,6 +18,7 @@ import { ToolInvocationsDisplay } from "@/components/ToolInvocationsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { PricingInfo } from "@/components/PricingInfo";
 import { AdvancedOptions } from "@/components/AdvancedOptions";
+import { ExportModal } from "@/components/ExportModal";
 import {
   executePrompt,
   abortExecution,
@@ -29,6 +32,7 @@ export function ExecutePromptPage() {
   const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptionsType>(
     {},
   );
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const executePromptMutation = useMutation<
     ExecutePromptSuccessResponse,
@@ -176,6 +180,19 @@ export function ExecutePromptPage() {
             </section>
           )}
 
+          {/* Export Section */}
+          <section className="flex justify-center py-4">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => setIsExportModalOpen(true)}
+              className="gap-2"
+            >
+              <FileText className="h-5 w-5" />
+              Export Instructions
+            </Button>
+          </section>
+
           {/* Pricing Section */}
           {pricingQuery.data && (
             <section className="space-y-4">
@@ -222,6 +239,13 @@ export function ExecutePromptPage() {
           </section>
         </div>
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        includeDisabledTools={false}
+      />
     </div>
   );
 }
