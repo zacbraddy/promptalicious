@@ -657,7 +657,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T037
 **Expected Outcome**: Project configuration and discovery flow works in browser
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -670,7 +670,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 **Surface Point**: After T039, Settings page + discovery modal working in browser with real-time progress and cancellation
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -683,7 +683,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T039
 **Expected Outcome**: React hooks ready for Tools page
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

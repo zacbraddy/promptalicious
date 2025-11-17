@@ -15,6 +15,7 @@ import type {
   UpdateProjectConfigurationRequest,
   UpdateProjectConfigurationSuccessResponse,
   DiscoveryStatus,
+  ToolDefinition,
 } from "@promptalicious/shared-infra";
 
 import { config } from "@/config/env";
@@ -198,6 +199,39 @@ export async function cancelDiscovery(): Promise<{
       cancelled: boolean;
       message: string;
     }>("/project/discovery/cancel");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function getTools(): Promise<ToolDefinition[]> {
+  try {
+    const response = await apiClient.get<ToolDefinition[]>("/tools");
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function getTool(toolId: string): Promise<ToolDefinition> {
+  try {
+    const response = await apiClient.get<ToolDefinition>(`/tools/${toolId}`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
+export async function updateTool(
+  toolId: string,
+  data: Partial<Pick<ToolDefinition, "description" | "enabled">>,
+): Promise<ToolDefinition> {
+  try {
+    const response = await apiClient.patch<ToolDefinition>(
+      `/tools/${toolId}`,
+      data,
+    );
     return response.data;
   } catch (error) {
     handleAxiosError(error);
