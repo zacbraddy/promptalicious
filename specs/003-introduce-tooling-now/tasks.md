@@ -646,7 +646,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T036
 **Expected Outcome**: API client ready for project configuration calls
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
@@ -727,7 +727,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T043
 **Expected Outcome**: Description editing works, sourceDescription nulled after first edit
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
