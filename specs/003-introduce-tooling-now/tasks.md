@@ -716,7 +716,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T042
 **Expected Outcome**: Modal shows tool detail with editable description
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
