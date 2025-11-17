@@ -740,7 +740,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 **Surface Point**: After T045, Tools page working in browser with enable/disable and description editing
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 
