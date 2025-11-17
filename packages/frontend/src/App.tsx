@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { Toaster } from "./components/ui/sonner";
 import { ExecutePromptPage } from "./pages/ExecutePromptPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ToolsPage } from "./pages/ToolsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ExecutePromptPage />} />
           <Route path="/execute" element={<ExecutePromptPage />} />
+          <Route path="/tools" element={<ToolsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
         <Toaster expand={true} visibleToasts={5} richColors />

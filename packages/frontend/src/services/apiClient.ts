@@ -207,8 +207,8 @@ export async function cancelDiscovery(): Promise<{
 
 export async function getTools(): Promise<ToolDefinition[]> {
   try {
-    const response = await apiClient.get<ToolDefinition[]>("/tools");
-    return response.data;
+    const response = await apiClient.get<{ tools: ToolDefinition[] }>("/tools");
+    return response.data.tools;
   } catch (error) {
     handleAxiosError(error);
   }
@@ -216,8 +216,10 @@ export async function getTools(): Promise<ToolDefinition[]> {
 
 export async function getTool(toolId: string): Promise<ToolDefinition> {
   try {
-    const response = await apiClient.get<ToolDefinition>(`/tools/${toolId}`);
-    return response.data;
+    const response = await apiClient.get<{ tool: ToolDefinition }>(
+      `/tools/${toolId}`,
+    );
+    return response.data.tool;
   } catch (error) {
     handleAxiosError(error);
   }
@@ -228,11 +230,11 @@ export async function updateTool(
   data: Partial<Pick<ToolDefinition, "description" | "enabled">>,
 ): Promise<ToolDefinition> {
   try {
-    const response = await apiClient.patch<ToolDefinition>(
+    const response = await apiClient.patch<{ tool: ToolDefinition }>(
       `/tools/${toolId}`,
       data,
     );
-    return response.data;
+    return response.data.tool;
   } catch (error) {
     handleAxiosError(error);
   }

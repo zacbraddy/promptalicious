@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Rocket, Settings } from "lucide-react";
+import { Rocket, Settings, Wrench } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,6 +25,13 @@ export function Layout({ children }: LayoutProps) {
             >
               <Rocket className="h-5 w-5" />
               <span>Execute</span>
+            </Link>
+            <Link
+              to="/tools"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Wrench className="h-5 w-5" />
+              <span>Tools</span>
             </Link>
             <Link
               to="/settings"
