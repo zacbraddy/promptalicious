@@ -777,7 +777,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 **Surface Point**: After T048, execution diagnostics working in browser with advanced options and tool invocations display
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

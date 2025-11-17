@@ -12,6 +12,7 @@ import { PromptInput } from "@/components/PromptInput";
 import { ExecuteControls } from "@/components/ExecuteControls";
 import { ResponseDisplay } from "@/components/ResponseDisplay";
 import { DiagnosticsDisplay } from "@/components/DiagnosticsDisplay";
+import { ToolInvocationsDisplay } from "@/components/ToolInvocationsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { PricingInfo } from "@/components/PricingInfo";
 import { AdvancedOptions } from "@/components/AdvancedOptions";
@@ -159,6 +160,21 @@ export function ExecutePromptPage() {
             </h2>
             <DiagnosticsDisplay result={result} />
           </section>
+
+          {/* Tool Invocations Section */}
+          {result.toolInvocations && result.toolInvocations.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Tool Invocations
+                <span className="text-muted-foreground ml-3 text-sm font-normal">
+                  — Detailed diagnostics for each tool execution
+                </span>
+              </h2>
+              <ToolInvocationsDisplay
+                toolInvocations={result.toolInvocations}
+              />
+            </section>
+          )}
 
           {/* Pricing Section */}
           {pricingQuery.data && (
