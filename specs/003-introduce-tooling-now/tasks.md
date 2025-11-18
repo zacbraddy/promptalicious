@@ -827,7 +827,7 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 **Dependencies**: T051
 **Expected Outcome**: Integration test validates end-to-end discovery flow
 
-- [ ] **Complete**
+- [x] **Complete**
 
 ---
 

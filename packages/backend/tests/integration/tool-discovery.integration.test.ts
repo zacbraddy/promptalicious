@@ -13,7 +13,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, afterEach } from "vitest";
 
 import { db } from "@/db/connection";
 import { tools } from "@/db/schema/tools.schema";
@@ -30,6 +30,10 @@ describe("toolDiscoveryService - ts-morph integration", () => {
 
   afterEach(async () => {
     await db.delete(tools);
+  });
+
+  afterAll(async () => {
+    await cleanupFixture(TEST_FIXTURES_DIR);
   });
 
   describe("parsing tool() calls", () => {

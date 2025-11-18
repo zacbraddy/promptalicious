@@ -139,7 +139,10 @@ export default createEslintConfig({
     "composite": false,
     "noEmit": true,
     "preserveSymlinks": false,
-    "allowArbitraryExtensions": true
+    "allowArbitraryExtensions": true,
+    "paths": {
+      "@rootalicious/*": "./rootalicious"
+    }
   },
   "include": ["**/*", "rootalicious/**/*"]
 }

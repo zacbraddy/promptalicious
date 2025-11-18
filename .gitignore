@@ -29,7 +29,7 @@ postgresql/
 .DS_Store
 
 # Test fixtures (generated during integration tests)
-packages/backend/tests/fixtures/tool-discovery/
+packages/backend/tests/fixtures
 
 # Workspace directory (user-specific tool implementations)
 workspace/*

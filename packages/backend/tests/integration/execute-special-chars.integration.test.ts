@@ -16,34 +16,29 @@ describe("Special characters in prompts (integration)", () => {
       .where(eq(llmConfig.id, 1))
       .limit(1);
 
-    if (config.length && config[0]) {
-      savedConfig = config[0];
+    if (!config.length || !config[0]?.apiKey) {
+      throw new Error(`
+❌ Integration tests require LLM configuration in database
+
+Please configure your LLM settings before running integration tests:
+
+1. Start the application:
+   pnpm dev
+
+2. Open the frontend in your browser (typically http://localhost:5173)
+
+3. Navigate to the Settings page and configure:
+   - API Key (required)
+   - Model selection
+   - Provider endpoint (if needed)
+
+4. Re-run the integration tests
+
+The integration tests make real LLM API calls and require valid configuration.
+`);
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-
-    if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY environment variable is required for integration tests",
-      );
-    }
-
-    await db
-      .insert(llmConfig)
-      .values({
-        id: 1,
-        selectedModel: "gpt-4o-mini",
-        apiKey,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: llmConfig.id,
-        set: {
-          apiKey,
-          updatedAt: new Date(),
-        },
-      });
+    savedConfig = config[0];
   });
 
   beforeEach(async () => {

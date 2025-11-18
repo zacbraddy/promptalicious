@@ -16,13 +16,32 @@ describe("Configuration persistence and validation flow (integration)", () => {
   let originalConfig: typeof llmConfig.$inferSelect | null = null;
 
   beforeAll(async () => {
-    const existingConfig = await db
-      .select()
-      .from(llmConfig)
-      .where(eq(llmConfig.id, 1))
-      .limit(1);
-    originalConfig = existingConfig[0] || null;
+    const existingConfig = await db.select().from(llmConfig).limit(1);
+
+    if (!existingConfig.length || !existingConfig[0]?.apiKey) {
+      throw new Error(`
+❌ Integration tests require LLM configuration in database
+
+Please configure your LLM settings before running integration tests:
+
+1. Start the application:
+   pnpm dev
+
+2. Open the frontend in your browser (typically http://localhost:5173)
+
+3. Navigate to the Settings page and configure:
+   - API Key (required)
+   - Model selection
+   - Provider endpoint (if needed)
+
+4. Re-run the integration tests
+
+The integration tests make real LLM API calls and require valid configuration.
+`);
+    }
+
     await cleanupDatabase();
+    originalConfig = existingConfig[0];
   });
 
   afterAll(async () => {
@@ -56,21 +75,13 @@ describe("Configuration persistence and validation flow (integration)", () => {
     expect(initialConfigData.config.selectedModel).toBe("gpt-4o-mini");
     expect(initialConfigData.availableModels).toContain("gpt-4o-mini");
 
-    const existingConfig = await db
-      .select()
-      .from(llmConfig)
-      .where(eq(llmConfig.id, 1))
-      .limit(1);
-
-    const validApiKey = existingConfig[0]!.apiKey;
-
     const putWithValidKey = await app.request("/api/config", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        apiKey: validApiKey,
+        apiKey: originalConfig?.apiKey,
       } satisfies UpdateConfigurationRequest),
     });
 
@@ -90,7 +101,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
 
     expect(dbConfig).toHaveLength(1);
     expect(dbConfig[0]?.selectedModel).toBe("gpt-4o-mini");
-    expect(dbConfig[0]?.apiKey).toBe(validApiKey);
+    expect(dbConfig[0]?.apiKey).toBe(originalConfig?.apiKey);
 
     const testConnectionRes = await app.request("/api/config/test-connection", {
       method: "POST",
@@ -127,7 +138,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
       .limit(1);
 
     expect(dbConfigAfterInvalid).toHaveLength(1);
-    expect(dbConfigAfterInvalid[0]?.apiKey).toBe(validApiKey);
+    expect(dbConfigAfterInvalid[0]?.apiKey).toBe(originalConfig?.apiKey);
     expect(dbConfigAfterInvalid[0]?.apiKey).not.toBe(
       "sk-invalid-test-key-12345",
     );
@@ -147,7 +158,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
       id: 1,
       selectedModel: "gpt-4o-mini",
       apiKey: originalConfig!.apiKey,
-      baseURL: "https://different-endpoint.example.com/v1",
+      baseURL: "https://api.openai.com/v1",
     });
 
     const updateModelRes = await app.request("/api/config", {
@@ -196,21 +207,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
   });
 
   it("should persist configuration across multiple requests", async () => {
-    const existingConfig = await db
-      .select()
-      .from(llmConfig)
-      .where(eq(llmConfig.id, 1))
-      .limit(1);
-
-    const hasValidApiKey =
-      existingConfig.length > 0 && existingConfig[0]?.apiKey;
-
-    if (!hasValidApiKey || !existingConfig[0]) {
-      console.warn("No valid API key in database - skipping persistence test");
-      return;
-    }
-
-    const apiKey = existingConfig[0].apiKey;
+    const apiKey = originalConfig?.apiKey;
 
     const firstUpdate = await app.request("/api/config", {
       method: "PUT",
@@ -237,7 +234,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        baseURL: "https://custom.endpoint.com/v1",
+        baseURL: "https://api.openai.com/v1",
       } satisfies UpdateConfigurationRequest),
     });
 
@@ -248,7 +245,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
     });
     const secondGet = (await getAfterSecond.json()) as ConfigurationResponse;
     expect(secondGet.config.selectedModel).toBe("gpt-4o-mini");
-    expect(secondGet.config.baseURL).toBe("https://custom.endpoint.com/v1");
+    expect(secondGet.config.baseURL).toBe("https://api.openai.com/v1");
 
     const dbFinalConfig = await db
       .select()
@@ -258,7 +255,7 @@ describe("Configuration persistence and validation flow (integration)", () => {
 
     expect(dbFinalConfig).toHaveLength(1);
     expect(dbFinalConfig[0]?.selectedModel).toBe("gpt-4o-mini");
-    expect(dbFinalConfig[0]?.baseURL).toBe("https://custom.endpoint.com/v1");
+    expect(dbFinalConfig[0]?.baseURL).toBe("https://api.openai.com/v1");
     expect(dbFinalConfig[0]?.apiKey).toBe(apiKey);
   });
 });
