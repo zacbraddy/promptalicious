@@ -4,7 +4,7 @@ export interface ToolDefinition {
   id: string;
   name: string;
   description: string;
-  parametersSchema: unknown;
+  inputSchema: unknown;
   executeFunction: (params: unknown) => Promise<unknown>;
   sourceFilePath: string;
   detectedHookParams: string[];

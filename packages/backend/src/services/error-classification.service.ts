@@ -28,6 +28,27 @@ export function classifyError(error: unknown): ClassifiedError {
         .additionalContext || {};
 
     if (error.name === "AbortError" || errorMessage.includes("abort")) {
+      // Check if this is actually a user cancellation or something else
+      // If the error message contains specific failure reasons, it's not a user cancellation
+      if (
+        errorMessage.includes("compilation failed") ||
+        errorMessage.includes("hook execution failed") ||
+        errorMessage.includes("failed to load") ||
+        errorMessage.includes("command failed")
+      ) {
+        // This is a task failure, not a user cancellation
+        return {
+          errorType: "api_error",
+          errorCode: "execution_failed",
+          errorMessage: error.message,
+          additionalContext: {
+            originalError: error.message,
+            ...existingContext,
+          },
+        };
+      }
+
+      // Otherwise, treat it as a user cancellation
       return {
         errorType: "aborted",
         errorCode: "execution_aborted",

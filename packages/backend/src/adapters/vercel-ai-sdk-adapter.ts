@@ -1,6 +1,7 @@
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, StopCondition, tool, jsonSchema } from "ai";
 import { z } from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
+import type { JSONSchema7 } from "json-schema";
 
 import type {
   SDKAdapter,
@@ -60,12 +61,18 @@ export class VercelAISDKAdapter implements SDKAdapter {
     const aiTools: Record<string, any> = {};
 
     for (const toolDef of tools) {
-      let parametersSchema: z.ZodTypeAny;
+      let inputSchemaForTool: z.ZodTypeAny | ReturnType<typeof jsonSchema>;
 
-      if (toolDef.parametersSchema instanceof z.ZodType) {
-        parametersSchema = toolDef.parametersSchema;
+      if (toolDef.inputSchema instanceof z.ZodType) {
+        inputSchemaForTool = toolDef.inputSchema;
+      } else if (
+        toolDef.inputSchema &&
+        typeof toolDef.inputSchema === "object" &&
+        "type" in toolDef.inputSchema
+      ) {
+        inputSchemaForTool = jsonSchema(toolDef.inputSchema as JSONSchema7);
       } else {
-        parametersSchema = z.object({});
+        inputSchemaForTool = z.object({});
       }
 
       const executeWrapper = async (input: unknown) => {
@@ -125,7 +132,7 @@ export class VercelAISDKAdapter implements SDKAdapter {
 
       aiTools[toolDef.name] = tool({
         description: toolDef.description,
-        inputSchema: parametersSchema,
+        inputSchema: inputSchemaForTool,
         execute: executeWrapper,
       });
     }
@@ -156,6 +163,8 @@ export class VercelAISDKAdapter implements SDKAdapter {
       maxTokens?: number;
       maxRetries?: number;
       abortSignal?: AbortSignal;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stopWhen?: StopCondition<any>;
     } = {
       model: provider(this.model ?? "gpt-4o-mini"),
       prompt,
@@ -166,6 +175,7 @@ export class VercelAISDKAdapter implements SDKAdapter {
       maxTokens: validatedOptions.maxTokens,
       maxRetries: validatedOptions.maxRetries,
       abortSignal: this.abortSignal,
+      stopWhen: stepCountIs(10),
     };
 
     const result = await generateText(generateTextOptions);

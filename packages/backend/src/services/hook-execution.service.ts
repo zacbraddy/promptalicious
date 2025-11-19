@@ -1,5 +1,9 @@
 import path from "node:path";
 import { access } from "node:fs/promises";
+import { Module } from "node:module";
+
+import { createJiti } from "jiti";
+import { getTsconfig } from "get-tsconfig";
 
 type HookType = "beforeAll" | "beforeEach" | "afterEach" | "afterAll";
 type HookFunction = () => Promise<Record<string, unknown> | void>;
@@ -16,10 +20,47 @@ interface WorkspaceState {
   beforeAllContext: Record<string, unknown>;
   afterAllExecuted: boolean;
   workspaceRootDir: string;
+  globalKeys: Set<string>;
 }
 
 const toolStates = new Map<string, ToolState>();
 const workspaceStates = new Map<string, WorkspaceState>();
+
+function createConfiguredJiti(importUrl: string, workspaceDir?: string) {
+  const tsconfig = getTsconfig();
+
+  const alias: Record<string, string> = {};
+
+  if (tsconfig?.config.compilerOptions?.paths) {
+    const baseUrl = tsconfig.config.compilerOptions.baseUrl || ".";
+    const tsconfigDir = path.dirname(tsconfig.path);
+
+    for (const [key, values] of Object.entries(
+      tsconfig.config.compilerOptions.paths,
+    )) {
+      const aliasKey = key.replace(/\/\*$/, "");
+      const aliasValue = (values[0] ?? "").replace(/\/\*$/, "");
+
+      alias[aliasKey] = path.resolve(tsconfigDir, baseUrl, aliasValue);
+    }
+  }
+
+  const jitiOptions: {
+    alias: Record<string, string>;
+    moduleCache?: false;
+    esmResolve?: boolean;
+  } = {
+    alias,
+    moduleCache: false,
+    esmResolve: true,
+  };
+
+  if (workspaceDir) {
+    return createJiti(workspaceDir, jitiOptions);
+  }
+
+  return createJiti(importUrl, jitiOptions);
+}
 
 export async function loadHook(
   workspaceDir: string,
@@ -71,9 +112,29 @@ export async function loadWorkspaceHook(
   }
 
   try {
-    const fileUrl = `file://${hookPath}?t=${Date.now()}`;
-    const hookModule = (await import(fileUrl)) as { default: HookFunction };
-    return hookModule.default;
+    const targetProjectNodeModules = path.join(
+      workspaceRootDir,
+      "rootalicious/node_modules",
+    );
+    const workspaceNodeModules = path.join(workspaceRootDir, "node_modules");
+    const rootaliciousPath = path.join(workspaceRootDir, "rootalicious");
+
+    const originalNodePath = process.env.NODE_PATH || "";
+    const originalCwd = process.cwd();
+
+    process.env.NODE_PATH = `${targetProjectNodeModules}:${workspaceNodeModules}:${originalNodePath}`;
+    process.chdir(rootaliciousPath);
+
+    (Module as { _initPaths?: () => void })._initPaths?.();
+
+    try {
+      const jiti = createConfiguredJiti(import.meta.url, workspaceRootDir);
+      const hookModule = await jiti.import(hookPath, { default: true });
+
+      return hookModule as HookFunction;
+    } finally {
+      process.chdir(originalCwd);
+    }
   } catch (error) {
     throw new Error(
       `Failed to load workspace ${hookType} hook: ${error instanceof Error ? error.message : String(error)}`,
@@ -91,6 +152,7 @@ export async function executeWorkspaceBeforeAll(
       beforeAllContext: {},
       afterAllExecuted: false,
       workspaceRootDir,
+      globalKeys: new Set<string>(),
     };
     workspaceStates.set(workspaceRootDir, workspaceState);
   }
@@ -129,6 +191,11 @@ export async function executeWorkspaceAfterAll(
     await executeHook(afterAllFn, "afterAll");
   }
 
+  for (const key of workspaceState.globalKeys) {
+    delete (globalThis as Record<string, unknown>)[key];
+  }
+  workspaceState.globalKeys.clear();
+
   workspaceState.afterAllExecuted = true;
 }
 
@@ -138,6 +205,7 @@ export async function executeToolLifecycle(
   toolExecute: (params: unknown) => Promise<unknown>,
   params: unknown,
   workspaceContext?: Record<string, unknown>,
+  workspaceRootDir?: string,
 ): Promise<unknown> {
   let toolState = toolStates.get(toolId);
   if (!toolState) {
@@ -166,18 +234,28 @@ export async function executeToolLifecycle(
     beforeEachContext = await executeHook(beforeEachFn, "beforeEach");
   }
 
-  const mergedParams = {
-    ...(typeof params === "object" && params !== null ? params : {}),
+  const environmentContext = {
     ...(workspaceContext || {}),
     ...beforeAllContext,
     ...beforeEachContext,
   };
 
+  for (const [key, value] of Object.entries(environmentContext)) {
+    (globalThis as Record<string, unknown>)[key] = value;
+
+    if (workspaceRootDir) {
+      const workspaceState = workspaceStates.get(workspaceRootDir);
+      if (workspaceState) {
+        workspaceState.globalKeys.add(key);
+      }
+    }
+  }
+
   let toolResult: unknown;
   let toolError: Error | undefined;
 
   try {
-    toolResult = await toolExecute(mergedParams);
+    toolResult = await toolExecute(params);
   } catch (error) {
     toolError = error as Error;
   }

@@ -24,6 +24,11 @@ export interface ToolDefinition {
   description: string;
   sourceDescription: string;
   parametersSchema: unknown;
+  schemaImport: {
+    schemaName: string;
+    schemaAccessor: string;
+    importPath: string;
+  } | null;
   sourceFilePath: string;
   workspaceDir: string;
   detectedHookParams: string[];
@@ -50,10 +55,12 @@ export interface DiscoveryResult {
 export async function discoverTools(
   projectPath: string,
 ): Promise<DiscoveryResult> {
+  await db.delete(tools);
+
   discoveryStatusService.appendLog({
     level: "info",
     phase: "scanning",
-    message: `Scanning project at ${projectPath}`,
+    message: `Cleared existing tools and scanning project at ${projectPath}`,
   });
 
   const summary: DiscoverySummary = {
@@ -238,12 +245,19 @@ function extractToolsFromFile(
         projectPath,
       );
 
+      const schemaImport = extractSchemaImport(
+        sourceFile,
+        parameters,
+        projectPath,
+      );
+
       tools.push({
         id: toolName,
         name: toolName,
         description,
         sourceDescription: description,
         parametersSchema: parameters,
+        schemaImport,
         sourceFilePath,
         workspaceDir,
         detectedHookParams: detectedParams,
@@ -289,9 +303,47 @@ function generateToolName(callExpr: Node, sourceFile: SourceFile): string {
     return parent.getName();
   }
 
+  let ancestor: Node | undefined = parent;
+  while (ancestor) {
+    if (
+      Node.isFunctionDeclaration(ancestor) ||
+      Node.isFunctionExpression(ancestor) ||
+      Node.isArrowFunction(ancestor)
+    ) {
+      const funcParent = ancestor.getParent();
+
+      if (Node.isVariableDeclaration(funcParent)) {
+        const funcName = funcParent.getName();
+        return extractToolNameFromFunction(funcName);
+      }
+
+      if (Node.isFunctionDeclaration(ancestor)) {
+        const funcName = ancestor.getName();
+        if (funcName) {
+          return extractToolNameFromFunction(funcName);
+        }
+      }
+
+      break;
+    }
+    ancestor = ancestor.getParent();
+  }
+
   const filePath = sourceFile.getFilePath();
   const baseName = path.basename(filePath, path.extname(filePath));
   return baseName;
+}
+
+function extractToolNameFromFunction(functionName: string): string {
+  const createToolPattern = /^create(.+)Tool$/i;
+  const match = functionName.match(createToolPattern);
+
+  if (match && match[1]) {
+    const toolName = match[1];
+    return toolName.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  }
+
+  return functionName.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
 function extractTypeImports(
@@ -353,6 +405,57 @@ function extractTypeImports(
   }
 
   return typeImports;
+}
+
+function extractSchemaImport(
+  sourceFile: SourceFile,
+  schemaReferenceText: string,
+  projectPath: string,
+): { schemaName: string; schemaAccessor: string; importPath: string } | null {
+  const parts = schemaReferenceText.split(".");
+  if (parts.length === 0) return null;
+
+  const schemaName = parts[0];
+  const schemaAccessor = parts.slice(1).join(".");
+
+  const importDeclarations = sourceFile.getImportDeclarations();
+
+  for (const importDecl of importDeclarations) {
+    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+    const namedImports = importDecl.getNamedImports();
+
+    for (const namedImport of namedImports) {
+      const importName = namedImport.getName();
+      if (importName === schemaName) {
+        let resolvedPath = moduleSpecifier;
+
+        if (moduleSpecifier.startsWith("@/")) {
+          const resolvedSourceFile = importDecl.getModuleSpecifierSourceFile();
+          if (resolvedSourceFile) {
+            const resolvedFilePath = resolvedSourceFile.getFilePath();
+            const relativePath = path.relative(projectPath, resolvedFilePath);
+            const pathWithoutExtension = relativePath.replace(
+              /\.(ts|tsx|js|jsx)$/,
+              "",
+            );
+            resolvedPath = `../rootalicious/${pathWithoutExtension}`;
+          } else {
+            resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+          }
+        } else {
+          resolvedPath = moduleSpecifier.replace(/^@\//, "../rootalicious/");
+        }
+
+        return {
+          schemaName,
+          schemaAccessor,
+          importPath: resolvedPath,
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 function detectClosureVariables(
@@ -627,6 +730,7 @@ async function saveToolToDatabase(tool: ToolDefinition): Promise<void> {
       description: tool.description,
       sourceDescription: tool.description,
       parametersSchema: tool.parametersSchema,
+      schemaImport: tool.schemaImport,
       sourceFilePath: tool.sourceFilePath,
       workspaceDir: tool.workspaceDir,
       enabled: true,
@@ -641,6 +745,7 @@ async function saveToolToDatabase(tool: ToolDefinition): Promise<void> {
         description: tool.description,
         sourceDescription: tool.description,
         parametersSchema: tool.parametersSchema,
+        schemaImport: tool.schemaImport,
         sourceFilePath: tool.sourceFilePath,
         workspaceDir: tool.workspaceDir,
         detectedHookParams: tool.detectedHookParams,

@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { eq } from "drizzle-orm";
+import { createJiti } from "jiti";
 
 import { db } from "@/db/connection";
 import { tools } from "@/db/schema/tools.schema";
@@ -59,17 +60,27 @@ export async function executeWithAdvancedOptions(
 
   const adapterTools: AdapterToolDefinition[] = [];
 
+  const jitiOptions: {
+    moduleCache?: false;
+    esmResolve?: boolean;
+  } = {
+    moduleCache: false,
+    esmResolve: true,
+  };
+
+  const jiti = createJiti(import.meta.url, jitiOptions);
+
   for (const tool of enabledTools) {
     const toolWorkspaceDir = path.resolve(repoRoot, tool.workspaceDir);
 
     const toolFilePath = path.join(toolWorkspaceDir, "tool.ts");
 
-    let toolModule: { default: (params: unknown) => Promise<unknown> };
+    let toolModule: {
+      default: (params: unknown) => Promise<unknown>;
+      inputSchema?: unknown;
+    };
     try {
-      const fileUrl = `file://${toolFilePath}?t=${Date.now()}`;
-      toolModule = (await import(fileUrl)) as {
-        default: (params: unknown) => Promise<unknown>;
-      };
+      toolModule = await jiti.import(toolFilePath);
     } catch (error) {
       throw new Error(
         `Failed to load tool "${tool.name}": ${error instanceof Error ? error.message : String(error)}`,
@@ -85,14 +96,18 @@ export async function executeWithAdvancedOptions(
         toolExecuteFn,
         params,
         workspaceContext,
+        workspaceRootDir,
       );
     };
+
+    // Use the inputSchema exported from the tool file if available
+    const inputSchema = toolModule.inputSchema;
 
     adapterTools.push({
       id: tool.id,
       name: tool.name,
       description: tool.description,
-      parametersSchema: tool.parametersSchema,
+      inputSchema,
       executeFunction: wrappedExecute,
       sourceFilePath: tool.sourceFilePath,
       detectedHookParams: (tool.detectedHookParams as string[]) || [],

@@ -12,6 +12,11 @@ export interface DiscoveredTool {
   description: string;
   sourceDescription: string;
   parametersSchema: unknown;
+  schemaImport: {
+    schemaName: string;
+    schemaAccessor: string;
+    importPath: string;
+  } | null;
   executeFunction: string;
   sourceFilePath: string;
   detectedHookParams: string[];
@@ -50,7 +55,7 @@ export class WorkspaceGeneratorService {
       await fs.mkdir(workspacePath, { recursive: true });
 
       await this.createProjectSymlink(workspacePath, projectPath);
-      await this.generateWorkspaceConfig(workspacePath);
+      await this.generateWorkspaceConfig(workspacePath, projectPath);
 
       let filesGenerated = 0;
 
@@ -125,7 +130,10 @@ export class WorkspaceGeneratorService {
     });
   }
 
-  private async generateWorkspaceConfig(workspacePath: string): Promise<void> {
+  private async generateWorkspaceConfig(
+    workspacePath: string,
+    projectPath: string,
+  ): Promise<void> {
     const eslintConfig = `import createEslintConfig from "@promptalicious/shared-infra/eslint";
 
 export default createEslintConfig({
@@ -133,26 +141,83 @@ export default createEslintConfig({
 });
 `;
 
-    const tsConfig = `{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "composite": false,
-    "noEmit": true,
-    "preserveSymlinks": false,
-    "allowArbitraryExtensions": true,
-    "paths": {
-      "@rootalicious/*": "./rootalicious"
+    // Read project's tsconfig to extract path aliases
+    let projectPathAliases: Record<string, string[]> = {};
+    try {
+      const projectTsconfigPath = path.join(projectPath, "tsconfig.json");
+      const projectTsconfigContent = await fs.readFile(
+        projectTsconfigPath,
+        "utf-8",
+      );
+      const projectTsconfig = JSON.parse(projectTsconfigContent) as unknown as {
+        compilerOptions?: { paths?: Record<string, string[]> };
+      };
+
+      // Extract paths from project tsconfig
+      if (projectTsconfig.compilerOptions?.paths) {
+        projectPathAliases = projectTsconfig.compilerOptions.paths;
+      }
+    } catch {
+      // No tsconfig or no paths - continue with empty aliases
+      discoveryStatusService.appendLog({
+        level: "info",
+        phase: "generating",
+        message: "No path aliases found in project tsconfig",
+      });
     }
-  },
-  "include": ["**/*", "rootalicious/**/*"]
-}
-`;
+
+    // Create merged path aliases with both project aliases and rootalicious
+    const mergedPaths: Record<string, string[]> = {
+      "@rootalicious/*": ["./rootalicious/src"],
+      // Convert project aliases to point to rootalicious symlink
+      ...Object.fromEntries(
+        Object.entries(projectPathAliases).map(([alias, paths]) => [
+          alias,
+          paths.map((p) => `./rootalicious/${p}`),
+        ]),
+      ),
+    };
+
+    const tsConfig = JSON.stringify(
+      {
+        extends: "@promptalicious/shared-infra/tsconfig",
+        compilerOptions: {
+          baseUrl: ".",
+          paths: mergedPaths,
+          typeRoots: [
+            "./node_modules/@types",
+            "./rootalicious/node_modules/@types",
+            "./rootalicious/node_modules",
+          ],
+        },
+        include: ["**/*", "rootalicious/**/*"],
+      },
+      null,
+      2,
+    );
+
+    // Use file: protocol to reference local packages outside workspace
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const repoRoot = path.resolve(__dirname, "../../../..");
+    const debugPath = path.relative(
+      workspacePath,
+      path.join(repoRoot, "packages/debug"),
+    );
+    const sharedInfraPath = path.relative(
+      workspacePath,
+      path.join(repoRoot, "packages/shared-infra"),
+    );
 
     const packageJson = `{
   "name": "promptalicious-workspace",
   "version": "0.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@promptalicious/debug": "file:${debugPath}",
+    "@promptalicious/shared-infra": "file:${sharedInfraPath}"
+  }
 }
 `;
 
@@ -162,10 +227,14 @@ export default createEslintConfig({
       fs.writeFile(path.join(workspacePath, "package.json"), packageJson),
     ]);
 
+    await execa("npm", ["install"], {
+      cwd: workspacePath,
+    });
+
     discoveryStatusService.appendLog({
       level: "info",
       phase: "generating",
-      message: "Generated workspace configuration files",
+      message: `Generated workspace configuration files with ${Object.keys(mergedPaths).length} path aliases`,
     });
   }
 
@@ -207,12 +276,16 @@ export default createEslintConfig({
 
     const normalizedFunction = this.normalizeIndentation(tool.executeFunction);
 
+    const schemaExport = tool.schemaImport
+      ? `\n\nexport { inputSchema } from "./environment";`
+      : "";
+
     const toolContent = `// Auto-generated from ${tool.sourceFilePath}
 // Tool: ${tool.name}
 
 import "./environment";
 
-${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}
+${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}${schemaExport}
 `;
 
     const toolPath = path.join(toolDir, "tool.ts");
@@ -225,10 +298,6 @@ ${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}
     toolDir: string,
     tool: DiscoveredTool,
   ): Promise<void> {
-    if (tool.environmentTypes.length === 0) {
-      return;
-    }
-
     // Collect all unique type imports across all environment variables
     const allTypeImports = new Map<string, string>();
     for (const envType of tool.environmentTypes) {
@@ -237,11 +306,21 @@ ${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}
       }
     }
 
+    // Add schema import if present
+    if (tool.schemaImport) {
+      allTypeImports.set(
+        tool.schemaImport.schemaName,
+        tool.schemaImport.importPath,
+      );
+    }
+
     const imports = Array.from(allTypeImports.entries())
-      .map(
-        ([typeName, importPath]) =>
-          `import { ${typeName} } from "${importPath}";`,
-      )
+      .map(([typeName, importPath]) => {
+        if (tool.schemaImport && typeName === tool.schemaImport.schemaName) {
+          return `import { ${typeName} } from "${importPath}";`;
+        }
+        return `import type { ${typeName} } from "${importPath}";`;
+      })
       .join("\n");
 
     // Generate environment type
@@ -252,6 +331,11 @@ ${imports ? imports + "\n\n" : ""}export default ${normalizedFunction}
             .join("\n")
         : "  // No environment variables detected";
 
+    // Generate schema export
+    const schemaExport = tool.schemaImport
+      ? `\n\n// Schema for tool parameters\nexport const inputSchema = ${tool.schemaImport.schemaName}${tool.schemaImport.schemaAccessor ? "." + tool.schemaImport.schemaAccessor : ""};\n`
+      : "";
+
     const environmentContent = `// Auto-generated environment declarations for tool: ${tool.name}
 // These are the closure variables detected in the original tool implementation
 // They will be provided by the beforeAll/beforeEach hooks at runtime
@@ -261,7 +345,7 @@ ${envTypeProperties}
 };
 
 // Global ambient declarations for use in tool.ts
-${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${name}: ${type};\n}`).join("\n")}
+${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${name}: ${type};\n}`).join("\n")}${schemaExport}
 `;
 
     const envPath = path.join(toolDir, "environment.ts");
@@ -318,7 +402,13 @@ ${tool.environmentTypes.map(({ name, type }) => `declare global {\n  const ${nam
     const allTypeImports = new Map<string, string>();
     for (const [, envType] of allEnvironmentTypes) {
       for (const typeImport of envType.typeImports) {
-        allTypeImports.set(typeImport.typeName, typeImport.importPath);
+        // Adjust import paths for workspace-level files (one directory shallower)
+        // Tool-level imports use ../rootalicious/, workspace-level uses ./rootalicious/
+        const adjustedPath = typeImport.importPath.replace(
+          /^\.\.\/rootalicious\//,
+          "./rootalicious/",
+        );
+        allTypeImports.set(typeImport.typeName, adjustedPath);
       }
     }
 

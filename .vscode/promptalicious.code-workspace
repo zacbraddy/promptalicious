@@ -17,6 +17,10 @@
 			"path": "../packages/shared-infra"
 		},
 		{
+			"name": "📦 @promptalicious/debug",
+			"path": "../packages/debug"
+		},
+		{
 			"name": "📖 docs",
 			"path": "../docs"
 		},

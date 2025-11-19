@@ -6,6 +6,7 @@ export const tools = pgTable("tools", {
   description: text("description").notNull(),
   sourceDescription: text("source_description"),
   parametersSchema: jsonb("parameters_schema").notNull(),
+  schemaImport: jsonb("schema_import"),
   sourceFilePath: text("source_file_path").notNull(),
   workspaceDir: text("workspace_dir").notNull(),
   enabled: boolean("enabled").notNull().default(true),

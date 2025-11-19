@@ -866,6 +866,20 @@ curl -X POST http://localhost:3000/api/export -d '{"includeDisabledTools":false}
 
 ---
 
+### T055a: Investigate if there is currently an intrinsic link between project name and project path in terms of project configuration
+
+**File**: `packages/backend/tests/integration/project.discovery.integration.test.ts` 
+**Description**: I might be wrong but it seems like based on some of the project discovery integration tests that there might be a soft link between project name and the folder at the end of the targetProjectPath. If so we need to break that link and ensure that project name is simply a descriptor of the project while targetProjectPath is able to independently hold a path that does not end in the EXACT project name.
+**Expected Outcome**: All Integration tests pass and a new unit test has been created to prove that project name and target path are now able to operate independently
+
+- [ ] **Complete**
+
+### T055b: Remove references to @rootalicious alias that we intended to include in the workflow
+**Description**: Originally we wanted to include an alias to allow users to reference files in their target project using `@rootalicious` when we came to implement this however we found that it was extremely difficult to implement this for not much benefit when you consider that all you really need to do is is use `./rootalicious` we need to document this change in direction to ensure that when we document the project that we don't document the @rootalicious alias as we decided not to implement
+**Expected Outcome**: All relevant spec files updated to clear reflect the fact that we went with `./rootalicious` for using target project modules and not `@rootlicious`
+
+- [ ] **Complete**
+
 ## Group 13: Documentation (User-Facing, Spec 003 Only)
 
 ### T056 [P]: Update README.md with tool integration capability

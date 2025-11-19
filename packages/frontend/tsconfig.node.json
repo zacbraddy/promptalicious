@@ -1,5 +1,5 @@
 {
-  "extends": "../shared-infra/tsconfig.json",
+  "extends": "@promptalicious/shared-infra/tsconfig",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "lib": ["ES2023"],

@@ -43,6 +43,13 @@
       "when": 1762876320137,
       "tag": "0005_add_environment_types_to_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1763495867495,
+      "tag": "0006_add_schema_import_to_tools",
+      "breakpoints": true
     }
   ]
 }
