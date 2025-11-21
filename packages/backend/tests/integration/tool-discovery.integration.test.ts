@@ -167,6 +167,68 @@ export const multiplyNumbers = tool({
       await cleanupFixture(fixtureDir);
     });
 
+    it("should discover multiple tools from factory functions in same file", async () => {
+      const fixtureDir = path.join(TEST_FIXTURES_DIR, "multiple-factory-tools");
+      await setupFixture(fixtureDir, {
+        "colour-tools.ts": `
+import { tool } from 'ai';
+import { z } from 'zod';
+
+export function createTool1() {
+  return tool({
+    description: 'A tool for 1',
+    parameters: z.object({
+      foreground: z.string(),
+      background: z.string(),
+    }),
+    execute: async () => {
+      return 1;
+    },
+  });
+}
+
+export function createTool2() {
+  return tool({
+    description: 'B tool for 2',
+    execute: async () => {
+      return 2;
+    },
+  });
+}
+
+export function createTool3() {
+  return tool({
+    description: 'C Tool for 3',
+    execute: async () => {
+      return 3;
+    },
+  });
+}
+        `,
+        "tsconfig.json": JSON.stringify({
+          compilerOptions: {
+            target: "ES2020",
+            module: "commonjs",
+            strict: true,
+          },
+        }),
+      });
+
+      const result = await toolDiscoveryService.discoverTools(fixtureDir);
+
+      expect(result.summary.toolsDiscovered).toBe(3);
+
+      const savedTools = await db.select().from(tools);
+      expect(savedTools).toHaveLength(3);
+      expect(savedTools.map((t) => t.name).sort()).toEqual([
+        "tool1",
+        "tool2",
+        "tool3",
+      ]);
+
+      await cleanupFixture(fixtureDir);
+    });
+
     it("should skip files without AI SDK import", async () => {
       const fixtureDir = path.join(TEST_FIXTURES_DIR, "no-ai-sdk");
       await setupFixture(fixtureDir, {

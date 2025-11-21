@@ -22,7 +22,7 @@ import {
 
 const configRouter = new Hono();
 
-const AVAILABLE_MODELS = ["gpt-4o-mini"];
+const AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o"];
 
 configRouter.get("/", async (c: Context) => {
   try {

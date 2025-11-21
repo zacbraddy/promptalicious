@@ -175,7 +175,7 @@ export class VercelAISDKAdapter implements SDKAdapter {
       maxTokens: validatedOptions.maxTokens,
       maxRetries: validatedOptions.maxRetries,
       abortSignal: this.abortSignal,
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(1000),
     };
 
     const result = await generateText(generateTextOptions);

@@ -21,7 +21,7 @@ const baseURLValidator = z
 
 const configFieldsSchema = z.object({
   selectedModel: z
-    .enum(["gpt-4o-mini"], {
+    .enum(["gpt-4o-mini", "gpt-4o"], {
       message: "Invalid model. Available models: gpt-4o-mini",
     })
     .optional(),
